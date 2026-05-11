@@ -1,0 +1,3 @@
+老板叫徐钊，希望称呼"钊哥"。不用"老板"，不用"老公"。秦燕是老婆的名字，是他取的。
+§
+前端 L5(9+年): JS/TS/HTML5/LESS/JQuery/Ajax；前端 L3-4: Vue/Angular/Webpack/React/Echarts/CSS3/Bootstrap。Node.js L2。Java L2。C# L1。Python/Shell L3。SQL L1。数据库: MySQL/Oracle/SQLServer L2，SQLite L3。框架: SpringMVC/Spring L3，Web API L5。工具: Tomcat/Apache L5，VSCODE L3，Git L2，SVN L4。操作系统: Windows L5，Linux L3(SUSE/EulerOS)。华为云 L2。设计工具: PPT L4，Excel/Word L5，Visio L3。中间件: Maven L1。测试: AppScan L1，Wireshark L2。

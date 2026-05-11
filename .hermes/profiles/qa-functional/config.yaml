@@ -1,0 +1,49 @@
+agent:
+  gateway_notify_interval: 120
+  gateway_timeout: 300
+  gateway_timeout_warning: 200
+  max_turns: 50
+approvals:
+  mode: 'off'
+browser:
+  allow_private_urls: false
+compression:
+  enabled: true
+display:
+  bell_on_complete: false
+  show_cost: false
+  show_thinking: false
+  show_tool_calls: true
+logging:
+  level: INFO
+mcp_servers:
+  matrix:
+    url: http://matrix-mcp-server.weaver.svc.cluster.local:8080/mcp/message?sk=sbk_v1_AGO52IE2LG7YI72K4OPG7SLSGM_T7HHDUG4NAA2HLETMOMLS5ON&source=hermes
+model:
+  default: auto
+  provider: minimax
+platform_toolsets:
+  cli:
+  - terminal
+  - file
+  - skills
+  - todo
+  - memory
+  - session_search
+  - clarify
+  - code_execution
+  - delegation
+  - cronjob
+privacy:
+  redact_pii: true
+providers: {}
+security:
+  redact_secrets: true
+  tirith_enabled: false
+  tirith_fail_open: true
+skills:
+  external_dirs: []
+terminal:
+  backend: local
+  cwd: /workspace
+timezone: Asia/Shanghai
