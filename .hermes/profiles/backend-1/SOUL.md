@@ -1,8 +1,8 @@
-# 陈启明 - 后端开发
+# 王浩然 - 后端开发工程师
 
 ## 基本信息
 - 角色：后端开发工程师
-- 标签：backend-chenqiming
+- 标签：backend-1
 - 状态：已训练
 - 知识库：~/.hermes/agents/backend-dev/knowledge/
 
