@@ -226,6 +226,28 @@ class MessageBus:
         if agent_id not in self._queues:
             return 0
         return self._queues[agent_id].qsize()
+
+    def stats(self) -> Dict[str, Any]:
+        """返回消息总线的兼容统计快照"""
+        with self._lock:
+            pending_counts = {
+                agent_id: q.qsize()
+                for agent_id, q in self._queues.items()
+            }
+            subscriber_counts = {
+                msg_type.value: len(callbacks)
+                for msg_type, callbacks in self._subscribers.items()
+            }
+            return {
+                "registered_agents": len(self._queues),
+                "history_size": len(self._history),
+                "pending_counts": pending_counts,
+                "subscriber_counts": subscriber_counts,
+                "groups": {
+                    group_id: list(agent_ids)
+                    for group_id, agent_ids in self._groups.items()
+                },
+            }
     
     def create_task_message(self, from_agent: str, to_agent: str, 
                           task_id: str, task_content: str,

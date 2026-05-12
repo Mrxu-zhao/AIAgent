@@ -44,10 +44,11 @@ class Monitor:
     - 日志聚合
     """
     
-    def __init__(self, max_history: int = 10000):
+    def __init__(self, max_history: int = 10000, task_router=None):
         self.metrics: Dict[str, deque] = {}
         self.alerts: List[Alert] = []
         self.logs: deque = deque(maxlen=max_history)
+        self.task_router = task_router
         self._lock = threading.RLock()
         self._alert_handlers: List[callable] = []
         self._running = False
@@ -60,6 +61,13 @@ class Monitor:
             "error_rate_high": 0.1,      # 错误率过高阈值
             "queue_length_high": 10,     # 队列过长阈值
         }
+
+    @property
+    def agents(self) -> Dict[str, Any]:
+        """兼容旧接口，只读透传 task_router.agents"""
+        if self.task_router is None:
+            return {}
+        return getattr(self.task_router, "agents", {})
     
     def start(self):
         """启动监控"""
