@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仓库级控制平面设计草图</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #11182d;
+      --panel-2: #17223f;
+      --text: #e8edf8;
+      --muted: #9fb0d1;
+      --line: #31426f;
+      --accent: #67a3ff;
+      --green: #4cc38a;
+      --yellow: #f2c15c;
+      --red: #f27777;
+      --purple: #9f83ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #09101d 0%, #0d1326 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.03));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .span-12 { grid-column: span 12; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+    .band {
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px dashed var(--line);
+      background: rgba(255,255,255,0.02);
+    }
+    .band h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      color: #cfe0ff;
+    }
+    .chip {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin: 6px 8px 0 0;
+      font-size: 12px;
+      color: #e9f0ff;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+    .flow {
+      display: grid;
+      gap: 14px;
+      margin-top: 10px;
+    }
+    .flow-step {
+      border-left: 4px solid var(--accent);
+      background: var(--panel);
+      padding: 14px 16px;
+      border-radius: 12px;
+    }
+    .flow-step strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+    ul {
+      margin: 10px 0 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    @media (max-width: 960px) {
+      .span-6, .span-4, .span-3 { grid-column: span 12; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>仓库级控制平面总体设计草图</h1>
+    <div class="subtitle">
+      目标不是让现有调度框架立即承担所有职责，而是在全仓库之上增加一个统一的任务编排、状态同步、冲突检测、
+      并行执行和结果聚合层。调度框架优化只是其中一个并行工作流。
+    </div>
+
+    <div class="legend">
+      <span><i class="dot" style="background:#67a3ff"></i> 控制平面</span>
+      <span><i class="dot" style="background:#4cc38a"></i> 并行子任务 / Workstream</span>
+      <span><i class="dot" style="background:#f2c15c"></i> 状态与协议</span>
+      <span><i class="dot" style="background:#9f83ff"></i> 汇总与回归验证</span>
+      <span><i class="dot" style="background:#f27777"></i> 故障隔离与回滚</span>
+    </div>
+
+    <div class="stack">
+      <div class="row">
+        <div class="card span-12" style="border-color:#436fc8">
+          <h2>1. 仓库级控制入口</h2>
+          <p>
+            单一总控入口负责读取评估报告、生成任务清单、注册子任务、分配给多个智能体并跟踪生命周期。
+            它只做编排与治理，不直接承载全部业务逻辑。
+          </p>
+          <div class="chip">任务注册</div>
+          <div class="chip">依赖解析</div>
+          <div class="chip">优先级队列</div>
+          <div class="chip">超时 / 重试 / 回滚策略</div>
+        </div>
+      </div>
+
+      <div class="row band">
+        <div class="span-12">
+          <h3>2. 统一状态与通信层</h3>
+        </div>
+        <div class="card span-4" style="border-color:#b08a2f">
+          <h2>任务协议</h2>
+          <p>每个子任务必须有唯一 ID、版本、输入摘要、输出契约、依赖、锁域、验收标准。</p>
+        </div>
+        <div class="card span-4" style="border-color:#b08a2f">
+          <h2>状态仓</h2>
+          <p>统一记录 `planned / ready / running / blocked / done / failed / rolled_back` 等状态。</p>
+        </div>
+        <div class="card span-4" style="border-color:#b08a2f">
+          <h2>冲突检测</h2>
+          <p>基于文件锁域、模块域、协议版本与结果校验检测冲突，禁止高风险并发写入同一区域。</p>
+        </div>
+      </div>
+
+      <div class="row band">
+        <div class="span-12">
+          <h3>3. 并行 Workstream 层</h3>
+        </div>
+        <div class="card span-3" style="border-color:#2f8f62">
+          <h2>WS-A</h2>
+          <p>调度框架正确性修复：路由、工作流、监控死锁、恢复闭环。</p>
+        </div>
+        <div class="card span-3" style="border-color:#2f8f62">
+          <h2>WS-B</h2>
+          <p>通信与状态治理：消息契约、共享状态、执行日志、聚合规范。</p>
+        </div>
+        <div class="card span-3" style="border-color:#2f8f62">
+          <h2>WS-C</h2>
+          <p>性能与基准：延迟、CPU、吞吐基线，压测脚本，前后对比。</p>
+        </div>
+        <div class="card span-3" style="border-color:#2f8f62">
+          <h2>WS-D</h2>
+          <p>文档与可维护性：设计、运行手册、验收标准、变更记录、后续治理手册。</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="card span-6" style="border-color:#7d66d1">
+          <h2>4. 聚合与回归验证层</h2>
+          <p>所有子任务完成后，由统一聚合器汇总结果、执行端到端回归测试并输出性能对比报告。</p>
+          <ul>
+            <li>聚合子任务输出与执行日志</li>
+            <li>执行全链路回归测试</li>
+            <li>验证延迟降低 &ge; 20%</li>
+            <li>验证 CPU 利用率下降 &ge; 15%</li>
+            <li>生成最终交付文档</li>
+          </ul>
+        </div>
+        <div class="card span-6" style="border-color:#b05252">
+          <h2>5. 故障隔离与回滚层</h2>
+          <p>单个子任务失败时，不阻断其他独立 workstream；仅阻断依赖它的后续任务，并触发局部回滚。</p>
+          <ul>
+            <li>超时自动标记失败</li>
+            <li>按策略执行有限重试</li>
+            <li>失败任务生成回滚包与问题快照</li>
+            <li>隔离对非依赖任务的影响</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="card span-12">
+          <h2>建议的执行主链路</h2>
+          <div class="flow">
+            <div class="flow-step">
+              <strong>阶段 1：任务建模</strong>
+              从评估报告提取 P0 / P1 / P2 建议，转换为独立子任务与并行 workstream。
+            </div>
+            <div class="flow-step">
+              <strong>阶段 2：协议建仓</strong>
+              建立任务清单、状态文件、锁域定义、执行日志、结果契约与冲突检测规则。
+            </div>
+            <div class="flow-step">
+              <strong>阶段 3：多智能体并发执行</strong>
+              每个智能体只处理自己负责的子任务，按统一协议上报中间结果。
+            </div>
+            <div class="flow-step">
+              <strong>阶段 4：统一聚合与端到端验证</strong>
+              自动汇总、运行回归测试、比较性能指标、产出最终完整文档。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      这是一张“总体设计草图”，不是最终实现细节。下一步会细化子任务模型、协议字段、状态同步机制、回滚策略和验收矩阵。
+    </div>
+  </div>
+</body>
+</html>
