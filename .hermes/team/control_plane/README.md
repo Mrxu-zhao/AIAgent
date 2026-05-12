@@ -17,6 +17,7 @@
 - `OpenClaw` 仅保留统一适配接口，不在本阶段实现运行时执行。
 - 调度框架的 P0 修复由控制平面的测试集统一验证。
 - `TaskStore` 已支持基于 `expected_version` 的乐观并发拒绝，以及基于 `version` / `last_event_id` 的快照校验。
+- `ControlPlaneExecutor` 已在关键状态迁移中消费 `expected_version`，对完成态写入提供最小 compare-and-swap 保护。
 
 ## 推荐执行顺序
 1. 注册任务并建立状态仓

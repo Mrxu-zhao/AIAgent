@@ -79,6 +79,7 @@ class ExecutorTests(unittest.TestCase):
 
             self.assertTrue(outcome["success"])
             self.assertEqual(snapshot["status"], "done")
+            self.assertEqual(snapshot["version"], 3)
             self.assertEqual([event["status_after"] for event in events], ["running", "done"])
 
     def test_execute_task_records_failed_event(self):
@@ -118,6 +119,69 @@ class ExecutorTests(unittest.TestCase):
             self.assertFalse(outcome["success"])
             self.assertEqual(snapshot["status"], "failed")
             self.assertEqual(events[-1]["error_code"], "PROCESS_EXIT_1")
+
+    def test_execute_task_detects_version_conflict_before_completion(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = store_module.TaskStore(Path(tmp) / "state", Path(tmp) / "events")
+            runner = executor_module.ControlPlaneExecutor(store=store)
+            adapter = adapters_module.HermesExecutorAdapter()
+            card = models.TaskCard(
+                task_id="WS-B-P1-012",
+                title="Conflict on completion",
+                goal="Detect stale completion write",
+                scope=[".hermes/team/control_plane/executor.py"],
+                lock_scope=models.LockScope(files=[], modules=["control_plane"], contracts=[]),
+                inputs=["task"],
+                outputs=["conflict"],
+                dependencies=[],
+                owner_agent="architect",
+                review_agent="architect",
+                priority=models.TaskPriority.P1,
+                timeout_seconds=1200,
+                retry_policy=models.RetryPolicy(max_attempts=1, backoff_seconds=[0]),
+                rollback_policy=models.RollbackPolicy(mode="code"),
+                acceptance_criteria=["version conflict is surfaced"],
+            )
+            store.register_task(card)
+
+            class Result:
+                returncode = 0
+                stdout = "ok"
+                stderr = ""
+
+            def command_runner(command):
+                store.append_event(
+                    models.TaskEvent(
+                        event_id="evt-external",
+                        task_id=card.task_id,
+                        event_type=models.EventType.TASK_PROGRESS,
+                        agent_id="reviewer",
+                        timestamp=2.0,
+                        attempt=1,
+                        status_before=models.TaskStatus.RUNNING,
+                        status_after=models.TaskStatus.RUNNING,
+                        summary="external update",
+                        artifact_refs=[],
+                        lock_scope={"files": [], "modules": ["control_plane"], "contracts": []},
+                        depends_on=[],
+                        metrics_delta={},
+                        error_code=None,
+                    ),
+                    expected_version=2,
+                )
+                return Result()
+
+            outcome = runner.execute_task(card, adapter, command_runner)
+
+            snapshot = store.read_snapshot(card.task_id)
+            events = store.list_events(card.task_id)
+
+            self.assertFalse(outcome["success"])
+            self.assertEqual(outcome["error_code"], "VERSION_CONFLICT")
+            self.assertEqual(snapshot["status"], "running")
+            self.assertEqual(snapshot["version"], 3)
+            self.assertEqual(len(events), 2)
+            self.assertEqual(events[-1]["event_id"], "evt-external")
 
 
 if __name__ == "__main__":
