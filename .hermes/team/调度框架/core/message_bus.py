@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Agent间消息总线
+支持广播、点对点、组播通信模式
+"""
+
+import json
+import time
+import queue
+from typing import Dict, List, Optional, Callable, Any
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from threading import Lock
+import uuid
+
+class MessageType(Enum):
+    TASK_ASSIGN = "task_assign"           # 任务分配
+    TASK_COMPLETE = "task_complete"       # 任务完成
+    TASK_FAILED = "task_failed"           # 任务失败
+    COLLAB_REQUEST = "collab_request"     # 协作请求
+    COLLAB_RESPONSE = "collab_response"   # 协作响应
+    BROADCAST = "broadcast"               # 广播消息
+    STATUS_UPDATE = "status_update"       # 状态更新
+    KNOWLEDGE_SHARE = "knowledge_share"   # 知识共享
+    HANDOFF = "handoff"                   # 任务交接
+
+class MessagePriority(Enum):
+    CRITICAL = 1
+    HIGH = 2
+    NORMAL = 3
+    LOW = 4
+
+@dataclass
+class Message:
+    """消息实体"""
+    id: str
+    type: MessageType
+    from_agent: str
+    to_agent: Optional[str]  # None表示广播
+    content: Dict[str, Any]
+    priority: MessagePriority
+    timestamp: float
+    reply_to: Optional[str] = None  # 回复哪条消息
+    
+    @classmethod
+    def create(cls, msg_type: MessageType, from_agent: str, to_agent: Optional[str],
+               content: Dict, priority: MessagePriority = MessagePriority.NORMAL,
+               reply_to: Optional[str] = None) -> "Message":
+        return cls(
+            id=str(uuid.uuid4())[:8],
+            type=msg_type,
+            from_agent=from_agent,
+            to_agent=to_agent,
+            content=content,
+            priority=priority,
+            timestamp=time.time(),
+            reply_to=reply_to
+        )
+    
+    def to_dict(self) -> Dict:
+        return {
+            "id": self.id,
+            "type": self.type.value,
+            "from": self.from_agent,
+            "to": self.to_agent,
+            "content": self.content,
+            "priority": self.priority.value,
+            "timestamp": self.timestamp,
+            "reply_to": self.reply_to
+        }
+
+class MessageBus:
+    """
+    Agent间消息总线
+    
+    支持:
+    - 点对点通信 (P2P)
+    - 广播 (Broadcast)
+    - 组播 (Group)
+    - 消息持久化
+    - 消息订阅/发布模式
+    """
+    
+    def __init__(self):
+        self._queues: Dict[str, queue.PriorityQueue] = {}  # Agent消息队列
+        self._history: List[Message] = []  # 消息历史
+        self._subscribers: Dict[MessageType, List[Callable]] = {}  # 订阅者
+        self._groups: Dict[str, List[str]] = {  # 预定义组
+            "backend": ["backend-1", "backend-2", "backend-3"],
+            "frontend": ["frontend-1", "frontend-2", "frontend-3"],
+            "qa": ["qa-functional", "qa-performance"],
+            "all": ["architect", "dba", "backend-1", "backend-2", "backend-3",
+                   "frontend-1", "frontend-2", "frontend-3", "ucd",
+                   "qa-functional", "qa-performance", "devops", "requirements-analyst"],
+            "dev": ["backend-1", "backend-2", "backend-3", "frontend-1", "frontend-2", "frontend-3"],
+            "design": ["architect", "dba", "ucd"],
+        }
+        self._lock = Lock()
+        self._max_history = 1000
+    
+    def register_agent(self, agent_id: str):
+        """注册Agent到消息总线"""
+        with self._lock:
+            if agent_id not in self._queues:
+                self._queues[agent_id] = queue.PriorityQueue()
+    
+    def unregister_agent(self, agent_id: str):
+        """注销Agent"""
+        with self._lock:
+            if agent_id in self._queues:
+                del self._queues[agent_id]
+    
+    def send(self, message: Message) -> bool:
+        """
+        发送消息
+        
+        Args:
+            message: 消息对象
+            
+        Returns:
+            是否发送成功
+        """
+        with self._lock:
+            # 记录历史
+            self._history.append(message)
+            if len(self._history) > self._max_history:
+                self._history = self._history[-self._max_history:]
+            
+            # 触发订阅者
+            self._notify_subscribers(message)
+            
+            # 分发消息
+            if message.to_agent is None:
+                # 广播给所有Agent
+                success = True
+                for agent_id, q in self._queues.items():
+                    if agent_id != message.from_agent:
+                        try:
+                            q.put((message.priority.value, message.timestamp, message))
+                        except:
+                            success = False
+                return success
+            elif message.to_agent in self._groups:
+                # 组播
+                success = True
+                for agent_id in self._groups[message.to_agent]:
+                    if agent_id in self._queues and agent_id != message.from_agent:
+                        try:
+                            self._queues[agent_id].put((message.priority.value, message.timestamp, message))
+                        except:
+                            success = False
+                return success
+            elif message.to_agent in self._queues:
+                # 点对点
+                try:
+                    self._queues[message.to_agent].put(
+                        (message.priority.value, message.timestamp, message)
+                    )
+                    return True
+                except:
+                    return False
+            else:
+                return False
+    
+    def receive(self, agent_id: str, timeout: float = 0.1) -> Optional[Message]:
+        """
+        接收消息
+        
+        Args:
+            agent_id: Agent ID
+            timeout: 超时时间(秒)
+            
+        Returns:
+            消息对象或None
+        """
+        if agent_id not in self._queues:
+            return None
+        
+        try:
+            _, _, message = self._queues[agent_id].get(timeout=timeout)
+            return message
+        except queue.Empty:
+            return None
+    
+    def subscribe(self, msg_type: MessageType, callback: Callable[[Message], None]):
+        """订阅特定类型的消息"""
+        with self._lock:
+            if msg_type not in self._subscribers:
+                self._subscribers[msg_type] = []
+            self._subscribers[msg_type].append(callback)
+    
+    def unsubscribe(self, msg_type: MessageType, callback: Callable[[Message], None]):
+        """取消订阅"""
+        with self._lock:
+            if msg_type in self._subscribers:
+                self._subscribers[msg_type] = [
+                    cb for cb in self._subscribers[msg_type] if cb != callback
+                ]
+    
+    def _notify_subscribers(self, message: Message):
+        """通知订阅者"""
+        if message.type in self._subscribers:
+            for callback in self._subscribers[message.type]:
+                try:
+                    callback(message)
+                except Exception as e:
+                    print(f"订阅者回调错误: {e}")
+    
+    def get_history(self, agent_id: Optional[str] = None, 
+                   msg_type: Optional[MessageType] = None,
+                   limit: int = 50) -> List[Dict]:
+        """获取消息历史"""
+        result = self._history
+        
+        if agent_id:
+            result = [m for m in result if m.from_agent == agent_id or m.to_agent == agent_id]
+        
+        if msg_type:
+            result = [m for m in result if m.type == msg_type]
+        
+        return [m.to_dict() for m in result[-limit:]]
+    
+    def get_pending_count(self, agent_id: str) -> int:
+        """获取Agent待处理消息数"""
+        if agent_id not in self._queues:
+            return 0
+        return self._queues[agent_id].qsize()
+    
+    def create_task_message(self, from_agent: str, to_agent: str, 
+                          task_id: str, task_content: str,
+                          priority: MessagePriority = MessagePriority.NORMAL) -> Message:
+        """创建任务分配消息"""
+        return Message.create(
+            MessageType.TASK_ASSIGN,
+            from_agent,
+            to_agent,
+            {"task_id": task_id, "content": task_content},
+            priority
+        )
+    
+    def create_collab_message(self, from_agent: str, to_agent: str,
+                            request_type: str, details: Dict,
+                            priority: MessagePriority = MessagePriority.NORMAL) -> Message:
+        """创建协作请求消息"""
+        return Message.create(
+            MessageType.COLLAB_REQUEST,
+            from_agent,
+            to_agent,
+            {"request_type": request_type, "details": details},
+            priority
+        )
+    
+    def create_handoff_message(self, from_agent: str, to_agent: str,
+                             task_id: str, context: Dict,
+                             priority: MessagePriority = MessagePriority.HIGH) -> Message:
+        """创建任务交接消息"""
+        return Message.create(
+            MessageType.HANDOFF,
+            from_agent,
+            to_agent,
+            {"task_id": task_id, "context": context},
+            priority
+        )
+
+
+# 单例
+_bus = None
+
+def get_bus() -> MessageBus:
+    global _bus
+    if _bus is None:
+        _bus = MessageBus()
+    return _bus
+
+
+if __name__ == "__main__":
+    # 测试
+    bus = get_bus()
+    
+    # 注册Agent
+    for agent in ["architect", "backend-1", "frontend-1"]:
+        bus.register_agent(agent)
+    
+    # 测试点对点
+    msg1 = Message.create(MessageType.TASK_ASSIGN, "architect", "backend-1",
+                         {"task": "设计API"}, MessagePriority.HIGH)
+    bus.send(msg1)
+    
+    received = bus.receive("backend-1")
+    print(f"收到消息: {received.to_dict() if received else None}")
+    
+    # 测试广播
+    msg2 = Message.create(MessageType.BROADCAST, "architect", None,
+                         {"message": "项目启动"}, MessagePriority.NORMAL)
+    bus.send(msg2)
+    
+    print(f"\nbackend-1 待处理: {bus.get_pending_count('backend-1')}")
+    print(f"frontend-1 待处理: {bus.get_pending_count('frontend-1')}")
+    
+    # 测试组播
+    msg3 = Message.create(MessageType.TASK_ASSIGN, "architect", "backend",
+                         {"task": "后端组任务"}, MessagePriority.NORMAL)
+    bus.send(msg3)
+    
+    print(f"\n组播后 backend-1 待处理: {bus.get_pending_count('backend-1')}")

@@ -1,0 +1,75 @@
+{
+  "label": "reconstructed-before",
+  "captured_at": 1778565271.1228533,
+  "iterations": 5,
+  "load_profile": {
+    "cpu_burn_iterations": 2000000,
+    "dispatch_batch_size": 12,
+    "workflow_parallel_fanout": 3
+  },
+  "scenarios": {
+    "dispatch": {
+      "iterations": 5,
+      "latency_ms": {
+        "avg": 62.55237999999999,
+        "p95": 63.9631,
+        "max": 63.9631
+      },
+      "cpu_ms": {
+        "avg": 62.5,
+        "p95": 62.5,
+        "max": 62.5
+      },
+      "cpu_burn_iterations": 2000000,
+      "goal_type": "reference",
+      "counts_toward_overall": false,
+      "workload": {
+        "dispatch_batch_size": 12
+      }
+    },
+    "dashboard": {
+      "iterations": 5,
+      "latency_ms": {
+        "avg": 200.0,
+        "p95": 200.0,
+        "max": 200.0
+      },
+      "cpu_ms": {
+        "avg": 66.46562,
+        "p95": 68.4737,
+        "max": 68.4737
+      },
+      "timed_out_runs": 5,
+      "timeout_seconds": 0.2,
+      "cpu_burn_iterations": 2000000,
+      "goal_type": "performance",
+      "counts_toward_overall": true
+    },
+    "workflow": {
+      "iterations": 5,
+      "latency_ms": {
+        "avg": 63.89020000000001,
+        "p95": 69.276,
+        "max": 69.276
+      },
+      "cpu_ms": {
+        "avg": 62.5,
+        "p95": 62.5,
+        "max": 62.5
+      },
+      "cpu_burn_iterations": 2000000,
+      "goal_type": "correctness",
+      "counts_toward_overall": false,
+      "workload": {
+        "workflow_parallel_fanout": 3
+      },
+      "correctness": {
+        "check": "step_agent_override",
+        "expected_agent": "dba",
+        "all_runs_passed": false,
+        "passed_runs": 0,
+        "total_runs": 5
+      }
+    }
+  }
+}
