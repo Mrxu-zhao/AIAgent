@@ -18,13 +18,16 @@
 - 调度框架的 P0 修复由控制平面的测试集统一验证。
 - `TaskStore` 已支持基于 `expected_version` 的乐观并发拒绝，以及基于 `version` / `last_event_id` 的快照校验。
 - `ControlPlaneExecutor` 已在关键状态迁移中消费 `expected_version`，对完成态写入提供最小 compare-and-swap 保护。
+- `ControlPlaneOrchestrator` 已负责高层多任务并行调度，并把 CAS 语义上推到 ready 任务选择、冲突解释和直接依赖阻塞传播。
+- 调度器不直接写 `done` / `failed` 终态，终态仍由 `ControlPlaneExecutor` 负责。
 
 ## 推荐执行顺序
 1. 注册任务并建立状态仓
 2. 使用执行器与适配器装配 `Hermes` 调度命令
-3. 运行调度框架 P0 回归测试
-4. 采集基线并比较优化前后指标
-5. 聚合执行结果并生成最终报告
+3. 使用 `ControlPlaneOrchestrator` 选择 ready 任务并执行高层调度
+4. 运行调度框架 P0 回归测试
+5. 采集基线并比较优化前后指标
+6. 聚合执行结果并生成最终报告
 
 ## 基线与性能报告
 运行以下命令重建当前基线、近似修复前基线与性能报告：

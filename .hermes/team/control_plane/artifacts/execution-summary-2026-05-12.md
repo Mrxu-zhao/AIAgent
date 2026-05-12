@@ -5,6 +5,7 @@
 - 已实现任务模型、任务注册表、状态仓、事件日志、冲突检测、失败重试判断、报告生成与基线比较。
 - 已为 `TaskStore` 增加乐观并发保护：支持 `expected_version` 冲突拒绝与快照校验。
 - 已打通 `Hermes` 调度命令装配与执行器事件回写路径，并为关键状态迁移接入最小 compare-and-swap 保护。
+- 已新增 `ControlPlaneOrchestrator`，支持多任务并行调度、`VERSION_CONFLICT` 解释和直接依赖阻塞传播。
 - 已为 `OpenClaw` 预留适配接口，当前返回 `NotImplementedError`。
 - 已修复调度框架三项 P0 问题：
   - `monitor.py` 仪表盘死锁
@@ -12,13 +13,18 @@
   - `team-cli.py` 未启动监控生命周期
 
 ## 当前验证结果
-- 测试命令：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
-- 测试结果：`40 tests, OK`
+- 导出验证：`python -m unittest tests.control_plane.test_orchestrator.OrchestratorExportTests -v`
+- 导出结果：`1 test, OK`
+- 控制平面全量测试：`python -m unittest tests.control_plane.test_adapters tests.control_plane.test_aggregator tests.control_plane.test_baseline tests.control_plane.test_benchmark_runner tests.control_plane.test_conflicts tests.control_plane.test_executor tests.control_plane.test_framework_cli tests.control_plane.test_framework_monitor tests.control_plane.test_framework_workflow tests.control_plane.test_models tests.control_plane.test_orchestrator tests.control_plane.test_store tests.control_plane.test_tasks -v`
+- 测试结果：`46 tests, OK`
+- 发现模式检查：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
+- 发现模式结果：`46 tests, OK`
 - 覆盖范围：
   - 控制平面模型与适配器
   - 状态仓与冲突检测
   - 版本冲突拒绝与快照校验
   - 执行器、Hermes 命令装配、事件回写与版本冲突检测
+  - 高层 orchestrator 调度、ready 任务选择、冲突解释与直接依赖阻塞传播
   - 基线比较、真实基准采样辅助与性能报告生成
   - 独立 benchmark runner 与基线产物重建
   - workflow 显式 `step.agent` 正确性基线与报告渲染
@@ -49,11 +55,10 @@
 ## 当前边界
 - 已满足“`Hermes` 可直接执行”的第一阶段要求，控制平面执行器已具备调用适配器、执行命令、回写 started/completed/failed 事件的最小运行时能力。
 - `OpenClaw` 目前只有接口保留，没有执行实现。
-- 当前已经产出真实“当前基线”数据和“可重复重建的近似 before 基线”，且两者已统一负载口径；报告也已区分参考场景、性能场景和正确性场景。状态仓与执行器已经具备最小 compare-and-swap 语义，但仍未扩展到更高层的并行调度编排。
+- 当前已经产出真实“当前基线”数据和“可重复重建的近似 before 基线”，且两者已统一负载口径；报告也已区分参考场景、性能场景和正确性场景。状态仓、执行器与 orchestrator 已具备最小 compare-and-swap 语义。
 
 ## 建议下一步
-1. 把 compare-and-swap 语义继续上推到多任务并行调度层，避免高层编排绕过状态门禁。
-2. 如果你后续拿到真实旧版本，再补一份真实 `before` 基线，替换当前近似对照。
-3. 为 `dashboard` 设计更接近生产状态量级的指标注入和告警密度，继续验证 CPU 降幅是否能稳定达到目标。
-4. 如果要继续追性能，优先增加真正存在代码差异的场景，不再把 `dispatch` 这类参考场景纳入优化 KPI。
-5. 再向上接入多任务并行调度、冲突阻断与更严格的快照版本门禁。
+1. 如果你后续拿到真实旧版本，再补一份真实 `before` 基线，替换当前近似对照。
+2. 为 `dashboard` 设计更接近生产状态量级的指标注入和告警密度，继续验证 CPU 降幅是否能稳定达到目标。
+3. 如果要继续追性能，优先增加真正存在代码差异的场景，不再把 `dispatch` 这类参考场景纳入优化 KPI。
+4. 在真实负载下继续验证 orchestrator 的并发调度、冲突处理与依赖阻塞行为。

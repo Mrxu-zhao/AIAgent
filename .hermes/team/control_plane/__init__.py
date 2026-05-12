@@ -13,10 +13,12 @@ from models import (
     TaskPriority,
     TaskStatus,
 )
+from orchestrator import ControlPlaneOrchestrator, build_dependency_graph, get_ready_tasks
 from store import TaskStore
 from tasks import TASKS
 
 __all__ = [
+    "ControlPlaneOrchestrator",
     "ControlPlaneExecutor",
     "EventType",
     "HermesExecutorAdapter",
@@ -30,8 +32,10 @@ __all__ = [
     "TaskPriority",
     "TaskStatus",
     "TaskStore",
+    "build_dependency_graph",
     "build_report",
     "compare_runs",
     "detect_conflict",
+    "get_ready_tasks",
     "summarize_samples",
 ]
