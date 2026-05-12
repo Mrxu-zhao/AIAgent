@@ -6,6 +6,8 @@
 - 已为 `TaskStore` 增加乐观并发保护：支持 `expected_version` 冲突拒绝与快照校验。
 - 已打通 `Hermes` 调度命令装配与执行器事件回写路径，并为关键状态迁移接入最小 compare-and-swap 保护。
 - 已新增 `ControlPlaneOrchestrator`，支持多任务并行调度、`VERSION_CONFLICT` 解释和直接依赖阻塞传播。
+- 已新增共享 `runner.py`，把 `TASKS`、`TaskStore`、`ControlPlaneExecutor` 与 `ControlPlaneOrchestrator` 接成真实任务批次入口。
+- 已新增 `run_batch.py` 脚本入口，并在 `team-cli.py` 中增加 `control-plane-run` 桥接命令，两个入口共用同一 runner 链路。
 - 已为 `OpenClaw` 预留适配接口，当前返回 `NotImplementedError`。
 - 已修复调度框架三项 P0 问题：
   - `monitor.py` 仪表盘死锁
@@ -15,16 +17,19 @@
 ## 当前验证结果
 - 导出验证：`python -m unittest tests.control_plane.test_orchestrator.OrchestratorExportTests -v`
 - 导出结果：`1 test, OK`
+- runner 与 CLI 桥接验证：`python -m unittest tests.control_plane.test_runner tests.control_plane.test_framework_team_cli_control_plane -v`
+- runner 与 CLI 桥接结果：`5 tests, OK`
 - 控制平面全量测试：`python -m unittest tests.control_plane.test_adapters tests.control_plane.test_aggregator tests.control_plane.test_baseline tests.control_plane.test_benchmark_runner tests.control_plane.test_conflicts tests.control_plane.test_executor tests.control_plane.test_framework_cli tests.control_plane.test_framework_monitor tests.control_plane.test_framework_workflow tests.control_plane.test_models tests.control_plane.test_orchestrator tests.control_plane.test_store tests.control_plane.test_tasks -v`
-- 测试结果：`46 tests, OK`
+- 测试结果：`51 tests, OK`
 - 发现模式检查：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
-- 发现模式结果：`46 tests, OK`
+- 发现模式结果：`51 tests, OK`
 - 覆盖范围：
   - 控制平面模型与适配器
   - 状态仓与冲突检测
   - 版本冲突拒绝与快照校验
   - 执行器、Hermes 命令装配、事件回写与版本冲突检测
   - 高层 orchestrator 调度、ready 任务选择、冲突解释与直接依赖阻塞传播
+  - 共享 batch runner、脚本入口与 `team-cli.py` 桥接入口
   - 基线比较、真实基准采样辅助与性能报告生成
   - 独立 benchmark runner 与基线产物重建
   - workflow 显式 `step.agent` 正确性基线与报告渲染

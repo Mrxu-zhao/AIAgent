@@ -10,6 +10,8 @@
 - `baseline.py`：延迟与 CPU 目标比较
 - `reporting.py`：报告片段渲染
 - `aggregator.py`：最终 Markdown 报告生成
+- `runner.py`：共享批次入口，负责任务注册与调度装配
+- `run_batch.py`：控制平面自有任务批次脚本入口
 - `run_benchmarks.py`：独立基线重建入口
 
 ## 当前边界
@@ -20,14 +22,17 @@
 - `ControlPlaneExecutor` 已在关键状态迁移中消费 `expected_version`，对完成态写入提供最小 compare-and-swap 保护。
 - `ControlPlaneOrchestrator` 已负责高层多任务并行调度，并把 CAS 语义上推到 ready 任务选择、冲突解释和直接依赖阻塞传播。
 - 调度器不直接写 `done` / `failed` 终态，终态仍由 `ControlPlaneExecutor` 负责。
+- `runner.py` 已把 `TASKS`、`TaskStore`、`ControlPlaneExecutor` 和 `ControlPlaneOrchestrator` 装配为统一批次执行入口。
+- `run_batch.py` 与 `team-cli.py control-plane-run` 共享同一条 runner 链路，不复制调度逻辑。
 
 ## 推荐执行顺序
-1. 注册任务并建立状态仓
-2. 使用执行器与适配器装配 `Hermes` 调度命令
+1. 使用 `runner.py` 或 `run_batch.py` 注册任务并建立状态仓
+2. 通过共享 runner 装配执行器、适配器与 `ControlPlaneOrchestrator`
 3. 使用 `ControlPlaneOrchestrator` 选择 ready 任务并执行高层调度
-4. 运行调度框架 P0 回归测试
-5. 采集基线并比较优化前后指标
-6. 聚合执行结果并生成最终报告
+4. 如需从旧 CLI 触发，使用 `team-cli.py control-plane-run`
+5. 运行调度框架 P0 回归测试
+6. 采集基线并比较优化前后指标
+7. 聚合执行结果并生成最终报告
 
 ## 基线与性能报告
 运行以下命令重建当前基线、近似修复前基线与性能报告：

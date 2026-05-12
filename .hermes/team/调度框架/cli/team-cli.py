@@ -14,11 +14,13 @@ from datetime import datetime
 
 # 添加 core 模块路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'control_plane')))
 
 from core import (
     get_router, get_bus, get_monitor, get_recovery_manager,
     TaskPriority, MessageType, MessagePriority
 )
+import runner as control_plane_runner
 
 class Colors:
     """终端颜色"""
@@ -232,6 +234,12 @@ class TeamCLI:
             filepath = args.export
             self.monitor.export_metrics(filepath)
             print(f"{Colors.GREEN}✓ 指标已导出到: {filepath}{Colors.NC}")
+
+    def cmd_control_plane_run(self, args):
+        """桥接控制平面批次执行"""
+        result = control_plane_runner.run_task_batch(max_workers=args.max_workers)
+        print(f"{Colors.GREEN}✓ 控制平面批次执行完成{Colors.NC}")
+        print(json.dumps(result["summary"], ensure_ascii=False, indent=2))
     
     def cmd_interactive(self, args):
         """交互式模式"""
@@ -320,6 +328,10 @@ def main():
     monitor_parser.add_argument('-l', '--logs', action='store_true', help='查看日志')
     monitor_parser.add_argument('-e', '--export', help='导出指标到文件')
     monitor_parser.add_argument('--limit', type=int, help='日志条数限制')
+
+    # control-plane-run 命令
+    control_plane_parser = subparsers.add_parser('control-plane-run', help='运行控制平面任务批次')
+    control_plane_parser.add_argument('--max-workers', type=int, default=2, help='并发执行数')
     
     # interactive 命令
     interactive_parser = subparsers.add_parser('interactive', help='交互式模式')
@@ -338,6 +350,8 @@ def main():
         cli.cmd_workflow(args)
     elif args.command == 'monitor':
         cli.cmd_monitor(args)
+    elif args.command == 'control-plane-run':
+        cli.cmd_control_plane_run(args)
     elif args.command == 'interactive':
         cli.cmd_interactive(args)
     else:

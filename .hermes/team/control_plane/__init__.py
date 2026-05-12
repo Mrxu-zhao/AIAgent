@@ -14,6 +14,7 @@ from models import (
     TaskStatus,
 )
 from orchestrator import ControlPlaneOrchestrator, build_dependency_graph, get_ready_tasks
+from runner import register_tasks, run_registered_batch, run_task_batch
 from store import TaskStore
 from tasks import TASKS
 
@@ -37,5 +38,8 @@ __all__ = [
     "compare_runs",
     "detect_conflict",
     "get_ready_tasks",
+    "register_tasks",
+    "run_registered_batch",
+    "run_task_batch",
     "summarize_samples",
 ]
