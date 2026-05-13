@@ -366,6 +366,332 @@ class WorkflowRuntimeTests(unittest.TestCase):
         self.assertEqual(observed["upstream_agent"], "backend-1")
         self.assertEqual(observed["upstream_role"], "后端开发")
 
+    def test_workflow_uses_control_plane_executor_when_dependencies_are_provided(self):
+        events = []
+
+        class FakeExecutor:
+            def execute_task(self, card, adapter, command_runner):
+                events.append(
+                    {
+                        "task_id": card.task_id,
+                        "goal": card.goal,
+                        "owner_agent": card.owner_agent,
+                        "executor_backend": card.executor_backend,
+                    }
+                )
+                return {
+                    "success": True,
+                    "command": ["openclaw-live", "task", "run"],
+                    "stdout": "ok",
+                    "stderr": "",
+                }
+
+        engine = workflow_module.WorkflowEngine(
+            task_router=None,
+            message_bus=None,
+            runtime_store=None,
+            control_plane_store=object(),
+            control_plane_executor=FakeExecutor(),
+            control_plane_adapter=object(),
+            command_runner=lambda command: None,
+        )
+        workflow = engine.create_workflow(
+            "wf-exec-bind",
+            "exec-bind",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                }
+            ],
+        )
+        workflow.variables["backend_recommendation"] = {"selected_backend": "openclaw"}
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertEqual(events[0]["executor_backend"], "openclaw")
+        self.assertEqual(
+            result["step_contexts"]["implement"]["execution"]["command"],
+            ["openclaw-live", "task", "run"],
+        )
+
+    def test_workflow_real_execution_success_preserves_execution_and_backend_shapes(self):
+        class FakeExecutor:
+            def execute_task(self, card, adapter, command_runner):
+                return {
+                    "success": True,
+                    "command": ["openclaw-live", "task", "run"],
+                    "stdout": "done",
+                    "stderr": "",
+                }
+
+        engine = workflow_module.WorkflowEngine(
+            task_router=None,
+            message_bus=None,
+            runtime_store=None,
+            control_plane_store=object(),
+            control_plane_executor=FakeExecutor(),
+            control_plane_adapter=object(),
+            command_runner=lambda command: None,
+        )
+        workflow = engine.create_workflow(
+            "wf-real-exec-success-shape",
+            "real-exec-success-shape",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                }
+            ],
+        )
+        workflow.variables["backend_recommendation"] = {"selected_backend": "hermes"}
+        workflow.steps[0].backend = "openclaw"
+
+        result = engine.execute_workflow(workflow.id)
+        step_context = result["step_contexts"]["implement"]
+
+        self.assertTrue(result["success"])
+        self.assertEqual(
+            step_context["execution"],
+            {
+                "command": ["openclaw-live", "task", "run"],
+                "stdout": "done",
+                "stderr": "",
+                "executor_backend": "openclaw",
+            },
+        )
+        self.assertEqual(
+            step_context["backend_recommendation"],
+            {"selected_backend": "openclaw"},
+        )
+        self.assertEqual(step_context["inherited_backend"], "hermes")
+
+    def test_workflow_builds_task_card_with_inherited_backend(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-card-map",
+            "card-map",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                }
+            ],
+        )
+        workflow.variables["backend_recommendation"] = {"selected_backend": "openclaw"}
+        step = workflow.steps[0]
+
+        card = engine._build_task_card_for_step(workflow, step, "实现代码", "backend-1", "openclaw")
+
+        self.assertEqual(card.task_id, "wf-wf-card-map-implement")
+        self.assertEqual(card.owner_agent, "backend-1")
+        self.assertEqual(card.review_agent, "backend-1")
+        self.assertEqual(card.executor_backend, "openclaw")
+        self.assertEqual(card.goal, "实现代码")
+        self.assertEqual(card.scope, ["wf-card-map", "implement"])
+        self.assertEqual(card.title, "Workflow step implement")
+        self.assertEqual(card.timeout_seconds, 300)
+
+    def test_step_backend_override_beats_routing_and_inherited_backend_on_control_plane_failure(self):
+        events = []
+
+        class FakeTask:
+            def __init__(self, routing_reason):
+                self.routing_reason = routing_reason
+                self.assigned_agent = "backend-1"
+
+        class FakeRouter:
+            agents = {
+                "backend-1": type("Agent", (), {"current_tasks": 0, "role": "后端开发"})(),
+            }
+
+            def route_task(self, content, **kwargs):
+                return (
+                    "backend-1",
+                    FakeTask({"backend_recommendation": {"selected_backend": "openclaw"}}),
+                )
+
+        class FakeExecutor:
+            def execute_task(self, card, adapter, command_runner):
+                events.append(
+                    {
+                        "task_id": card.task_id,
+                        "executor_backend": card.executor_backend,
+                    }
+                )
+                return {
+                    "success": False,
+                    "command": ["hermes", "team", "dispatch"],
+                    "stdout": "",
+                    "stderr": "provider failed",
+                    "error": "provider failed",
+                }
+
+        engine = workflow_module.WorkflowEngine(
+            task_router=FakeRouter(),
+            message_bus=None,
+            runtime_store=None,
+            control_plane_store=object(),
+            control_plane_executor=FakeExecutor(),
+            control_plane_adapter=object(),
+            command_runner=lambda command: None,
+        )
+        workflow = engine.create_workflow(
+            "wf-backend-priority-failure",
+            "backend-priority-failure",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                }
+            ],
+        )
+        workflow.variables["backend_recommendation"] = {"selected_backend": "hermes"}
+        workflow.steps[0].backend = "openclaw"
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertFalse(result["success"])
+        self.assertEqual(events[0]["executor_backend"], "openclaw")
+        self.assertEqual(
+            result["step_contexts"]["implement"]["execution"]["executor_backend"],
+            "openclaw",
+        )
+        self.assertEqual(
+            result["step_contexts"]["implement"]["execution"]["stderr"],
+            "provider failed",
+        )
+        self.assertEqual(result["step_contexts"]["implement"]["error"], "provider failed")
+
+    def test_routing_backend_recommendation_beats_inherited_backend_on_control_plane_failure(self):
+        events = []
+
+        class FakeTask:
+            def __init__(self, routing_reason):
+                self.routing_reason = routing_reason
+                self.assigned_agent = "backend-1"
+
+        class FakeRouter:
+            agents = {
+                "backend-1": type("Agent", (), {"current_tasks": 0, "role": "后端开发"})(),
+            }
+
+            def route_task(self, content, **kwargs):
+                return (
+                    "backend-1",
+                    FakeTask({"backend_recommendation": {"selected_backend": "openclaw"}}),
+                )
+
+        class FakeExecutor:
+            def execute_task(self, card, adapter, command_runner):
+                events.append(
+                    {
+                        "task_id": card.task_id,
+                        "executor_backend": card.executor_backend,
+                    }
+                )
+                return {
+                    "success": False,
+                    "command": ["openclaw-live", "task", "run"],
+                    "stdout": "",
+                    "stderr": "openclaw failed",
+                    "error": "openclaw failed",
+                }
+
+        engine = workflow_module.WorkflowEngine(
+            task_router=FakeRouter(),
+            message_bus=None,
+            runtime_store=None,
+            control_plane_store=object(),
+            control_plane_executor=FakeExecutor(),
+            control_plane_adapter=object(),
+            command_runner=lambda command: None,
+        )
+        workflow = engine.create_workflow(
+            "wf-routing-priority-failure",
+            "routing-priority-failure",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                }
+            ],
+        )
+        workflow.variables["backend_recommendation"] = {"selected_backend": "hermes"}
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertFalse(result["success"])
+        self.assertEqual(events[0]["executor_backend"], "openclaw")
+        self.assertEqual(
+            result["step_contexts"]["implement"]["execution"]["executor_backend"],
+            "openclaw",
+        )
+        self.assertEqual(
+            result["step_contexts"]["implement"]["execution"]["command"],
+            ["openclaw-live", "task", "run"],
+        )
+        self.assertEqual(result["step_contexts"]["implement"]["error"], "openclaw failed")
+
+    def test_workflow_keeps_simulated_execution_without_control_plane_dependencies(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-simulated",
+            "simulated",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                }
+            ],
+        )
+
+        result = engine.execute_workflow(workflow.id)
+        step_context = result["step_contexts"]["implement"]
+
+        self.assertTrue(result["success"])
+        self.assertEqual(
+            step_context,
+            {
+                "step_id": "implement",
+                "agent": "backend-1",
+                "summary": "模拟执行: 实现代码",
+                "artifacts": [],
+                "open_questions": [],
+                "risks": [],
+                "decisions": [],
+                "handoff_hint": None,
+                "backend_recommendation": None,
+                "inherited_backend": None,
+            },
+        )
+        self.assertNotIn("execution", step_context)
+        self.assertNotIn("error", step_context)
+
 
 if __name__ == "__main__":
     unittest.main()

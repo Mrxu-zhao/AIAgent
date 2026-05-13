@@ -1,0 +1,8 @@
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "running", "timestamp": 1778661834.0804203, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "completed", "timestamp": 1778661834.0808518, "payload": {"agent": "backend-1", "error": null, "output": "模拟执行: 实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "running", "timestamp": 1778661857.6882904, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "completed", "timestamp": 1778661857.6885397, "payload": {"agent": "backend-1", "error": null, "output": "模拟执行: 实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "running", "timestamp": 1778661871.2365856, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "completed", "timestamp": 1778661871.2367892, "payload": {"agent": "backend-1", "error": null, "output": "模拟执行: 实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "running", "timestamp": 1778661940.0093133, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "status": "completed", "timestamp": 1778661940.009555, "payload": {"agent": "backend-1", "error": null, "output": "模拟执行: 实现代码"}}

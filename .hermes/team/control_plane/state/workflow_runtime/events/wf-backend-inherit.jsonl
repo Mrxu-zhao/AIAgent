@@ -26,3 +26,35 @@
 {"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778659304.1114447, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
 {"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778659304.1117067, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778659304.1119914, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778660719.5844073, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778660719.584683, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778660719.58491, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778660719.5851197, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778660765.601789, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778660765.6020904, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778660765.6023545, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778660765.6026013, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778660883.1634939, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778660883.1637838, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778660883.1639922, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778660883.1642644, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778661238.1972535, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778661238.1975548, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778661238.1978254, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778661238.1981087, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778661666.6049712, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778661666.6053627, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778661666.6056101, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778661666.6059225, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778661697.385653, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778661697.3859956, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778661697.3862576, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778661697.3864665, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778661871.2469223, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778661871.2472048, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778661871.2474868, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778661871.2477696, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "running", "timestamp": 1778661940.023652, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "design", "status": "completed", "timestamp": 1778661940.0239658, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "running", "timestamp": 1778661940.0242727, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-inherit", "step_id": "implement", "status": "completed", "timestamp": 1778661940.024542, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}

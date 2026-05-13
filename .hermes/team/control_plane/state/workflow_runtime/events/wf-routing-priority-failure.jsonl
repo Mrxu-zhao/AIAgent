@@ -1,0 +1,32 @@
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661152.3232164, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661152.3235602, "payload": {"agent": "backend-1", "error": null, "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661152.323804, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661152.3240504, "payload": {"agent": "backend-1", "error": null, "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661195.4611855, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661195.4614162, "payload": {"agent": "backend-1", "error": null, "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661195.4616168, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661195.4618328, "payload": {"agent": "backend-1", "error": null, "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661218.5304623, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661218.5306807, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661218.530895, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661218.5310843, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661238.161135, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661238.1614652, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661238.161824, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661238.1620505, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661666.569444, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661666.5697036, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661666.5699112, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661666.5701811, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661697.350649, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661697.3509457, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661697.3511863, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661697.3514867, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661871.2084265, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661871.208881, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661871.209136, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661871.2094145, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661939.9776392, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661939.9779317, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661939.9783576, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-routing-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661939.9787395, "payload": {"agent": "backend-1", "error": "openclaw failed", "output": null}}

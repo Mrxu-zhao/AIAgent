@@ -78,3 +78,35 @@
 {"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778659304.0869622, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
 {"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778659304.0871594, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
 {"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778659304.0873857, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778660719.5606291, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778660719.5609596, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778660719.5611978, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778660719.5614698, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778660765.5789301, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778660765.5792031, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778660765.5794156, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778660765.5796685, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778660883.1417818, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778660883.1420796, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778660883.1422954, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778660883.1425614, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778661238.1727693, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778661238.173061, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778661238.173267, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778661238.1735575, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778661666.579909, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778661666.58022, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778661666.5804455, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778661666.5807338, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778661697.3611202, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778661697.3613937, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778661697.3615804, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778661697.3618026, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778661871.2197223, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778661871.220031, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778661871.220242, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778661871.2204766, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "running", "timestamp": 1778661939.9892576, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "status": "completed", "timestamp": 1778661939.9895825, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "running", "timestamp": 1778661939.9898121, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778661939.9900515, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}

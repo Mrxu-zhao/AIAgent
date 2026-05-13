@@ -20,6 +20,7 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
+from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority
 from observability.metrics import get_metrics_registry
 from protocols.handoff import HandoffPayload
 from providers.registry import build_default_provider_registry
@@ -90,7 +91,17 @@ class WorkflowEngine:
     - 实时状态监控
     """
     
-    def __init__(self, task_router=None, message_bus=None, runtime_store=None, provider_registry=None):
+    def __init__(
+        self,
+        task_router=None,
+        message_bus=None,
+        runtime_store=None,
+        provider_registry=None,
+        control_plane_store=None,
+        control_plane_executor=None,
+        control_plane_adapter=None,
+        command_runner=None,
+    ):
         self.task_router = task_router
         self.message_bus = message_bus
         self.config = load_control_plane_config()
@@ -99,11 +110,26 @@ class WorkflowEngine:
                 runtime_store = WorkflowRunStore()
         self.runtime_store = runtime_store
         self.provider_registry = provider_registry
+        self.control_plane_store = control_plane_store
+        self.control_plane_executor = control_plane_executor
+        self.control_plane_adapter = control_plane_adapter
+        self.command_runner = command_runner
         self.workflows: Dict[str, Workflow] = {}
         self._executors: Dict[str, ThreadPoolExecutor] = {}
         self._running: Dict[str, bool] = {}
         self._lock = threading.Lock()
         self._active_workflow: Optional[Workflow] = None
+
+    def _can_use_control_plane_execution(self) -> bool:
+        return all(
+            dependency is not None
+            for dependency in (
+                self.control_plane_store,
+                self.control_plane_executor,
+                self.control_plane_adapter,
+                self.command_runner,
+            )
+        )
 
     def _merge_unique_list(self, target: List[Any], values: List[Any]) -> None:
         """按顺序合并列表并去重。"""
@@ -419,7 +445,8 @@ class WorkflowEngine:
         """把步骤执行结果归一化成结构化上下文。"""
         output = result.get("output") if isinstance(result, dict) else result
         summary = output if isinstance(output, str) else task_content
-        return {
+        error = result.get("error") if isinstance(result, dict) else None
+        context = {
             "step_id": step.id,
             "agent": result.get("agent", step.agent) if isinstance(result, dict) else step.agent,
             "summary": summary,
@@ -430,6 +457,97 @@ class WorkflowEngine:
             "handoff_hint": result.get("handoff_hint") if isinstance(result, dict) else None,
             "backend_recommendation": result.get("backend_recommendation") if isinstance(result, dict) else None,
             "inherited_backend": result.get("inherited_backend") if isinstance(result, dict) else None,
+        }
+        if error is not None:
+            context["error"] = error
+        if isinstance(result, dict) and result.get("execution"):
+            context["execution"] = dict(result["execution"])
+        return context
+
+    def _resolve_step_backend(
+        self,
+        workflow: Workflow,
+        step: WorkflowStep,
+        task_result: Optional[Dict[str, Any]] = None,
+    ) -> Optional[str]:
+        explicit_backend = getattr(step, "backend", None)
+        if explicit_backend:
+            return explicit_backend
+        task_result = task_result or {}
+        recommendation = task_result.get("backend_recommendation") or {}
+        if recommendation.get("selected_backend"):
+            return recommendation["selected_backend"]
+        inherited = workflow.variables.get("backend_recommendation", {})
+        if isinstance(inherited, dict) and inherited.get("selected_backend"):
+            return inherited["selected_backend"]
+        return None
+
+    def _build_task_card_for_step(
+        self,
+        workflow: Workflow,
+        step: WorkflowStep,
+        task_content: str,
+        agent_id: str,
+        executor_backend: Optional[str],
+    ) -> TaskCard:
+        return TaskCard(
+            task_id=f"wf-{workflow.id}-{step.id}",
+            title=f"Workflow step {step.id}",
+            goal=task_content,
+            scope=[workflow.id, step.id],
+            lock_scope=LockScope(files=[], modules=["workflow"], contracts=[]),
+            inputs=["workflow-step"],
+            outputs=["stdout", "stderr"],
+            dependencies=[],
+            owner_agent=agent_id,
+            review_agent=agent_id,
+            priority=TaskPriority.P1,
+            timeout_seconds=max(1, int(step.timeout)),
+            retry_policy=RetryPolicy(max_attempts=1, backoff_seconds=[0]),
+            rollback_policy=RollbackPolicy(mode="manual"),
+            acceptance_criteria=[f"step {step.id} executed"],
+            executor_backend=executor_backend,
+        )
+
+    def _execute_via_control_plane(
+        self,
+        workflow: Workflow,
+        step: WorkflowStep,
+        task_content: str,
+        agent_id: str,
+        task_result: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        inherited_backend = (
+            workflow.variables.get("backend_recommendation", {}).get("selected_backend")
+            if isinstance(workflow.variables.get("backend_recommendation"), dict)
+            else None
+        )
+        executor_backend = self._resolve_step_backend(workflow, step, task_result) or self.config.default_executor
+        card = self._build_task_card_for_step(workflow, step, task_content, agent_id, executor_backend)
+        if hasattr(self.control_plane_store, "register_task"):
+            try:
+                self.control_plane_store.read_snapshot(card.task_id)
+            except Exception:
+                self.control_plane_store.register_task(card)
+        outcome = self.control_plane_executor.execute_task(
+            card,
+            self.control_plane_adapter,
+            self.command_runner,
+        )
+        error_message = outcome.get("error") or outcome.get("stderr") or None
+        return {
+            "success": outcome.get("success", False),
+            "output": outcome.get("stdout") or task_content,
+            "error": error_message,
+            "agent": agent_id,
+            "backend_recommendation": {"selected_backend": executor_backend},
+            "inherited_backend": inherited_backend,
+            "execution": {
+                "command": outcome.get("command", []),
+                "stdout": outcome.get("stdout", ""),
+                "stderr": outcome.get("stderr", ""),
+                "executor_backend": executor_backend,
+            },
         }
 
     def _merge_step_context_into_variables(self, workflow: Workflow, step_context: Dict[str, Any]) -> None:
@@ -566,13 +684,27 @@ class WorkflowEngine:
                 success = registry._counters.get("improvement_workflow_role_hit_success_total", 0.0)
                 total = registry._counters.get("improvement_workflow_role_hit_total", 0.0)
                 registry.record_ratio("improvement_workflow_role_hit_ratio", success, total)
-            # 这里可以集成实际的Agent调用
+            if self._can_use_control_plane_execution() and self._active_workflow is not None:
+                return self._execute_via_control_plane(
+                    self._active_workflow,
+                    step,
+                    task_content,
+                    agent_id,
+                    getattr(task, "routing_reason", None),
+                )
             return {
                 "success": True,
                 "output": f"任务已分配给 {agent_id}: {task_content}",
                 "agent": agent_id
             }
         else:
+            if self._can_use_control_plane_execution() and self._active_workflow is not None:
+                return self._execute_via_control_plane(
+                    self._active_workflow,
+                    step,
+                    task_content,
+                    step.agent or "auto",
+                )
             return {
                 "success": True,
                 "output": f"模拟执行: {task_content}",

@@ -1,0 +1,12 @@
+{
+  "workflow_id": "wf-simulated",
+  "status": "completed",
+  "started_at": 1778661940.0090466,
+  "name": "simulated",
+  "description": "demo",
+  "completed_at": 1778661940.009899,
+  "completed_steps": [
+    "implement"
+  ],
+  "failed_steps": []
+}
