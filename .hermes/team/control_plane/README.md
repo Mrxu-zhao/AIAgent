@@ -24,7 +24,10 @@
 - 调度器不直接写 `done` / `failed` 终态，终态仍由 `ControlPlaneExecutor` 负责。
 - `runner.py` 已把 `TASKS`、`TaskStore`、`ControlPlaneExecutor` 和 `ControlPlaneOrchestrator` 装配为统一批次执行入口。
 - `run_batch.py` 与 `team-cli.py control-plane-run` 共享同一条 runner 链路，不复制调度逻辑。
-- `team.sh`、`team-dispatch.sh`、`team-tmux.sh` 已退化为薄适配层，统一转发到控制平面入口或兼容 CLI。
+- `team.sh` 已优先转发主控制平面入口；`team-dispatch.sh` 与 `team-tmux.sh` 仍保留兼容 CLI 路径，旧入口收敛工作尚未完成。
+- workflow runtime 当前仅覆盖快照与 step 事件落盘，尚未形成 checkpoint / resume / audit 的完整闭环。
+- `persistent_bus` 当前更接近文件持久化队列 MVP，尚未提供完整 cursor 与持久化订阅语义。
+- observability 与 governance 当前以指标导出、静态交付物和治理骨架为主，尚未形成完整抓取与审批闭环。
 
 ## 推荐执行顺序
 1. 使用 `runner.py` 或 `run_batch.py` 注册任务并建立状态仓
@@ -54,5 +57,5 @@ python .hermes/team/control_plane/run_benchmarks.py
 
 ## 验证基线
 - `python -m unittest discover -s tests/control_plane -p "test_*.py" -v`：`94 tests, OK`
-- `python -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py" --fail-under=90`：`94%`
+- `python -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py" --fail-under=90`：`4 个关键路径文件覆盖率 94%`
 - `python -m ruff check .hermes/team/control_plane .hermes/team/调度框架/core .hermes/team/调度框架/cli/team-cli.py tests/control_plane`：`All checks passed`

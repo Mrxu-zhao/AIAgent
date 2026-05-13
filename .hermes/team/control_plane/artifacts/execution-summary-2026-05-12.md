@@ -79,6 +79,10 @@
 - `OpenClaw` 目前只有接口保留，没有执行实现。
 - `OpenClaw` 当前为 dry-run MVP，可统一生成命令，但尚未接入真实 live 执行。
 - 当前已补充真实批次放大验证产物：`real-load-validation.json` / `real-load-validation.md`，用于记录扩展批次和关键行为验证结果。
+- 旧 CLI 只有 `control-plane-run` 已共享主 runner，其余命令仍保留兼容实现，统一入口收敛尚未完成。
+- `workflow_runtime` 当前仅覆盖快照与 step 事件落盘，尚未形成 checkpoint / resume / audit 的完整恢复闭环。
+- `persistent_bus` 当前更接近文件持久化队列 MVP，尚未具备完整 cursor 与持久化订阅语义。
+- observability 当前以指标导出、静态交付物和代理指标为主，尚未形成 Prometheus 抓取与 tracing 闭环。
 
 
 ## 建议下一步
