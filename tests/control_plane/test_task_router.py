@@ -60,6 +60,17 @@ class TaskRouterIntentTests(unittest.TestCase):
         self.assertEqual(task.routing_reason["excluded_agents"], ["qa-functional"])
         self.assertEqual(task.routing_reason["excluded_roles"], ["功能测试"])
 
+    def test_route_task_emits_backend_recommendation(self):
+        router = task_router_module.TaskRouter()
+
+        agent_id, task = router.route_task("需要外部执行的 review 任务")
+
+        self.assertIn("backend_recommendation", task.routing_reason)
+        self.assertIn(
+            task.routing_reason["backend_recommendation"]["selected_backend"],
+            {"hermes", "openclaw"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

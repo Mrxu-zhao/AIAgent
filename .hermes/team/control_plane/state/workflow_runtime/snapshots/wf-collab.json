@@ -1,13 +1,13 @@
 {
   "workflow_id": "wf-collab",
   "status": "completed",
-  "started_at": 1778657408.6508079,
+  "started_at": 1778659304.0813532,
   "name": "collab",
   "description": "demo",
-  "completed_at": 1778657408.6526065,
+  "completed_at": 1778659304.082643,
   "completed_steps": [
-    "design",
-    "review"
+    "review",
+    "design"
   ],
   "failed_steps": []
 }

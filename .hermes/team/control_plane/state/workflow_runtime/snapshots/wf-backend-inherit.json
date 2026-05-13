@@ -1,0 +1,13 @@
+{
+  "workflow_id": "wf-backend-inherit",
+  "status": "completed",
+  "started_at": 1778659304.1107197,
+  "name": "backend-inherit",
+  "description": "demo",
+  "completed_at": 1778659304.1123571,
+  "completed_steps": [
+    "design",
+    "implement"
+  ],
+  "failed_steps": []
+}

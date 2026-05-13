@@ -355,6 +355,11 @@ class WorkflowEngine:
         result = {"success": False, "error": "step did not produce a result"}
         self._active_workflow = workflow
         try:
+            inherited_backend = (
+                workflow.variables.get("backend_recommendation", {}).get("selected_backend")
+                if isinstance(workflow.variables.get("backend_recommendation"), dict)
+                else None
+            )
             # 渲染任务模板
             task_content = self._render_template(step.task_template, workflow.variables)
             
@@ -371,6 +376,9 @@ class WorkflowEngine:
                 result = self._execute_human_review(step, task_content)
             else:
                 result = {"success": False, "error": "未知的步骤类型"}
+
+            if isinstance(result, dict) and inherited_backend:
+                result.setdefault("inherited_backend", inherited_backend)
             
             if result.get("success"):
                 step.status = StepStatus.COMPLETED
@@ -421,6 +429,7 @@ class WorkflowEngine:
             "decisions": list(result.get("decisions", [])) if isinstance(result, dict) else [],
             "handoff_hint": result.get("handoff_hint") if isinstance(result, dict) else None,
             "backend_recommendation": result.get("backend_recommendation") if isinstance(result, dict) else None,
+            "inherited_backend": result.get("inherited_backend") if isinstance(result, dict) else None,
         }
 
     def _merge_step_context_into_variables(self, workflow: Workflow, step_context: Dict[str, Any]) -> None:
@@ -431,6 +440,8 @@ class WorkflowEngine:
         workflow.variables[f"{step_id}_open_questions"] = list(step_context["open_questions"])
         workflow.variables[f"{step_id}_risks"] = list(step_context["risks"])
         workflow.variables.setdefault("step_contexts", {})[step_id] = step_context
+        if step_context.get("backend_recommendation"):
+            workflow.variables["backend_recommendation"] = dict(step_context["backend_recommendation"])
         collaboration_context = workflow.variables.setdefault(
             "collaboration_context",
             self._default_collaboration_context(),
@@ -473,7 +484,10 @@ class WorkflowEngine:
                 backend_reason=backend_reason,
                 review_policy=workflow.variables.get("review_policy"),
             )
-            workflow.handoffs.append(payload.to_dict())
+            handoff_payload = payload.to_dict()
+            workflow.handoffs.append(handoff_payload)
+            if self.message_bus:
+                self.message_bus.send({"type": "handoff", "payload": handoff_payload})
 
     def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, str, List[str], str]:
         """把步骤建议与真实 provider registry 合并成 handoff backend 元信息。"""

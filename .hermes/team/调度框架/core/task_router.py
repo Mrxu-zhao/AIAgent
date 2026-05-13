@@ -192,14 +192,28 @@ class TaskRouter:
             return ["qa-performance", "qa-functional"]
         return ["qa-functional", "qa-performance"]
 
+    def _build_backend_recommendation(self, intent: TaskIntent) -> Dict[str, str]:
+        """为后续执行层提供稳定的 backend 建议。"""
+        if intent.collaboration_mode == "review":
+            return {
+                "selected_backend": "openclaw",
+                "backend_reason": "review tasks prefer openclaw when external execution is acceptable",
+            }
+        return {
+            "selected_backend": "hermes",
+            "backend_reason": "default to hermes for local execution",
+        }
+
     def select_best_agent(self, intent: TaskIntent, priority: TaskPriority) -> Tuple[str, Dict[str, object]]:
         """根据任务画像选择最合适的 Agent，并返回可解释原因。"""
+        backend_recommendation = self._build_backend_recommendation(intent)
         if intent.requested_agent and intent.requested_agent in self.agents:
             return intent.requested_agent, {
                 "strategy": "explicit-agent",
                 "requested_agent": intent.requested_agent,
                 "collaboration_mode": intent.collaboration_mode,
                 "priority": priority.name,
+                "backend_recommendation": backend_recommendation,
             }
 
         excluded_agents = []
@@ -226,6 +240,7 @@ class TaskRouter:
                         "excluded_agents": excluded_agents,
                         "excluded_roles": excluded_roles,
                         "priority": priority.name,
+                        "backend_recommendation": backend_recommendation,
                     }
 
         task = Task(
@@ -264,6 +279,7 @@ class TaskRouter:
             "excluded_agents": excluded_agents,
             "excluded_roles": excluded_roles,
             "priority": priority.name,
+            "backend_recommendation": backend_recommendation,
         }
     
     def calculate_agent_score(self, agent: Agent, task: Task) -> float:

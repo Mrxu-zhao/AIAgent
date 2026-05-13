@@ -116,10 +116,10 @@ def _default_payload() -> Dict[str, object]:
         "task_keywords": {
             "requirements": ["需求", "分析", "调研", "用户故事", "prd", "requirement"],
             "architecture": ["架构", "设计", "技术选型", "架构图", "architecture"],
-            "database": ["数据库", "表设计", "sql", "索引", "mysql", "redis"],
+            "database": ["数据库", "数据库表设计", "sql", "索引", "mysql", "redis"],
             "backend": ["后端", "接口", "api", "服务", "controller", "service", "dao", "java", "spring"],
             "frontend": ["前端", "页面", "组件", "ui", "vue", "react", "html", "css", "js"],
-            "ucd": ["设计", "原型", "交互", "ux", "figma", "mockup"],
+            "ucd": ["高保真", "UCD设计", "原型", "交互", "ux", "figma", "mockup"],
             "qa_functional": ["测试", "用例", "bug", "功能测试", "回归", "test", "qa"],
             "qa_performance": ["性能", "压测", "jmeter", "tps", "并发", "performance"],
             "devops": ["部署", "docker", "k8s", "jenkins", "ci/cd", "运维", "服务器", "devops"],

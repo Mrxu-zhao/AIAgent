@@ -257,6 +257,74 @@ class WorkflowRuntimeTests(unittest.TestCase):
         self.assertEqual(result["handoffs"][0]["source_backend"], "openclaw")
         self.assertEqual(result["handoffs"][0]["target_backend"], "hermes")
 
+    def test_workflow_step_inherits_backend_recommendation(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-backend-inherit",
+            "backend-inherit",
+            "demo",
+            [
+                {"id": "design", "name": "设计", "type": "sequential", "agent": "architect", "task": "设计方案"},
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                    "dependencies": ["design"],
+                },
+            ],
+        )
+
+        def fake_execute(step, task_content):
+            result = {"success": True, "output": f"{step.id}:{task_content}", "agent": step.agent}
+            if step.id == "design":
+                result["backend_recommendation"] = {"selected_backend": "openclaw"}
+            return result
+
+        engine._execute_agent_task = fake_execute
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertEqual(
+            result["step_contexts"]["design"]["backend_recommendation"]["selected_backend"],
+            "openclaw",
+        )
+        self.assertEqual(result["step_contexts"]["implement"]["inherited_backend"], "openclaw")
+
+    def test_workflow_emits_handoff_to_message_bus(self):
+        events = []
+
+        class FakeBus:
+            def send(self, payload):
+                events.append(payload)
+
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=FakeBus(), runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-bus-handoff",
+            "bus-handoff",
+            "demo",
+            [
+                {"id": "design", "name": "设计", "type": "sequential", "agent": "architect", "task": "设计方案"},
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                    "dependencies": ["design"],
+                },
+            ],
+        )
+
+        engine._execute_agent_task = lambda step, task_content: {
+            "success": True,
+            "output": "ok",
+            "agent": step.agent,
+        }
+        engine.execute_workflow(workflow.id)
+
+        self.assertTrue(any(event.get("type") == "handoff" for event in events), "no handoff event")
+
     def test_workflow_engine_passes_upstream_agent_and_role_into_review_route(self):
         router = router_module.TaskRouter()
         engine = workflow_module.WorkflowEngine(task_router=router, message_bus=None, runtime_store=None)
