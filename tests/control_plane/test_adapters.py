@@ -1,4 +1,4 @@
-﻿﻿import unittest
+﻿import unittest
 from unittest.mock import patch
 
 from tests.control_plane.test_support import load_control_plane_module
@@ -63,7 +63,30 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(command[:3], ["openclaw-live", "task", "run"])
         self.assertIn("--execute", command)
 
+    def test_get_executor_adapter_supports_explicit_backend(self):
+        fake_provider = type(
+            "Provider",
+            (),
+            {
+                "name": "openclaw",
+                "command": "openclaw-live",
+                "dry_run": False,
+                "dispatch_args": ["task", "run"],
+            },
+        )()
+        fake_registry = type("Registry", (), {"get": lambda self, name: fake_provider})()
+
+        with patch.object(
+            adapters_module,
+            "build_default_provider_registry",
+            return_value=fake_registry,
+        ):
+            adapter = adapters_module.get_executor_adapter("openclaw")
+
+        command = adapter.build_dispatch_command("backend-1", "ship feature")
+        self.assertEqual(command[:3], ["openclaw-live", "task", "run"])
+        self.assertIn("--execute", command)
+
 
 if __name__ == "__main__":
     unittest.main()
-

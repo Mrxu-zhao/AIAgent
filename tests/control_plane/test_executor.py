@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tests.control_plane.test_support import load_control_plane_module
 
@@ -181,6 +182,60 @@ class ExecutorTests(unittest.TestCase):
             self.assertEqual(snapshot["version"], 3)
             self.assertEqual(len(events), 2)
             self.assertEqual(events[-1]["event_id"], "evt-external")
+
+    def test_execute_task_supports_per_card_executor_backend_override(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = store_module.TaskStore(Path(tmp) / "state", Path(tmp) / "events")
+            runner = executor_module.ControlPlaneExecutor(store=store)
+            default_adapter = adapters_module.HermesExecutorAdapter()
+            card = models.TaskCard(
+                task_id="WS-B-P1-013",
+                title="Override backend",
+                goal="Route via openclaw",
+                scope=[".hermes/team/control_plane/executor.py"],
+                lock_scope=models.LockScope(files=[], modules=["control_plane"], contracts=[]),
+                inputs=["task"],
+                outputs=["stdout"],
+                dependencies=[],
+                owner_agent="backend-1",
+                review_agent="architect",
+                priority=models.TaskPriority.P1,
+                timeout_seconds=1200,
+                retry_policy=models.RetryPolicy(max_attempts=1, backoff_seconds=[0]),
+                rollback_policy=models.RollbackPolicy(mode="code"),
+                acceptance_criteria=["task uses explicit backend"],
+                executor_backend="openclaw",
+            )
+            store.register_task(card)
+
+            class Result:
+                returncode = 0
+                stdout = "ok"
+                stderr = ""
+
+            override_adapter = adapters_module.OpenClawExecutorAdapter(
+                openclaw_command="openclaw-live",
+                dry_run=False,
+                dispatch_args=["task", "run"],
+            )
+
+            observed = {}
+
+            def command_runner(command):
+                observed["command"] = command
+                return Result()
+
+            with patch.object(
+                executor_module,
+                "get_executor_adapter",
+                return_value=override_adapter,
+            ) as resolver_mock:
+                outcome = runner.execute_task(card, default_adapter, command_runner)
+
+            self.assertTrue(outcome["success"])
+            resolver_mock.assert_called_once_with("openclaw")
+            self.assertEqual(observed["command"][:3], ["openclaw-live", "task", "run"])
+            self.assertIn("--execute", observed["command"])
 
 
 if __name__ == "__main__":

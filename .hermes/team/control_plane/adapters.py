@@ -26,10 +26,9 @@ class OpenClawExecutorAdapter:
         return self.provider.build_dispatch_command(agent_id, task)
 
 
-def get_default_executor_adapter():
-    config = load_control_plane_config()
-    registry = build_default_provider_registry()
-    provider = registry.get(config.default_executor)
+def get_executor_adapter(backend_name: str, provider_registry=None):
+    registry = provider_registry or build_default_provider_registry()
+    provider = registry.get(backend_name)
     if provider.name == "openclaw":
         return OpenClawExecutorAdapter(
             openclaw_command=provider.command,
@@ -37,3 +36,8 @@ def get_default_executor_adapter():
             dispatch_args=provider.dispatch_args,
         )
     return HermesExecutorAdapter(hermes_command=provider.command)
+
+
+def get_default_executor_adapter():
+    config = load_control_plane_config()
+    return get_executor_adapter(config.default_executor)

@@ -1,13 +1,13 @@
 {
   "workflow_id": "wf-decision-summary",
   "status": "completed",
-  "started_at": 1778656461.5291874,
+  "started_at": 1778657408.6531365,
   "name": "decision-summary",
   "description": "demo",
-  "completed_at": 1778656461.5306227,
+  "completed_at": 1778657408.6548884,
   "completed_steps": [
-    "review",
-    "design"
+    "design",
+    "review"
   ],
   "failed_steps": []
 }

@@ -72,6 +72,7 @@ class TaskCard:
     retry_policy: RetryPolicy
     rollback_policy: RollbackPolicy
     acceptance_criteria: List[str]
+    executor_backend: Optional[str] = None
     status: TaskStatus = TaskStatus.PLANNED
     evidence: List[str] = field(default_factory=list)
 

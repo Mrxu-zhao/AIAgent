@@ -202,10 +202,60 @@ class WorkflowRuntimeTests(unittest.TestCase):
             result = engine.execute_workflow(workflow.id)
 
         self.assertEqual(result["handoffs"][0]["selected_backend"], "openclaw")
+        self.assertEqual(result["handoffs"][0]["target_backend"], "openclaw")
         self.assertEqual(result["handoffs"][0]["backend_candidates"], ["hermes", "openclaw"])
         self.assertIn("needs external execution", result["handoffs"][0]["backend_reason"])
         self.assertIn("provider=openclaw", result["handoffs"][0]["backend_reason"])
         self.assertIn("mode=dry-run", result["handoffs"][0]["backend_reason"])
+
+    def test_workflow_handoff_tracks_real_source_backend(self):
+        fake_registry = type(
+            "Registry",
+            (),
+            {
+                "list_providers": lambda self: ["hermes", "openclaw"],
+                "get": lambda self, name: type(
+                    "Provider",
+                    (),
+                    {"name": name, "dry_run": False},
+                )(),
+            },
+        )()
+
+        with patch.object(workflow_module, "build_default_provider_registry", return_value=fake_registry):
+            engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+            engine.config.default_executor = "openclaw"
+            workflow = engine.create_workflow(
+                "wf-source-backend",
+                "source-backend",
+                "demo",
+                [
+                    {"id": "design", "name": "设计", "type": "sequential", "agent": "architect", "task": "设计方案"},
+                    {
+                        "id": "implement",
+                        "name": "实现",
+                        "type": "sequential",
+                        "agent": "backend-1",
+                        "task": "实现代码",
+                        "dependencies": ["design"],
+                    },
+                ],
+            )
+
+            def fake_execute(step, task_content):
+                result = {"success": True, "output": f"{step.id}:{task_content}", "agent": step.agent}
+                if step.id == "design":
+                    result["backend_recommendation"] = {
+                        "selected_backend": "hermes",
+                        "backend_reason": "return to local execution",
+                    }
+                return result
+
+            engine._execute_agent_task = fake_execute
+            result = engine.execute_workflow(workflow.id)
+
+        self.assertEqual(result["handoffs"][0]["source_backend"], "openclaw")
+        self.assertEqual(result["handoffs"][0]["target_backend"], "hermes")
 
     def test_workflow_engine_passes_upstream_agent_and_role_into_review_route(self):
         router = router_module.TaskRouter()

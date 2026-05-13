@@ -1,6 +1,7 @@
 import time
 from uuid import uuid4
 
+from adapters import get_executor_adapter
 from models import EventType, TaskEvent, TaskStatus
 
 
@@ -14,7 +15,13 @@ class ControlPlaneExecutor:
     def _is_version_conflict(self, exc):
         return exc.__class__.__name__ == "VersionConflictError"
 
+    def resolve_adapter(self, card, adapter):
+        if getattr(card, "executor_backend", None):
+            return get_executor_adapter(card.executor_backend)
+        return adapter
+
     def execute_task(self, card, adapter, command_runner):
+        adapter = self.resolve_adapter(card, adapter)
         command = self.build_dispatch_command(adapter, card.owner_agent, card.goal)
         snapshot = self.store.read_snapshot(card.task_id)
         expected_start_version = snapshot["version"]

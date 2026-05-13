@@ -453,10 +453,10 @@ class WorkflowEngine:
                 continue
             if candidate.agent == step_context["agent"]:
                 continue
-            selected_backend, backend_candidates, backend_reason = self._resolve_handoff_backend(step_context)
+            source_backend, selected_backend, backend_candidates, backend_reason = self._resolve_handoff_backend(step_context)
             payload = HandoffPayload.create(
-                source_backend="hermes",
-                target_backend="hermes",
+                source_backend=source_backend,
+                target_backend=selected_backend,
                 task_id=f"{workflow.id}:{step.id}->{candidate.id}",
                 summary=step_context["summary"],
                 context={"workflow_id": workflow.id, "step_context": step_context},
@@ -475,11 +475,18 @@ class WorkflowEngine:
             )
             workflow.handoffs.append(payload.to_dict())
 
-    def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, List[str], str]:
+    def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, str, List[str], str]:
         """把步骤建议与真实 provider registry 合并成 handoff backend 元信息。"""
         backend_recommendation = step_context.get("backend_recommendation") or {}
         registry = self.provider_registry or build_default_provider_registry()
         backend_candidates = list(registry.list_providers())
+        source_backend = backend_recommendation.get("current_backend") or backend_recommendation.get("source_backend")
+        if source_backend not in backend_candidates:
+            source_backend = (
+                self.config.default_executor
+                if self.config.default_executor in backend_candidates
+                else (backend_candidates[0] if backend_candidates else "hermes")
+            )
         selected_backend = backend_recommendation.get("selected_backend")
         if selected_backend not in backend_candidates:
             selected_backend = (
@@ -492,16 +499,16 @@ class WorkflowEngine:
         recommendation_reason = backend_recommendation.get("backend_reason")
         if recommendation_reason:
             backend_reason = (
-                f"{recommendation_reason}; provider={selected_backend}; "
+                f"{recommendation_reason}; source={source_backend}; provider={selected_backend}; "
                 f"mode={provider_mode}; registry={','.join(backend_candidates)}"
             )
         else:
             backend_reason = (
-                f"selected from provider registry; provider={selected_backend}; "
+                f"selected from provider registry; source={source_backend}; provider={selected_backend}; "
                 f"mode={provider_mode}; default={self.config.default_executor}; "
                 f"registry={','.join(backend_candidates)}"
             )
-        return selected_backend, backend_candidates, backend_reason
+        return source_backend, selected_backend, backend_candidates, backend_reason
 
     def _resolve_upstream_step_context(self, workflow: Workflow, step: WorkflowStep) -> Optional[Dict[str, Any]]:
         """优先从显式依赖中定位 review/handoff 的上游步骤上下文。"""

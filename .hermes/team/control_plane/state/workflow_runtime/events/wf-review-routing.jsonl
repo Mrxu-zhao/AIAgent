@@ -14,3 +14,15 @@
 {"workflow_id": "wf-review-routing", "step_id": "implement", "status": "completed", "timestamp": 1778656461.5315917, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口"}}
 {"workflow_id": "wf-review-routing", "step_id": "review", "status": "running", "timestamp": 1778656461.5317898, "payload": {"agent": null, "task_template": "请 review {implement_summary}"}}
 {"workflow_id": "wf-review-routing", "step_id": "review", "status": "completed", "timestamp": 1778656461.5320346, "payload": {"agent": null, "error": null, "output": "任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "implement", "status": "running", "timestamp": 1778657033.4916713, "payload": {"agent": "backend-1", "task_template": "实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "implement", "status": "completed", "timestamp": 1778657033.491984, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "review", "status": "running", "timestamp": 1778657033.4921865, "payload": {"agent": null, "task_template": "请 review {implement_summary}"}}
+{"workflow_id": "wf-review-routing", "step_id": "review", "status": "completed", "timestamp": 1778657033.49246, "payload": {"agent": null, "error": null, "output": "任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "implement", "status": "running", "timestamp": 1778657175.1553745, "payload": {"agent": "backend-1", "task_template": "实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "implement", "status": "completed", "timestamp": 1778657175.155686, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "review", "status": "running", "timestamp": 1778657175.1558864, "payload": {"agent": null, "task_template": "请 review {implement_summary}"}}
+{"workflow_id": "wf-review-routing", "step_id": "review", "status": "completed", "timestamp": 1778657175.1561143, "payload": {"agent": null, "error": null, "output": "任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "implement", "status": "running", "timestamp": 1778657408.655687, "payload": {"agent": "backend-1", "task_template": "实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "implement", "status": "completed", "timestamp": 1778657408.6560373, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口"}}
+{"workflow_id": "wf-review-routing", "step_id": "review", "status": "running", "timestamp": 1778657408.656366, "payload": {"agent": null, "task_template": "请 review {implement_summary}"}}
+{"workflow_id": "wf-review-routing", "step_id": "review", "status": "completed", "timestamp": 1778657408.6568809, "payload": {"agent": null, "error": null, "output": "任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口"}}
