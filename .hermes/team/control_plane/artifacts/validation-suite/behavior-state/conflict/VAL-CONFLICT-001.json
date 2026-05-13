@@ -1,0 +1,52 @@
+{
+  "task_id": "VAL-CONFLICT-001",
+  "title": "VAL-CONFLICT-001",
+  "goal": "conflict-goal",
+  "scope": [
+    ".hermes/team/control_plane/adapters.py",
+    ".hermes/team/control_plane/executor.py"
+  ],
+  "lock_scope": {
+    "files": [
+      ".hermes/team/control_plane/adapters.py",
+      ".hermes/team/control_plane/executor.py"
+    ],
+    "modules": [
+      "control_plane"
+    ],
+    "contracts": [
+      "executor-adapter"
+    ]
+  },
+  "inputs": [
+    "team README",
+    "team-dispatch.sh"
+  ],
+  "outputs": [
+    "adapter implementation",
+    "executor dispatch command"
+  ],
+  "dependencies": [],
+  "owner_agent": "backend-2",
+  "review_agent": "architect",
+  "priority": "P1",
+  "timeout_seconds": 1800,
+  "retry_policy": {
+    "max_attempts": 1,
+    "backoff_seconds": [
+      0
+    ]
+  },
+  "rollback_policy": {
+    "mode": "code"
+  },
+  "acceptance_criteria": [
+    "可生成 hermes team dispatch 命令"
+  ],
+  "status": "running",
+  "evidence": [],
+  "version": 4,
+  "last_event_id": "evt-25e7a2c8cf454a0f99abdbea91f10729",
+  "updated_at": 1778631497.7786393,
+  "updated_by": "control-plane-orchestrator"
+}

@@ -1,0 +1,52 @@
+{
+  "task_id": "WS-B-P1-005-R02",
+  "title": "Hermes 执行适配",
+  "goal": "为控制平面提供 Hermes 直接执行命令装配能力",
+  "scope": [
+    ".hermes/team/control_plane/adapters.py",
+    ".hermes/team/control_plane/executor.py"
+  ],
+  "lock_scope": {
+    "files": [
+      ".hermes/team/control_plane/adapters.py",
+      ".hermes/team/control_plane/executor.py"
+    ],
+    "modules": [
+      "control_plane"
+    ],
+    "contracts": [
+      "executor-adapter"
+    ]
+  },
+  "inputs": [
+    "team README",
+    "team-dispatch.sh"
+  ],
+  "outputs": [
+    "adapter implementation",
+    "executor dispatch command"
+  ],
+  "dependencies": [],
+  "owner_agent": "backend-2",
+  "review_agent": "architect",
+  "priority": "P1",
+  "timeout_seconds": 1800,
+  "retry_policy": {
+    "max_attempts": 1,
+    "backoff_seconds": [
+      0
+    ]
+  },
+  "rollback_policy": {
+    "mode": "code"
+  },
+  "acceptance_criteria": [
+    "可生成 hermes team dispatch 命令"
+  ],
+  "status": "done",
+  "evidence": [],
+  "version": 3,
+  "last_event_id": "evt-9e15269ae7ca49e48868fe34984f6bd1",
+  "updated_at": 1778631497.7534826,
+  "updated_by": "backend-2"
+}

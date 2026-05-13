@@ -2,10 +2,15 @@
 
 ## 概述
 
-徐钊研发团队的多 Agent 调度框架，支持：
-- 13 个专业 Agent 并行协作
-- 多种调度方式（命令行、交互式、tmux）
-- 标准化工作流
+徐钊研发团队的多 Agent 调度框架，当前是仓库级控制平面治理下的单进程内存型 workstream，提供：
+- 13 个专业 Agent 的路由与协作定义
+- 命令行、交互式、tmux 等多种使用方式
+- 标准化工作流与基础监控能力
+
+当前边界：
+- 不是跨进程持久化调度系统
+- 没有真实消息消费确认
+- 没有独立队列服务或已完成的故障转移编排
 
 ## Agent 列表
 
@@ -87,6 +92,13 @@ hermes --profile qa-functional chat -p "测试订单模块"
 ~/.hermes/team/调度框架/team.sh
 ```
 
+### 方式五: 仓库级控制平面入口
+
+```bash
+python .hermes/team/调度框架/cli/team-cli.py control-plane-run --max-workers 2
+python .hermes/team/control_plane/run_batch.py --max-workers 2
+```
+
 ## 调度别名
 
 支持中文和角色别名：
@@ -133,7 +145,9 @@ hermes --resume <session_id> chat
 
 ```
 ~/.hermes/team/调度框架/
-├── team.sh                    # 主入口(交互式菜单)
+├── team.sh                    # 旧交互式菜单入口
+├── cli/
+│   └── team-cli.py            # 当前命令行入口，含 control-plane-run 桥接
 ├── scripts/
 │   └── team-dispatch.sh       # 命令行调度脚本
 ├── tmux/
@@ -141,6 +155,12 @@ hermes --resume <session_id> chat
 └── workflows/
     └── project-workflow.md    # 项目工作流定义
 ```
+
+## 与控制平面对齐
+
+- 当前推荐主入口是 `cli/team-cli.py`，其中 `control-plane-run` 直接桥接仓库级控制平面 runner。
+- `.hermes/team/control_plane/runner.py` 负责真实任务批次装配，`team-cli.py` 不再复制调度逻辑。
+- 调度框架中的 Monitor、Workflow、CLI 关键回归由 `tests/control_plane/` 统一覆盖。
 
 ## 注意事项
 

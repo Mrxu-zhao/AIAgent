@@ -17,6 +17,7 @@ from orchestrator import ControlPlaneOrchestrator, build_dependency_graph, get_r
 from runner import register_tasks, run_registered_batch, run_task_batch
 from store import TaskStore
 from tasks import TASKS
+from validation import replicate_cards, run_behavior_validation, run_real_load_validation
 
 __all__ = [
     "ControlPlaneOrchestrator",
@@ -41,5 +42,8 @@ __all__ = [
     "register_tasks",
     "run_registered_batch",
     "run_task_batch",
+    "run_real_load_validation",
+    "run_behavior_validation",
+    "replicate_cards",
     "summarize_samples",
 ]

@@ -7,6 +7,7 @@
 
 import json
 import time
+import ast
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -401,18 +402,87 @@ class WorkflowEngine:
     def _evaluate_condition(self, condition: str, variables: Dict) -> bool:
         """评估条件表达式"""
         try:
-            # 安全地评估条件
-            allowed_names = {"true": True, "false": False}
-            allowed_names.update(variables)
-            
-            # 替换变量占位符
             expr = condition
             for key, value in variables.items():
                 expr = expr.replace(f"{{{key}}}", repr(value))
-            
-            return eval(expr, {"__builtins__": {}}, allowed_names)
+
+            parsed = ast.parse(expr, mode="eval")
+            return bool(self._safe_eval_expr(parsed.body, {"true": True, "false": False}))
         except:
             return False
+
+    def _safe_eval_expr(self, node, names: Dict[str, Any]):
+        if isinstance(node, ast.Constant):
+            return node.value
+        if isinstance(node, ast.Name):
+            if node.id in names:
+                return names[node.id]
+            raise ValueError(f"unsupported name: {node.id}")
+        if isinstance(node, ast.List):
+            return [self._safe_eval_expr(item, names) for item in node.elts]
+        if isinstance(node, ast.Tuple):
+            return tuple(self._safe_eval_expr(item, names) for item in node.elts)
+        if isinstance(node, ast.Set):
+            return {self._safe_eval_expr(item, names) for item in node.elts}
+        if isinstance(node, ast.Dict):
+            return {
+                self._safe_eval_expr(key, names): self._safe_eval_expr(value, names)
+                for key, value in zip(node.keys, node.values)
+            }
+        if isinstance(node, ast.BoolOp):
+            values = [bool(self._safe_eval_expr(value, names)) for value in node.values]
+            if isinstance(node.op, ast.And):
+                return all(values)
+            if isinstance(node.op, ast.Or):
+                return any(values)
+        if isinstance(node, ast.UnaryOp):
+            operand = self._safe_eval_expr(node.operand, names)
+            if isinstance(node.op, ast.Not):
+                return not bool(operand)
+            if isinstance(node.op, ast.USub):
+                return -operand
+            if isinstance(node.op, ast.UAdd):
+                return +operand
+        if isinstance(node, ast.BinOp):
+            left = self._safe_eval_expr(node.left, names)
+            right = self._safe_eval_expr(node.right, names)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+            if isinstance(node.op, ast.Div):
+                return left / right
+            if isinstance(node.op, ast.Mod):
+                return left % right
+        if isinstance(node, ast.Compare):
+            left = self._safe_eval_expr(node.left, names)
+            for operator, comparator in zip(node.ops, node.comparators):
+                right = self._safe_eval_expr(comparator, names)
+                if isinstance(operator, ast.Eq):
+                    ok = left == right
+                elif isinstance(operator, ast.NotEq):
+                    ok = left != right
+                elif isinstance(operator, ast.Gt):
+                    ok = left > right
+                elif isinstance(operator, ast.GtE):
+                    ok = left >= right
+                elif isinstance(operator, ast.Lt):
+                    ok = left < right
+                elif isinstance(operator, ast.LtE):
+                    ok = left <= right
+                elif isinstance(operator, ast.In):
+                    ok = left in right
+                elif isinstance(operator, ast.NotIn):
+                    ok = left not in right
+                else:
+                    raise ValueError("unsupported comparison operator")
+                if not ok:
+                    return False
+                left = right
+            return True
+        raise ValueError(f"unsupported expression: {ast.dump(node)}")
     
     def cancel_workflow(self, workflow_id: str):
         """取消工作流执行"""

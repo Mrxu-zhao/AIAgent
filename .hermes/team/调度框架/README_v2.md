@@ -16,7 +16,7 @@
 - **点对点通信**: Agent之间直接发送消息
 - **广播**: 向所有Agent广播消息
 - **组播**: 向特定组发送消息（如backend/frontend/qa组）
-- **消息持久化**: 保留消息历史，支持查询和审计
+- **内存态消息历史**: 当前仅保留进程内历史，便于查询与兼容统计
 - **订阅发布模式**: 支持按消息类型订阅
 
 ### 3. 工作流引擎 (`core/workflow_engine.py`)
@@ -30,10 +30,10 @@
 ### 4. 监控与故障恢复 (`core/monitor.py`)
 - **实时监控**: Agent负载、任务队列、错误率
 - **自动告警**: 负载过高、错误率异常自动告警
-- **故障恢复**: 
+- **基础恢复能力**: 
   - 自动重试（指数退避）
-  - Agent故障自动转移
-  - 优雅降级
+  - 降低失败 Agent 评分，供后续重新路由参考
+  - 严重故障升级告警
 - **日志聚合**: 统一日志收集和查询
 - **仪表盘**: 可视化展示系统状态
 
@@ -93,6 +93,9 @@ python cli/team-cli.py workflow -n "电商平台"
 
 # 查看监控仪表盘
 python cli/team-cli.py monitor --dashboard
+
+# 运行仓库级控制平面批次
+python cli/team-cli.py control-plane-run --max-workers 2
 
 # 交互式模式
 python cli/team-cli.py interactive
@@ -226,13 +229,13 @@ result = engine.execute_workflow(workflow.id)
 | 场景 | 策略 | 说明 |
 |-----|------|------|
 | 任务失败 | 自动重试 | 指数退避，最多3次 |
-| Agent连续失败 | 故障转移 | 降低评分，路由给其他Agent |
-| 所有Agent满载 | 排队等待 | 任务进入队列等待 |
+| Agent连续失败 | 降级路由评分 | 为后续调度提供更低成功率权重，不保证立即切换执行端 |
+| 所有Agent满载 | 无独立排队服务 | 当前仍为进程内路由，不提供持久化等待队列 |
 | 严重故障 | 升级告警 | 通知人工介入 |
 
 ## 与原有框架的兼容
 
-原有脚本仍然可用：
+原有脚本仍然可用，但仓库级控制平面已成为新的主执行平面：
 
 ```bash
 # 原有方式（仍然支持）
@@ -243,6 +246,7 @@ result = engine.execute_workflow(workflow.id)
 # 新增方式（推荐）
 python cli/team-cli.py dispatch "任务"
 python cli/team-cli.py workflow -n "项目"
+python cli/team-cli.py control-plane-run --max-workers 2
 ```
 
 ## 配置说明

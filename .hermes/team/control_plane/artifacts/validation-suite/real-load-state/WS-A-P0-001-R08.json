@@ -1,0 +1,48 @@
+{
+  "task_id": "WS-A-P0-001-R08",
+  "title": "修复监控死锁",
+  "goal": "让 dashboard 查询在锁竞争下仍可返回",
+  "scope": [
+    ".hermes/team/调度框架/core/monitor.py"
+  ],
+  "lock_scope": {
+    "files": [
+      ".hermes/team/调度框架/core/monitor.py"
+    ],
+    "modules": [
+      "monitor"
+    ],
+    "contracts": []
+  },
+  "inputs": [
+    "assessment_report_2026-05-12.md"
+  ],
+  "outputs": [
+    "monitor deadlock fix",
+    "unit test output"
+  ],
+  "dependencies": [],
+  "owner_agent": "backend-1",
+  "review_agent": "architect",
+  "priority": "P0",
+  "timeout_seconds": 1800,
+  "retry_policy": {
+    "max_attempts": 2,
+    "backoff_seconds": [
+      0,
+      60
+    ]
+  },
+  "rollback_policy": {
+    "mode": "code"
+  },
+  "acceptance_criteria": [
+    "dashboard 调用 100 次均返回"
+  ],
+  "status": "done",
+  "evidence": [],
+  "version": 3,
+  "last_event_id": "evt-a0cd7a64a8794cb1af665bb14b6a8ce3",
+  "updated_at": 1778631497.7650182,
+  "updated_by": "backend-1"
+}

@@ -1,0 +1,76 @@
+{
+  "real_load": {
+    "workload": {
+      "base_tasks": 2,
+      "replicas": 8,
+      "total_tasks": 16,
+      "max_workers": 4
+    },
+    "paths": {
+      "state_dir": "d:\\KIMIK2.5\\AIAgent\\.hermes\\team\\control_plane\\artifacts\\validation-suite\\real-load-state",
+      "events_dir": "d:\\KIMIK2.5\\AIAgent\\.hermes\\team\\control_plane\\artifacts\\validation-suite\\real-load-events"
+    },
+    "summary": {
+      "done_tasks": [
+        "WS-A-P0-001-R01",
+        "WS-A-P0-001-R02",
+        "WS-A-P0-001-R03",
+        "WS-A-P0-001-R04",
+        "WS-A-P0-001-R05",
+        "WS-A-P0-001-R06",
+        "WS-A-P0-001-R07",
+        "WS-A-P0-001-R08",
+        "WS-B-P1-005-R01",
+        "WS-B-P1-005-R02",
+        "WS-B-P1-005-R03",
+        "WS-B-P1-005-R04",
+        "WS-B-P1-005-R05",
+        "WS-B-P1-005-R06",
+        "WS-B-P1-005-R07",
+        "WS-B-P1-005-R08"
+      ],
+      "failed_tasks": [],
+      "blocked_tasks": [],
+      "conflicted_tasks": [],
+      "rounds": 1
+    },
+    "checks": {
+      "all_tasks_done": true,
+      "no_failed_tasks": true,
+      "no_blocked_tasks": true,
+      "no_conflicted_tasks": true
+    }
+  },
+  "behaviors": {
+    "dependency_blocking": {
+      "summary": {
+        "done_tasks": [],
+        "failed_tasks": [
+          "VAL-BLOCK-ROOT"
+        ],
+        "blocked_tasks": [
+          "VAL-BLOCK-LEAF"
+        ],
+        "conflicted_tasks": [],
+        "rounds": 1
+      },
+      "checks": {
+        "blocked_dependency_recorded": true
+      }
+    },
+    "version_conflict": {
+      "summary": {
+        "done_tasks": [],
+        "failed_tasks": [],
+        "blocked_tasks": [],
+        "conflicted_tasks": [
+          "VAL-CONFLICT-001"
+        ],
+        "rounds": 1
+      },
+      "checks": {
+        "conflict_recorded": true
+      }
+    }
+  }
+}

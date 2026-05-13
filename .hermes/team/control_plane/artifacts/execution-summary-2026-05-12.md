@@ -19,10 +19,14 @@
 - 导出结果：`1 test, OK`
 - runner 与 CLI 桥接验证：`python -m unittest tests.control_plane.test_runner tests.control_plane.test_framework_team_cli_control_plane -v`
 - runner 与 CLI 桥接结果：`5 tests, OK`
-- 控制平面全量测试：`python -m unittest tests.control_plane.test_adapters tests.control_plane.test_aggregator tests.control_plane.test_baseline tests.control_plane.test_benchmark_runner tests.control_plane.test_conflicts tests.control_plane.test_executor tests.control_plane.test_framework_cli tests.control_plane.test_framework_monitor tests.control_plane.test_framework_workflow tests.control_plane.test_models tests.control_plane.test_orchestrator tests.control_plane.test_store tests.control_plane.test_tasks -v`
-- 测试结果：`51 tests, OK`
-- 发现模式检查：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
-- 发现模式结果：`51 tests, OK`
+- CLI 生命周期回归：`python -m unittest tests.control_plane.test_framework_cli -v`
+- CLI 生命周期结果：`3 tests, OK`
+- workflow 条件解释器回归：`python -m unittest tests.control_plane.test_framework_workflow -v`
+- workflow 条件解释器结果：`3 tests, OK`
+- 控制平面真实负载验证：`python %TEMP%\\run_real_load_validation.py`
+- 真实负载验证结果：`8 replicas / 16 tasks / 4 workers` 全部完成，且附带阻塞传播与版本冲突行为检查均通过。
+- 控制平面全量测试：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
+- 发现模式结果：`60 tests, OK`
 - 覆盖范围：
   - 控制平面模型与适配器
   - 状态仓与冲突检测
@@ -33,7 +37,9 @@
   - 基线比较、真实基准采样辅助与性能报告生成
   - 独立 benchmark runner 与基线产物重建
   - workflow 显式 `step.agent` 正确性基线与报告渲染
-  - 调度框架 P0 回归
+  - 调度框架 P0 回归与 CLI 生命周期
+  - workflow 安全条件解释器
+  - 扩展批次真实负载验证与 orchestrator 行为验证
 
 ## 当前基线产物
 - 近似修复前基线：`.hermes/team/control_plane/artifacts/before-baseline.json`
@@ -61,9 +67,10 @@
 - 已满足“`Hermes` 可直接执行”的第一阶段要求，控制平面执行器已具备调用适配器、执行命令、回写 started/completed/failed 事件的最小运行时能力。
 - `OpenClaw` 目前只有接口保留，没有执行实现。
 - 当前已经产出真实“当前基线”数据和“可重复重建的近似 before 基线”，且两者已统一负载口径；报告也已区分参考场景、性能场景和正确性场景。状态仓、执行器与 orchestrator 已具备最小 compare-and-swap 语义。
+- 当前已补充真实批次放大验证产物：`real-load-validation.json` / `real-load-validation.md`，用于记录扩展批次和关键行为验证结果。
 
 ## 建议下一步
 1. 如果你后续拿到真实旧版本，再补一份真实 `before` 基线，替换当前近似对照。
 2. 为 `dashboard` 设计更接近生产状态量级的指标注入和告警密度，继续验证 CPU 降幅是否能稳定达到目标。
 3. 如果要继续追性能，优先增加真正存在代码差异的场景，不再把 `dispatch` 这类参考场景纳入优化 KPI。
-4. 在真实负载下继续验证 orchestrator 的并发调度、冲突处理与依赖阻塞行为。
+4. 在真实命令执行器接入后，再把当前“放大批次 + 行为验证”升级为端到端集成验证。

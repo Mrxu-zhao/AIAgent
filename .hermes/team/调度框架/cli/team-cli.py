@@ -39,6 +39,7 @@ class TeamCLI:
         self.router = get_router()
         self.bus = get_bus()
         self.monitor = get_monitor()
+        self.monitor.task_router = self.router
         self.recovery = get_recovery_manager(self.router)
         if not self.monitor._running:
             self.monitor.start()
@@ -46,6 +47,11 @@ class TeamCLI:
         # 注册所有Agent到消息总线
         for agent_id in self.router.agents:
             self.bus.register_agent(agent_id)
+
+    def shutdown(self):
+        """关闭 CLI 运行时资源。"""
+        if getattr(self.monitor, "_running", False):
+            self.monitor.stop()
     
     def print_banner(self):
         """打印横幅"""
@@ -339,24 +345,26 @@ def main():
     args = parser.parse_args()
     
     cli = TeamCLI()
-    
-    if args.command == 'status':
-        cli.cmd_status(args)
-    elif args.command == 'dispatch':
-        cli.cmd_dispatch(args)
-    elif args.command == 'broadcast':
-        cli.cmd_broadcast(args)
-    elif args.command == 'workflow':
-        cli.cmd_workflow(args)
-    elif args.command == 'monitor':
-        cli.cmd_monitor(args)
-    elif args.command == 'control-plane-run':
-        cli.cmd_control_plane_run(args)
-    elif args.command == 'interactive':
-        cli.cmd_interactive(args)
-    else:
-        cli.print_banner()
-        parser.print_help()
+    try:
+        if args.command == 'status':
+            cli.cmd_status(args)
+        elif args.command == 'dispatch':
+            cli.cmd_dispatch(args)
+        elif args.command == 'broadcast':
+            cli.cmd_broadcast(args)
+        elif args.command == 'workflow':
+            cli.cmd_workflow(args)
+        elif args.command == 'monitor':
+            cli.cmd_monitor(args)
+        elif args.command == 'control-plane-run':
+            cli.cmd_control_plane_run(args)
+        elif args.command == 'interactive':
+            cli.cmd_interactive(args)
+        else:
+            cli.print_banner()
+            parser.print_help()
+    finally:
+        cli.shutdown()
 
 
 if __name__ == '__main__':
