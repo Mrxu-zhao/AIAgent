@@ -80,6 +80,19 @@ class Message:
             "reply_to": self.reply_to
         }
 
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "Message":
+        return cls(
+            id=payload["id"],
+            type=MessageType(payload["type"]),
+            from_agent=payload["from"],
+            to_agent=payload.get("to"),
+            content=payload["content"],
+            priority=MessagePriority(payload["priority"]),
+            timestamp=payload["timestamp"],
+            reply_to=payload.get("reply_to"),
+        )
+
 class MessageBus:
     """
     Agent间消息总线
@@ -188,7 +201,14 @@ class MessageBus:
             消息对象或None
         """
         if self._persistent_bus:
-            return self._persistent_bus.receive(agent_id)
+            message = self._persistent_bus.receive(agent_id)
+            if message is None:
+                return None
+            if isinstance(message, Message):
+                return message
+            if hasattr(message, "to_dict"):
+                return Message.from_dict(message.to_dict())
+            return Message.from_dict(message)
 
         if agent_id not in self._queues:
             return None

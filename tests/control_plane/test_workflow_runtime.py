@@ -6,8 +6,10 @@ from unittest.mock import patch
 from tests.control_plane.test_support import ensure_control_plane_path, load_framework_module
 
 ensure_control_plane_path()
+import protocols.handoff as handoff_module  # noqa: E402
 import workflow_runtime as workflow_runtime_module  # noqa: E402
 
+message_bus_module = load_framework_module("message_bus")
 workflow_module = load_framework_module("workflow_engine")
 router_module = load_framework_module("task_router")
 
@@ -77,6 +79,35 @@ class WorkflowRuntimeTests(unittest.TestCase):
         self.assertEqual(len(result["handoffs"]), 1)
         self.assertEqual(result["handoffs"][0]["source_step"], "design")
         self.assertEqual(result["handoffs"][0]["target_step"], "implement")
+
+    def test_workflow_engine_threads_knowledge_recommendation_from_router(self):
+        router = router_module.TaskRouter()
+        engine = workflow_module.WorkflowEngine(task_router=router, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-knowledge-pack",
+            "knowledge-pack",
+            "demo",
+            [
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现接口并补测试",
+                },
+            ],
+        )
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertTrue(result["success"])
+        self.assertIn("knowledge_recommendations", result)
+        self.assertIn("implement", result["knowledge_recommendations"])
+        knowledge = result["step_contexts"]["implement"]["knowledge_recommendation"]
+        self.assertEqual(knowledge["load_order"], ["team", "role", "instance"])
+        self.assertIn(".hermes/team/knowledge/status.md", knowledge["team"])
+        self.assertIn(".hermes/agents/backend-dev/knowledge/status.md", knowledge["role"])
+        self.assertIn(".hermes/team/agents/backend-1/knowledge/expertise.md", knowledge["instance"])
 
     def test_workflow_engine_accumulates_collaboration_context(self):
         engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
@@ -324,6 +355,109 @@ class WorkflowRuntimeTests(unittest.TestCase):
         engine.execute_workflow(workflow.id)
 
         self.assertTrue(any(event.get("type") == "handoff" for event in events), "no handoff event")
+
+    def test_workflow_publishes_standard_handoff_message_when_bus_supports_factory(self):
+        published = {}
+
+        class FakeBus:
+            def create_handoff_message(self, from_agent, to_agent, task_id, context, priority=None):
+                published["factory"] = {
+                    "from_agent": from_agent,
+                    "to_agent": to_agent,
+                    "task_id": task_id,
+                    "context": context,
+                    "priority": priority,
+                }
+                return {"kind": "handoff-message", "task_id": task_id, "context": context}
+
+            def send(self, message):
+                published["message"] = message
+                return True
+
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=FakeBus(), runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-standard-handoff",
+            "standard-handoff",
+            "demo",
+            [
+                {"id": "design", "name": "设计", "type": "sequential", "agent": "architect", "task": "设计方案"},
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                    "dependencies": ["design"],
+                },
+            ],
+        )
+        engine._execute_agent_task = lambda step, task_content: {
+            "success": True,
+            "output": "ok",
+            "agent": step.agent,
+        }
+
+        engine.execute_workflow(workflow.id)
+
+        self.assertEqual(published["factory"]["from_agent"], "architect")
+        self.assertEqual(published["factory"]["to_agent"], "backend-1")
+        self.assertEqual(published["factory"]["task_id"], "wf-standard-handoff:design->implement")
+        self.assertEqual(published["message"]["kind"], "handoff-message")
+        self.assertTrue(handoff_module.validate_handoff_payload(published["factory"]["context"]))
+
+    def test_workflow_published_handoff_round_trips_through_message_bus(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config = message_bus_module.load_control_plane_config()
+            override = {
+                **config.directories,
+                "message_bus_dir": str(Path(tmp) / "message_bus"),
+            }
+
+            with patch.object(
+                message_bus_module,
+                "load_control_plane_config",
+                return_value=type(
+                    "Config",
+                    (),
+                    {
+                        **config.to_dict(),
+                        "directories": override,
+                    },
+                )(),
+            ):
+                bus = message_bus_module.MessageBus()
+                bus.register_agent("architect")
+                bus.register_agent("backend-1")
+                engine = workflow_module.WorkflowEngine(task_router=None, message_bus=bus, runtime_store=None)
+                workflow = engine.create_workflow(
+                    "wf-bus-roundtrip",
+                    "bus-roundtrip",
+                    "demo",
+                    [
+                        {"id": "design", "name": "设计", "type": "sequential", "agent": "architect", "task": "设计方案"},
+                        {
+                            "id": "implement",
+                            "name": "实现",
+                            "type": "sequential",
+                            "agent": "backend-1",
+                            "task": "实现代码",
+                            "dependencies": ["design"],
+                        },
+                    ],
+                )
+                engine._execute_agent_task = lambda step, task_content: {
+                    "success": True,
+                    "output": "ok",
+                    "agent": step.agent,
+                }
+
+                result = engine.execute_workflow(workflow.id)
+                received = bus.receive("backend-1")
+
+            self.assertEqual(received.type, message_bus_module.MessageType.HANDOFF)
+            self.assertEqual(received.content["task_id"], result["handoffs"][0]["task_id"])
+            self.assertEqual(received.content["context"], result["handoffs"][0])
+            self.assertTrue(handoff_module.validate_handoff_payload(received.content["context"]))
 
     def test_workflow_engine_passes_upstream_agent_and_role_into_review_route(self):
         router = router_module.TaskRouter()
@@ -691,6 +825,7 @@ class WorkflowRuntimeTests(unittest.TestCase):
         )
         self.assertNotIn("execution", step_context)
         self.assertNotIn("error", step_context)
+        self.assertNotIn("knowledge_recommendation", step_context)
 
 
 if __name__ == "__main__":

@@ -316,6 +316,7 @@ class WorkflowEngine:
                 "failed_steps": list(failed_steps),
                 "variables": workflow.variables,
                 "step_contexts": workflow.variables.get("step_contexts", {}),
+                "knowledge_recommendations": workflow.variables.get("knowledge_recommendations", {}),
                 "collaboration_context": workflow.variables.get("collaboration_context", {}),
                 "handoffs": list(workflow.handoffs),
                 "duration": workflow.completed_at - workflow.started_at
@@ -446,6 +447,7 @@ class WorkflowEngine:
         output = result.get("output") if isinstance(result, dict) else result
         summary = output if isinstance(output, str) else task_content
         error = result.get("error") if isinstance(result, dict) else None
+        knowledge_recommendation = result.get("knowledge_recommendation") if isinstance(result, dict) else None
         context = {
             "step_id": step.id,
             "agent": result.get("agent", step.agent) if isinstance(result, dict) else step.agent,
@@ -458,6 +460,8 @@ class WorkflowEngine:
             "backend_recommendation": result.get("backend_recommendation") if isinstance(result, dict) else None,
             "inherited_backend": result.get("inherited_backend") if isinstance(result, dict) else None,
         }
+        if knowledge_recommendation is not None:
+            context["knowledge_recommendation"] = knowledge_recommendation
         if error is not None:
             context["error"] = error
         if isinstance(result, dict) and result.get("execution"):
@@ -560,6 +564,10 @@ class WorkflowEngine:
         workflow.variables.setdefault("step_contexts", {})[step_id] = step_context
         if step_context.get("backend_recommendation"):
             workflow.variables["backend_recommendation"] = dict(step_context["backend_recommendation"])
+        if step_context.get("knowledge_recommendation"):
+            workflow.variables.setdefault("knowledge_recommendations", {})[step_id] = dict(
+                step_context["knowledge_recommendation"]
+            )
         collaboration_context = workflow.variables.setdefault(
             "collaboration_context",
             self._default_collaboration_context(),
@@ -569,6 +577,21 @@ class WorkflowEngine:
         self._merge_unique_list(collaboration_context["risks"], list(step_context["risks"]))
         decisions = [self._compress_decision(step_id, decision) for decision in step_context["decisions"]]
         self._merge_unique_list(collaboration_context["decisions"], decisions)
+
+    def _publish_handoff_message(self, handoff_payload: Dict[str, Any]) -> None:
+        """优先发布标准 handoff 消息，兼容仅支持字典的轻量 bus。"""
+        if not self.message_bus:
+            return
+        if hasattr(self.message_bus, "create_handoff_message"):
+            message = self.message_bus.create_handoff_message(
+                handoff_payload.get("source_agent"),
+                handoff_payload.get("target_agent"),
+                handoff_payload.get("task_id"),
+                handoff_payload,
+            )
+            self.message_bus.send(message)
+            return
+        self.message_bus.send({"type": "handoff", "payload": handoff_payload})
 
     def _record_followup_handoffs(self, workflow: Workflow, step: WorkflowStep, step_context: Dict[str, Any]) -> None:
         """当后继步骤由其他 agent 负责时，自动生成 handoff。"""
@@ -604,8 +627,7 @@ class WorkflowEngine:
             )
             handoff_payload = payload.to_dict()
             workflow.handoffs.append(handoff_payload)
-            if self.message_bus:
-                self.message_bus.send({"type": "handoff", "payload": handoff_payload})
+            self._publish_handoff_message(handoff_payload)
 
     def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, str, List[str], str]:
         """把步骤建议与真实 provider registry 合并成 handoff backend 元信息。"""
@@ -674,6 +696,15 @@ class WorkflowEngine:
                     0, self.task_router.agents[agent_id].current_tasks - 1
                 )
                 self.task_router.agents[step.agent].current_tasks += 1
+                if hasattr(task, "routing_reason") and isinstance(task.routing_reason, dict):
+                    intent = self.task_router.analyze_task_intent(
+                        task_content,
+                        upstream_agent=route_kwargs.get("upstream_agent"),
+                        upstream_role=route_kwargs.get("upstream_role"),
+                    )
+                    task.routing_reason["knowledge_recommendation"] = (
+                        self.task_router._build_knowledge_recommendation(intent, step.agent)
+                    )
                 task.assigned_agent = step.agent
                 agent_id = step.agent
             if step.agent:
@@ -695,7 +726,9 @@ class WorkflowEngine:
             return {
                 "success": True,
                 "output": f"任务已分配给 {agent_id}: {task_content}",
-                "agent": agent_id
+                "agent": agent_id,
+                "backend_recommendation": getattr(task, "routing_reason", {}).get("backend_recommendation"),
+                "knowledge_recommendation": getattr(task, "routing_reason", {}).get("knowledge_recommendation"),
             }
         else:
             if self._can_use_control_plane_execution() and self._active_workflow is not None:

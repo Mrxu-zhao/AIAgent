@@ -71,6 +71,22 @@ class TaskRouterIntentTests(unittest.TestCase):
             {"hermes", "openclaw"},
         )
 
+    def test_route_task_emits_knowledge_recommendation(self):
+        router = task_router_module.TaskRouter()
+
+        agent_id, task = router.route_task("请 backend-1 实现接口并补测试")
+
+        self.assertEqual(agent_id, "backend-1")
+        self.assertIn("knowledge_recommendation", task.routing_reason)
+        knowledge = task.routing_reason["knowledge_recommendation"]
+        self.assertEqual(
+            knowledge["load_order"],
+            ["team", "role", "instance"],
+        )
+        self.assertIn(".hermes/team/knowledge/status.md", knowledge["team"])
+        self.assertIn(".hermes/agents/backend-dev/knowledge/status.md", knowledge["role"])
+        self.assertIn(".hermes/team/agents/backend-1/knowledge/expertise.md", knowledge["instance"])
+
 
 if __name__ == "__main__":
     unittest.main()

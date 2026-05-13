@@ -70,3 +70,47 @@
 {"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778661939.9859514, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
 {"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778661939.9862032, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
 {"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778661939.9864569, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663086.9662774, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663086.9665067, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663086.9666831, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663086.9668741, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663147.612406, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663147.6126285, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663147.6128392, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663147.613119, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663342.0238318, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663342.0240612, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663342.0242734, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663342.0244846, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663395.6770892, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663395.6773572, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663395.6776042, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663395.6778064, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663541.4401875, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663541.4404278, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663541.440685, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663541.4409254, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663623.1876051, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663623.1879604, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663623.188251, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663623.1884894, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663670.7324796, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663670.7327287, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663670.73298, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663670.7332244, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663712.7153103, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663712.7155998, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663712.7158232, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663712.7160437, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778663759.529869, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778663759.530212, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778663759.5304935, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778663759.5307279, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778664019.9681132, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778664019.968387, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778664019.9686184, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778664019.9688385, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778664140.1304817, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778664140.130794, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778664140.1310732, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778664140.1313715, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}

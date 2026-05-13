@@ -1,0 +1,12 @@
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778664007.304132, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778664007.3179867, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778664007.3185368, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778664007.3188512, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778664019.9924533, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778664019.99775, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778664019.998008, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778664019.9983482, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778664140.1562111, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778664140.1615758, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778664140.1618018, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778664140.1619918, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

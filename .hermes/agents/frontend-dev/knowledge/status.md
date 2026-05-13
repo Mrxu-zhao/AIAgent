@@ -1,42 +1,35 @@
 # 知识库状态
 
 ## 基本信息
-- **Agent**: 前端开发工程师
-- **版本**: v1.1
-- **创建时间**: 2025-01
-- **最后更新**: 2026-04-29
-- **管理者**: 秦燕（项目经理）
+- **Agent**: 前端开发
+- **版本**: v2.0
+- **最后更新**: 2026-05-13
+- **状态**: 已接入三层知识体系与标准入口
 
-## 知识库统计
+## 标准入口
+- `overview.md`
+- `playbooks/common-tasks.md`
+- `playbooks/troubleshooting.md`
+- `patterns/preferred-patterns.md`
+- `patterns/anti-patterns.md`
+- `checklists/design-checklist.md`
+- `checklists/delivery-checklist.md`
+- `templates/output-templates.md`
 
-| 分类 | 数量 | 最后更新 |
-|------|------|----------|
-| 前端框架模式 | 2 | 2026-04-29 |
-| 目录规范 | 3 | 2026-04-29 |
-| 经验教训 | 2 | 2026-04-29 |
-| 项目档案 | 2 | 2026-04-29 |
+## 历史专题文件统计
+- 历史专题文件数：7
+- 建议做法：优先读标准入口，专题问题再查历史文件。
 
-## 已分析项目
+## 历史专题文件示例
+- `2026-04-29-frontend-analysis.md`
+- `backend-common-pitfalls.md`
+- `backend-debugging-guide.md`
+- `backend-performance-optimization.md`
+- `frontend_patterns.md`
+- `mall4j_frontend_study.md`
+- `xzmeto_resource_front_study.md`
 
-- [x] xzmeto_resource 前台+程序端 — Vue3+TS / uni-app
-- [x] mall4j 四套前端 — Vue3+Element Plus / uni-app+sard-uniapp
-
-## 待分析
-
-- [ ] mall4uni 补充分析（小程序端）
-- [ ] yuejian-front 前端
-- [ ] yuejian_print 打印端
-
-## 更新日志
-
-```
-2025-01  初始化知识库，v1.0 创建
-2026-04-29  v1.1 首次实战积累
-  + 电商前端模式 (mall4j 四套)
-  + 管理端前端模式 (xzmeto)
-  + Vue3 PC端目录规范
-  + uni-app 移动端目录规范
-  + Axios 多实例封装模式
-  + 项目档案: xzmeto_resource_front_study.md
-  + 项目档案: mall4j_frontend_study.md
-```
+## 维护约定
+- 新增稳定方法论，优先沉淀到 `patterns/`、`checklists/`、`templates/`。
+- 专题研究类内容可继续保留在历史专题文件中，由 `README.md` 统一索引。
+- 任务完成后同步更新本文件中的最后更新时间与必要统计。

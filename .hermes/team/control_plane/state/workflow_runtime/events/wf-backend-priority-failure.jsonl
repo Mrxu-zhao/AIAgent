@@ -30,3 +30,47 @@
 {"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661939.9801393, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
 {"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778661939.9803934, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778661939.9807487, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663086.961097, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663086.96132, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663086.9615092, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663086.9617095, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663147.6066396, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663147.6068957, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663147.6071568, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663147.6074064, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663342.0186012, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663342.0188513, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663342.0190644, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663342.0192912, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663395.6721454, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663395.6723893, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663395.6725912, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663395.6728232, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663541.4344735, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663541.4347217, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663541.434988, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663541.4352462, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663623.1824787, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663623.1827414, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663623.1830006, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663623.1832306, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663670.72708, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663670.7273588, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663670.727609, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663670.727901, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663712.7096136, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663712.7098465, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663712.7100468, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663712.7103171, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663759.52367, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663759.5240407, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778663759.5243402, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778663759.524671, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778664019.9619305, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778664019.9623554, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778664019.9626236, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778664019.962913, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778664140.1193516, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778664140.1196253, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "running", "timestamp": 1778664140.1198323, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "status": "failed", "timestamp": 1778664140.1200917, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}

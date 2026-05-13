@@ -50,3 +50,47 @@
 {"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778661939.9822652, "payload": {"agent": "architect", "error": null, "output": "ok"}}
 {"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778661939.982524, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778661939.982781, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663086.9629025, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663086.963127, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663086.963321, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663086.9635043, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663147.6086347, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663147.6089172, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663147.609165, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663147.6097274, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663342.020486, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663342.0207489, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663342.020961, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663342.0211616, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663395.6739058, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663395.674144, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663395.6743157, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663395.6745112, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663541.436426, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663541.4367256, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663541.4369519, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663541.4371715, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663623.1843815, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663623.1846175, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663623.1848078, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663623.1850624, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663670.7292004, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663670.729472, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663670.7296824, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663670.729877, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663712.7115302, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663712.7118223, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663712.712096, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663712.712368, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778663759.5261202, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663759.5263817, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663759.526692, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663759.5269463, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778664019.964141, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778664019.964399, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778664019.9645886, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778664019.9648495, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "running", "timestamp": 1778664140.1235528, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "status": "completed", "timestamp": 1778664140.1238518, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "running", "timestamp": 1778664140.124106, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778664140.124486, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

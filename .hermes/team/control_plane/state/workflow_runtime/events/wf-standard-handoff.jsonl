@@ -1,0 +1,52 @@
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663044.0868945, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663044.0883007, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663044.0886412, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663044.0889528, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663073.7402544, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663073.7405128, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663073.7407198, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663073.7409332, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663086.985941, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663086.9862294, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663086.9864402, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663086.9867287, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663147.6321104, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663147.6323574, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663147.63258, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663147.6328177, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663342.0450265, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663342.0453868, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663342.0456612, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663342.0459251, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663395.6977174, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663395.697956, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663395.6981428, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663395.6983705, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663541.4632, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663541.463447, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663541.4636922, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663541.463933, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663623.208231, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663623.2085192, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663623.2088015, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663623.2090123, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663670.7590685, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663670.759299, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663670.7595072, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663670.7597206, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663712.7395554, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663712.7398064, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663712.7399993, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663712.7401934, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778663759.5524583, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778663759.5526853, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778663759.552904, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778663759.5531137, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778664020.000929, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778664020.0012302, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778664020.00147, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778664020.001735, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "running", "timestamp": 1778664140.1641695, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "status": "completed", "timestamp": 1778664140.1644478, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "running", "timestamp": 1778664140.1646533, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "status": "completed", "timestamp": 1778664140.1648498, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

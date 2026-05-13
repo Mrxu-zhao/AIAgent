@@ -1,0 +1,12 @@
+{
+  "workflow_id": "wf-knowledge-pack",
+  "status": "completed",
+  "started_at": 1778664140.1367593,
+  "name": "knowledge-pack",
+  "description": "demo",
+  "completed_at": 1778664140.1376672,
+  "completed_steps": [
+    "implement"
+  ],
+  "failed_steps": []
+}

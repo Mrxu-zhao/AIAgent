@@ -2,47 +2,35 @@
 
 ## 基本信息
 - **Agent**: 需求分析师
-- **版本**: v1.1
-- **创建时间**: 2025-01
-- **最后更新**: 2026-04-29
-- **管理者**: 秦燕（项目经理）
+- **版本**: v2.0
+- **最后更新**: 2026-05-13
+- **状态**: 已接入三层知识体系与标准入口
 
-## 知识库统计
+## 标准入口
+- `overview.md`
+- `playbooks/common-tasks.md`
+- `playbooks/troubleshooting.md`
+- `patterns/preferred-patterns.md`
+- `patterns/anti-patterns.md`
+- `checklists/design-checklist.md`
+- `checklists/delivery-checklist.md`
+- `templates/output-templates.md`
 
-| 分类 | 数量 | 最后更新 |
-|------|------|----------|
-| 领域知识 | 2 | 2026-04-29 |
-| 需求模式 | 4 | 2026-04-29 |
-| 经验教训 | 2 | 2026-04-29 |
-| 文档模板 | 0 | - |
-| 术语表 | 2 | 2026-04-29 |
-| 项目档案 | 4 | 2026-04-29 |
+## 历史专题文件统计
+- 历史专题文件数：9
+- 建议做法：优先读标准入口，专题问题再查历史文件。
 
-## 积累进度
+## 历史专题文件示例
+- `_index.md`
+- `_summary.md`
+- `glossary.md`
+- `patterns/_index.md`
+- `requirements-pitfalls.md`
+- `requirements_patterns.md`
+- `template.md`
+- `wyjypt_requirements.md`
 
-- [x] 电商平台 — 2026-04-29 分析 mall4j-bbc 后端（218表电商系统）
-- [x] 企业管理系统 — 2026-04-29 分析 xzmeto_resource 后端（微服务资源管理系统）
-- [ ] 政务系统
-- [ ] 金融系统
-- [ ] 教育系统
-
-## 待学习项
-
-- [ ] 深入 mall4j 后端各模块业务逻辑（商品/订单/支付/配送/售后/分销）
-- [ ] xzmeto 后端各微服务详细接口
-- [ ] mall4uni 小程序端补充分析
-- [ ] yuejian 约健打印系统
-
-## 更新日志
-
-```
-2025-01  初始化知识库，v1.0 创建
-2026-04-29  v1.1 首次实战积累
-  + 电商平台领域知识 (mall4j-bbc)
-  + 企业管理系统领域知识 (xzmeto_resource)
-  + 需求模式: 微服务vs单体模块化对比
-  + 需求模式: 多端前端配套需求采集
-  + 经验教训: xzmeto微服务拆分的业务边界
-  + 术语表: 电商术语+微服务术语
-  + 项目档案: 4个配套项目分析报告
-```
+## 维护约定
+- 新增稳定方法论，优先沉淀到 `patterns/`、`checklists/`、`templates/`。
+- 专题研究类内容可继续保留在历史专题文件中，由 `README.md` 统一索引。
+- 任务完成后同步更新本文件中的最后更新时间与必要统计。

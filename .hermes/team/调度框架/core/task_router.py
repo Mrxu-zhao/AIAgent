@@ -204,16 +204,68 @@ class TaskRouter:
             "backend_reason": "default to hermes for local execution",
         }
 
+    def _resolve_role_knowledge_key(self, agent_id: str) -> str:
+        """把实例 agent 映射到角色知识目录。"""
+        if agent_id.startswith("backend-"):
+            return "backend-dev"
+        if agent_id.startswith("frontend-"):
+            return "frontend-dev"
+        return agent_id
+
+    def _build_knowledge_recommendation(self, intent: TaskIntent, agent_id: str) -> Dict[str, object]:
+        """为执行层和协作层提供稳定的知识加载建议。"""
+        role_key = self._resolve_role_knowledge_key(agent_id)
+        team_paths = [
+            ".hermes/team/knowledge/status.md",
+            ".hermes/team/knowledge/project-overview.md",
+            ".hermes/team/knowledge/workflow-playbook.md",
+        ]
+        if intent.task_type == TaskType.REQUIREMENTS or "spec" in intent.deliverables:
+            team_paths.append(".hermes/team/knowledge/domain-glossary.md")
+        if intent.collaboration_mode != "single":
+            team_paths.append(".hermes/team/knowledge/handoff-templates.md")
+        if intent.risk_flags:
+            team_paths.append(".hermes/team/knowledge/risk-register.md")
+
+        role_paths = [
+            f".hermes/agents/{role_key}/knowledge/status.md",
+            f".hermes/agents/{role_key}/knowledge/overview.md",
+            f".hermes/agents/{role_key}/knowledge/playbooks/common-tasks.md",
+            f".hermes/agents/{role_key}/knowledge/checklists/delivery-checklist.md",
+        ]
+        if intent.collaboration_mode in {"review", "handoff"}:
+            role_paths.append(f".hermes/agents/{role_key}/knowledge/checklists/design-checklist.md")
+
+        instance_paths = [
+            f".hermes/team/agents/{agent_id}/knowledge/expertise.md",
+            f".hermes/team/agents/{agent_id}/knowledge/owned-modules.md",
+            f".hermes/team/agents/{agent_id}/knowledge/delivery-style.md",
+        ]
+        if intent.collaboration_mode != "single":
+            instance_paths.append(f".hermes/team/agents/{agent_id}/knowledge/collaboration-preferences.md")
+
+        return {
+            "load_order": ["team", "role", "instance"],
+            "team": team_paths,
+            "role": role_paths,
+            "instance": instance_paths,
+        }
+
     def select_best_agent(self, intent: TaskIntent, priority: TaskPriority) -> Tuple[str, Dict[str, object]]:
         """根据任务画像选择最合适的 Agent，并返回可解释原因。"""
         backend_recommendation = self._build_backend_recommendation(intent)
         if intent.requested_agent and intent.requested_agent in self.agents:
+            knowledge_recommendation = self._build_knowledge_recommendation(
+                intent,
+                intent.requested_agent,
+            )
             return intent.requested_agent, {
                 "strategy": "explicit-agent",
                 "requested_agent": intent.requested_agent,
                 "collaboration_mode": intent.collaboration_mode,
                 "priority": priority.name,
                 "backend_recommendation": backend_recommendation,
+                "knowledge_recommendation": knowledge_recommendation,
             }
 
         excluded_agents = []
@@ -232,6 +284,10 @@ class TaskRouter:
                 if candidate.role in excluded_roles:
                     continue
                 if candidate.current_tasks < candidate.max_tasks:
+                    knowledge_recommendation = self._build_knowledge_recommendation(
+                        intent,
+                        candidate_id,
+                    )
                     return candidate_id, {
                         "strategy": "reviewer-preferred",
                         "review_policy": intent.review_policy,
@@ -241,6 +297,7 @@ class TaskRouter:
                         "excluded_roles": excluded_roles,
                         "priority": priority.name,
                         "backend_recommendation": backend_recommendation,
+                        "knowledge_recommendation": knowledge_recommendation,
                     }
 
         task = Task(
@@ -270,6 +327,7 @@ class TaskRouter:
         if best_agent is None:
             best_agent = min(self.agents.keys(), key=lambda agent_id: self.agents[agent_id].current_tasks)
 
+        knowledge_recommendation = self._build_knowledge_recommendation(intent, best_agent)
         return best_agent, {
             "strategy": "scored-selection",
             "collaboration_mode": intent.collaboration_mode,
@@ -280,6 +338,7 @@ class TaskRouter:
             "excluded_roles": excluded_roles,
             "priority": priority.name,
             "backend_recommendation": backend_recommendation,
+            "knowledge_recommendation": knowledge_recommendation,
         }
     
     def calculate_agent_score(self, agent: Agent, task: Task) -> float:

@@ -62,3 +62,47 @@
 {"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778661940.007891, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
 {"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778661940.0080826, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778661940.0082936, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663086.982807, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663086.9830918, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663086.983314, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663086.9835212, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663147.629251, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663147.6295404, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663147.62976, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663147.6300042, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663342.0417063, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663342.0419528, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663342.0421782, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663342.0424304, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663395.6948397, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663395.6950853, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663395.695275, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663395.6954913, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663541.4597085, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663541.4600396, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663541.460285, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663541.4605033, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663623.2046733, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663623.204934, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663623.2051659, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663623.2053893, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663670.7559319, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663670.7562053, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663670.7564633, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663670.7566657, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663712.735885, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663712.736202, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663712.7364523, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663712.7367148, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778663759.549664, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778663759.5499103, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778663759.550104, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778663759.5503435, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778664019.9872024, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778664019.987494, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778664019.9877613, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778664019.9881928, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "running", "timestamp": 1778664140.1515117, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "status": "completed", "timestamp": 1778664140.151793, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "running", "timestamp": 1778664140.1520574, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "status": "completed", "timestamp": 1778664140.1522934, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}

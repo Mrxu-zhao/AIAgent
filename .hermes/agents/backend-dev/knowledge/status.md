@@ -1,7 +1,7 @@
 # 知识库状态
 
 ## 基本信息
-- **Agent**: 数据库设计师
+- **Agent**: 后端开发
 - **版本**: v2.0
 - **最后更新**: 2026-05-13
 - **状态**: 已接入三层知识体系与标准入口
@@ -17,18 +17,18 @@
 - `templates/output-templates.md`
 
 ## 历史专题文件统计
-- 历史专题文件数：13
+- 历史专题文件数：17
 - 建议做法：优先读标准入口，专题问题再查历史文件。
 
 ## 历史专题文件示例
-- `2026-04-29-mall4j-xzmeto-analysis.md`
-- `database_patterns.md`
-- `dba-pitfalls.md`
-- `ecommerce-vs-management-db.md`
-- `er-diagram-guide.md`
-- `mall4j_backend_study.md`
-- `mysql-index-principles.md`
-- `mysql-transaction-locking.md`
+- `backend-architecture-patterns.md`
+- `backend-common-pitfalls.md`
+- `backend-debugging-guide.md`
+- `backend-performance-optimization.md`
+- `design-patterns-guide.md`
+- `global-exception-handling.md`
+- `java-unit-test-best-practices.md`
+- `jwt-spring-security.md`
 
 ## 维护约定
 - 新增稳定方法论，优先沉淀到 `patterns/`、`checklists/`、`templates/`。
