@@ -31,31 +31,48 @@
 
 ```
 业务需求
-    ↓
+↓
 项目经理（秦燕）→ 拆分任务
-    ↓
+↓
 ┌───────────────┬───────────────┐
 │ 需求分析师    │ 架构师        │  ← 规划阶段
-│ (秦燕)        │ (张欣怡)      │
+│ (吴雪梅)      │ (张欣怡)      │
 ├───────────────┴───────────────┤
 │ 数据库设计师(周嘉诚)           │  ← 设计阶段
 ├───────────────┬───────────────┤
 │ 后端组        │ 前端组        │  ← 开发阶段
 │ (3人)         │ (3人)         │
 ├───────────────┴───────────────┤
-│ 测试组(2人) │ 运维(黄志远)   │  ← 交付阶段
+│ 测试组(2人)  │ 运维(黄志远)   │  ← 交付阶段
 └───────────────┴───────────────┘
 ```
 
 ## 知识共享
 
 所有 Agent 共享团队知识库：
-- `knowledge/templates/` — 文档模板
-- `knowledge/patterns/` — 最佳实践
+- `knowledge/status.md` — 共享知识入口与状态
+- `knowledge/project-overview.md` — 项目背景与范围
+- `knowledge/domain-glossary.md` — 统一术语
+- `knowledge/workflow-playbook.md` — 协作流程说明
+- `knowledge/handoff-templates.md` — 跨 Agent 交接模板
+- `knowledge/risk-register.md` — 已知风险与规避策略
+- `knowledge/decision-log.md` — 关键决策记录
+- `knowledge/templates/` — 团队通用模板
+- `knowledge/patterns/` — 最佳实践沉淀
 - `knowledge/lessons/` — 经验教训
-- `knowledge/glossaries/` — 术语表
+- `knowledge/glossaries/` — 术语补充与命名约定
+
+## 个体知识
+
+每个团队成员在 `agents/<agent>/knowledge/` 下维护最小实例画像：
+- `expertise.md`
+- `owned-modules.md`
+- `collaboration-preferences.md`
+- `delivery-style.md`
+- `recent-lessons.md`
 
 ---
 
 *创建时间: 2026-04-29*
+*最近更新: 2026-05-13*
 *负责人: 秦燕*
