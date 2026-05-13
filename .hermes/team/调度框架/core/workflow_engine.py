@@ -21,6 +21,8 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
 
 from config import load_control_plane_config
 from observability.metrics import get_metrics_registry
+from protocols.handoff import HandoffPayload
+from providers.registry import build_default_provider_registry
 from workflow_runtime import WorkflowRunStore
 
 
@@ -74,6 +76,7 @@ class Workflow:
     current_step: Optional[str] = None
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
+    handoffs: List[Dict[str, Any]] = field(default_factory=list)
 
 class WorkflowEngine:
     """
@@ -87,18 +90,57 @@ class WorkflowEngine:
     - 实时状态监控
     """
     
-    def __init__(self, task_router=None, message_bus=None, runtime_store=None):
+    def __init__(self, task_router=None, message_bus=None, runtime_store=None, provider_registry=None):
         self.task_router = task_router
         self.message_bus = message_bus
+        self.config = load_control_plane_config()
         if runtime_store is None:
-            config = load_control_plane_config()
-            if config.feature_flags.get("workflow_runtime_enabled", False):
+            if self.config.feature_flags.get("workflow_runtime_enabled", False):
                 runtime_store = WorkflowRunStore()
         self.runtime_store = runtime_store
+        self.provider_registry = provider_registry
         self.workflows: Dict[str, Workflow] = {}
         self._executors: Dict[str, ThreadPoolExecutor] = {}
         self._running: Dict[str, bool] = {}
         self._lock = threading.Lock()
+        self._active_workflow: Optional[Workflow] = None
+
+    def _merge_unique_list(self, target: List[Any], values: List[Any]) -> None:
+        """按顺序合并列表并去重。"""
+        for value in values:
+            if value not in target:
+                target.append(value)
+
+    def _default_collaboration_context(self) -> Dict[str, Any]:
+        return {
+            "artifacts": [],
+            "open_questions": [],
+            "risks": [],
+            "decisions": [],
+            "decision_summary_template": "[{step_id}] {summary} | rationale: {rationale} | impact: {impact} | next: {next_action}",
+        }
+
+    def _compress_decision(self, step_id: str, decision: Any) -> Dict[str, str]:
+        """将 decision 压成稳定模板，避免上下文体积持续膨胀。"""
+        if isinstance(decision, dict):
+            summary = str(decision.get("summary", "")).strip() or f"{step_id}-decision"
+            rationale = str(decision.get("rationale", "n/a")).strip() or "n/a"
+            impact = str(decision.get("impact", "n/a")).strip() or "n/a"
+            next_action = str(
+                decision.get("next_action", decision.get("next", "n/a"))
+            ).strip() or "n/a"
+        else:
+            summary = str(decision).strip()
+            rationale = "n/a"
+            impact = "n/a"
+            next_action = "n/a"
+        return {
+            "step_id": step_id,
+            "decision_summary": (
+                f"[{step_id}] {summary} | rationale: {rationale} | "
+                f"impact: {impact} | next: {next_action}"
+            ),
+        }
     
     def register_workflow(self, workflow: Workflow):
         """注册工作流"""
@@ -168,6 +210,12 @@ class WorkflowEngine:
         
         if context:
             workflow.variables.update(context)
+        workflow.variables.setdefault("step_contexts", {})
+        workflow.variables.setdefault(
+            "collaboration_context",
+            self._default_collaboration_context(),
+        )
+        workflow.handoffs = []
         
         self._running[workflow_id] = True
         
@@ -241,6 +289,9 @@ class WorkflowEngine:
                 "completed_steps": list(completed_steps),
                 "failed_steps": list(failed_steps),
                 "variables": workflow.variables,
+                "step_contexts": workflow.variables.get("step_contexts", {}),
+                "collaboration_context": workflow.variables.get("collaboration_context", {}),
+                "handoffs": list(workflow.handoffs),
                 "duration": workflow.completed_at - workflow.started_at
             }
             
@@ -301,6 +352,8 @@ class WorkflowEngine:
                 {"agent": step.agent, "task_template": step.task_template},
             )
         
+        result = {"success": False, "error": "step did not produce a result"}
+        self._active_workflow = workflow
         try:
             # 渲染任务模板
             task_content = self._render_template(step.task_template, workflow.variables)
@@ -329,8 +382,14 @@ class WorkflowEngine:
         except Exception as e:
             step.status = StepStatus.FAILED
             step.error = str(e)
+            result = {"success": False, "error": str(e)}
+        finally:
+            self._active_workflow = None
         
         step.completed_at = time.time()
+        step_context = self._build_step_context(step, result, task_content)
+        self._merge_step_context_into_variables(workflow, step_context)
+        self._record_followup_handoffs(workflow, step, step_context)
         if self.runtime_store:
             self.runtime_store.record_step_event(
                 workflow.id,
@@ -347,11 +406,130 @@ class WorkflowEngine:
             if placeholder in result:
                 result = result.replace(placeholder, str(value))
         return result
+
+    def _build_step_context(self, step: WorkflowStep, result: Dict, task_content: str) -> Dict[str, Any]:
+        """把步骤执行结果归一化成结构化上下文。"""
+        output = result.get("output") if isinstance(result, dict) else result
+        summary = output if isinstance(output, str) else task_content
+        return {
+            "step_id": step.id,
+            "agent": result.get("agent", step.agent) if isinstance(result, dict) else step.agent,
+            "summary": summary,
+            "artifacts": list(result.get("artifacts", [])) if isinstance(result, dict) else [],
+            "open_questions": list(result.get("open_questions", [])) if isinstance(result, dict) else [],
+            "risks": list(result.get("risks", [])) if isinstance(result, dict) else [],
+            "decisions": list(result.get("decisions", [])) if isinstance(result, dict) else [],
+            "handoff_hint": result.get("handoff_hint") if isinstance(result, dict) else None,
+            "backend_recommendation": result.get("backend_recommendation") if isinstance(result, dict) else None,
+        }
+
+    def _merge_step_context_into_variables(self, workflow: Workflow, step_context: Dict[str, Any]) -> None:
+        """把步骤上下文写入 workflow 变量，供后续步骤引用。"""
+        step_id = step_context["step_id"]
+        workflow.variables[f"{step_id}_summary"] = step_context["summary"]
+        workflow.variables[f"{step_id}_artifacts"] = list(step_context["artifacts"])
+        workflow.variables[f"{step_id}_open_questions"] = list(step_context["open_questions"])
+        workflow.variables[f"{step_id}_risks"] = list(step_context["risks"])
+        workflow.variables.setdefault("step_contexts", {})[step_id] = step_context
+        collaboration_context = workflow.variables.setdefault(
+            "collaboration_context",
+            self._default_collaboration_context(),
+        )
+        self._merge_unique_list(collaboration_context["artifacts"], list(step_context["artifacts"]))
+        self._merge_unique_list(collaboration_context["open_questions"], list(step_context["open_questions"]))
+        self._merge_unique_list(collaboration_context["risks"], list(step_context["risks"]))
+        decisions = [self._compress_decision(step_id, decision) for decision in step_context["decisions"]]
+        self._merge_unique_list(collaboration_context["decisions"], decisions)
+
+    def _record_followup_handoffs(self, workflow: Workflow, step: WorkflowStep, step_context: Dict[str, Any]) -> None:
+        """当后继步骤由其他 agent 负责时，自动生成 handoff。"""
+        for index, candidate in enumerate(workflow.steps):
+            is_direct_successor = False
+            if step.id in candidate.dependencies:
+                is_direct_successor = True
+            elif index > 0 and workflow.steps[index - 1].id == step.id:
+                is_direct_successor = True
+            if not is_direct_successor:
+                continue
+            if candidate.agent == step_context["agent"]:
+                continue
+            selected_backend, backend_candidates, backend_reason = self._resolve_handoff_backend(step_context)
+            payload = HandoffPayload.create(
+                source_backend="hermes",
+                target_backend="hermes",
+                task_id=f"{workflow.id}:{step.id}->{candidate.id}",
+                summary=step_context["summary"],
+                context={"workflow_id": workflow.id, "step_context": step_context},
+                source_agent=step_context["agent"],
+                target_agent=candidate.agent,
+                source_step=step.id,
+                target_step=candidate.id,
+                reason="workflow-step-transition",
+                artifacts=list(step_context["artifacts"]),
+                open_questions=list(step_context["open_questions"]),
+                risks=list(step_context["risks"]),
+                selected_backend=selected_backend,
+                backend_candidates=backend_candidates,
+                backend_reason=backend_reason,
+                review_policy=workflow.variables.get("review_policy"),
+            )
+            workflow.handoffs.append(payload.to_dict())
+
+    def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, List[str], str]:
+        """把步骤建议与真实 provider registry 合并成 handoff backend 元信息。"""
+        backend_recommendation = step_context.get("backend_recommendation") or {}
+        registry = self.provider_registry or build_default_provider_registry()
+        backend_candidates = list(registry.list_providers())
+        selected_backend = backend_recommendation.get("selected_backend")
+        if selected_backend not in backend_candidates:
+            selected_backend = (
+                self.config.default_executor
+                if self.config.default_executor in backend_candidates
+                else (backend_candidates[0] if backend_candidates else "hermes")
+            )
+        provider = registry.get(selected_backend)
+        provider_mode = "dry-run" if getattr(provider, "dry_run", False) else "live"
+        recommendation_reason = backend_recommendation.get("backend_reason")
+        if recommendation_reason:
+            backend_reason = (
+                f"{recommendation_reason}; provider={selected_backend}; "
+                f"mode={provider_mode}; registry={','.join(backend_candidates)}"
+            )
+        else:
+            backend_reason = (
+                f"selected from provider registry; provider={selected_backend}; "
+                f"mode={provider_mode}; default={self.config.default_executor}; "
+                f"registry={','.join(backend_candidates)}"
+            )
+        return selected_backend, backend_candidates, backend_reason
+
+    def _resolve_upstream_step_context(self, workflow: Workflow, step: WorkflowStep) -> Optional[Dict[str, Any]]:
+        """优先从显式依赖中定位 review/handoff 的上游步骤上下文。"""
+        step_contexts = workflow.variables.get("step_contexts", {})
+        for dependency_id in reversed(step.dependencies):
+            dependency_context = step_contexts.get(dependency_id)
+            if dependency_context:
+                return dependency_context
+        for candidate in reversed(workflow.steps):
+            if candidate.id == step.id:
+                break
+            candidate_context = step_contexts.get(candidate.id)
+            if candidate_context:
+                return candidate_context
+        return None
     
     def _execute_agent_task(self, step: WorkflowStep, task_content: str) -> Dict:
         """执行Agent任务"""
         if self.task_router:
-            agent_id, task = self.task_router.route_task(task_content)
+            route_kwargs = {}
+            if step.agent is None and self._active_workflow is not None:
+                upstream_context = self._resolve_upstream_step_context(self._active_workflow, step)
+                if upstream_context:
+                    route_kwargs["upstream_agent"] = upstream_context.get("agent")
+                    upstream_agent = route_kwargs["upstream_agent"]
+                    if upstream_agent and upstream_agent in self.task_router.agents:
+                        route_kwargs["upstream_role"] = self.task_router.agents[upstream_agent].role
+            agent_id, task = self.task_router.route_task(task_content, **route_kwargs)
             if step.agent and step.agent in self.task_router.agents and agent_id != step.agent:
                 self.task_router.agents[agent_id].current_tasks = max(
                     0, self.task_router.agents[agent_id].current_tasks - 1
@@ -406,7 +584,7 @@ class WorkflowEngine:
             "output": results
         }
     
-    def _execute_conditional(self, step: WorkflowStep, task_content: str, 
+    def _execute_conditional(self, step: WorkflowStep, task_content: str,
                             variables: Dict) -> Dict:
         """条件执行"""
         if not step.condition:

@@ -1,0 +1,37 @@
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778655226.4055936, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778655226.4060044, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778655226.4063323, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778655226.4066324, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778655285.1236503, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778655285.1239266, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778655285.1241791, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778655285.1243923, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778655364.088055, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778655364.0884042, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778655364.08881, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778655364.0890775, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778655463.4450507, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778655463.4453664, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778655463.445693, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778655463.446019, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778655504.7358766, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778655504.736169, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778655504.7364454, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778655504.7367187, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778656180.792832, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778656180.7930999, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778656180.793354, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778656180.7936316, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778656287.3788307, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778656325.7325332, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778656325.7329109, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778656325.7331758, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778656325.7334735, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778656375.9118104, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778656375.913866, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778656375.9141502, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778656375.9146714, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "running", "timestamp": 1778656461.5276406, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "design", "status": "completed", "timestamp": 1778656461.5279858, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "running", "timestamp": 1778656461.528208, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-collab", "step_id": "review", "status": "completed", "timestamp": 1778656461.5284314, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}

@@ -1,0 +1,12 @@
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778656350.8135395, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778656350.814008, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778656350.81441, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778656350.8147411, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778656375.9098654, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778656375.9101555, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778656375.9104114, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778656375.9107149, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "running", "timestamp": 1778656461.5294747, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "status": "completed", "timestamp": 1778656461.5297403, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "running", "timestamp": 1778656461.5299642, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "status": "completed", "timestamp": 1778656461.5302806, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}

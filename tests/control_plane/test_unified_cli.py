@@ -158,7 +158,12 @@ class UnifiedCLITests(unittest.TestCase):
         fake_audit = SimpleNamespace(log=lambda *args: None)
         fake_engine = SimpleNamespace(
             create_workflow=lambda *args: SimpleNamespace(id="wf-1"),
-            execute_workflow=lambda workflow_id: {"success": True, "workflow_id": workflow_id},
+            execute_workflow=lambda workflow_id: {
+                "success": True,
+                "workflow_id": workflow_id,
+                "step_contexts": {"step-1": {"summary": "done"}},
+                "handoffs": [],
+            },
         )
 
         with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
@@ -182,6 +187,8 @@ class UnifiedCLITests(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["workflow_id"], "wf-1")
+        self.assertIn("step_contexts", result)
+        self.assertIn("handoffs", result)
 
     def test_main_without_command_prints_help(self):
         stream = io.StringIO()

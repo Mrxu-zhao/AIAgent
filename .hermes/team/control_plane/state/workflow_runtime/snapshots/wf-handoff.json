@@ -1,0 +1,13 @@
+{
+  "workflow_id": "wf-handoff",
+  "status": "completed",
+  "started_at": 1778656461.5326848,
+  "name": "handoff",
+  "description": "demo",
+  "completed_at": 1778656461.533917,
+  "completed_steps": [
+    "design",
+    "implement"
+  ],
+  "failed_steps": []
+}

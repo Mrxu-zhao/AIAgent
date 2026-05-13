@@ -49,6 +49,22 @@ class Agent:
     success_rate: float = 1.0
     avg_response_time: float = 0
 
+
+@dataclass
+class TaskIntent:
+    task_type: TaskType
+    requested_agent: Optional[str] = None
+    requested_role: Optional[str] = None
+    collaboration_mode: str = "single"
+    review_policy: str = "none"
+    upstream_agent: Optional[str] = None
+    upstream_role: Optional[str] = None
+    deliverables: List[str] = field(default_factory=list)
+    risk_flags: List[str] = field(default_factory=list)
+    keywords: List[str] = field(default_factory=list)
+
+
+
 @dataclass
 class Task:
     id: str
@@ -61,6 +77,8 @@ class Task:
     created_at: float = 0
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
+    intent: Dict[str, object] = field(default_factory=dict)
+    routing_reason: Dict[str, object] = field(default_factory=dict)
 
 class TaskRouter:
     """智能任务路由器"""
@@ -107,6 +125,146 @@ class TaskRouter:
         # 返回得分最高的类型
         best_match = max(scores, key=scores.get)
         return best_match if scores[best_match] > 0 else TaskType.UNKNOWN
+
+    def analyze_task_intent(
+        self,
+        content: str,
+        upstream_agent: Optional[str] = None,
+        upstream_role: Optional[str] = None,
+    ) -> TaskIntent:
+        """提取任务中的显式指派、协作模式与交付物信号。"""
+        content_lower = content.lower()
+        task_type = self.classify_task(content)
+        requested_agent = None
+        requested_role = None
+        matched_keywords = []
+
+        for alias, agent_id in self.config.aliases.items():
+            if alias.lower() in content_lower:
+                requested_agent = agent_id
+                requested_role = self.agents[agent_id].role
+                break
+
+        deliverables = []
+        deliverable_mapping = {
+            "spec": ("spec", "设计文档", "方案"),
+            "test": ("测试", "test", "用例"),
+            "review": ("review", "评审", "验收"),
+            "code": ("代码", "实现", "接口"),
+        }
+        for deliverable, keywords in deliverable_mapping.items():
+            if any(keyword.lower() in content_lower for keyword in keywords):
+                deliverables.append(deliverable)
+
+        collaboration_mode = "single"
+        if any(keyword in content_lower for keyword in ("review", "评审", "验收")):
+            collaboration_mode = "review"
+        elif any(keyword in content_lower for keyword in ("handoff", "交接", "移交")):
+            collaboration_mode = "handoff"
+        elif any(keyword in content_lower for keyword in ("并行", "parallel")):
+            collaboration_mode = "parallel"
+
+        risk_flags = []
+        if any(keyword in content_lower for keyword in ("线上", "生产", "critical", "高风险", "风险")):
+            risk_flags.append("critical")
+        if any(keyword in content_lower for keyword in ("性能", "performance")):
+            risk_flags.append("performance")
+
+        for keyword_list in self.config.task_keywords.values():
+            matched_keywords.extend([keyword for keyword in keyword_list if keyword.lower() in content_lower])
+
+        return TaskIntent(
+            task_type=task_type,
+            requested_agent=requested_agent,
+            requested_role=requested_role,
+            collaboration_mode=collaboration_mode,
+            review_policy="soft-prefer-reviewer" if collaboration_mode == "review" else "none",
+            upstream_agent=upstream_agent,
+            upstream_role=upstream_role,
+            deliverables=deliverables,
+            risk_flags=risk_flags,
+            keywords=matched_keywords,
+        )
+
+    def _reviewer_candidate_pool(self, intent: TaskIntent) -> List[str]:
+        """返回 review 任务的优先候选池。"""
+        if "performance" in intent.risk_flags:
+            return ["qa-performance", "qa-functional"]
+        return ["qa-functional", "qa-performance"]
+
+    def select_best_agent(self, intent: TaskIntent, priority: TaskPriority) -> Tuple[str, Dict[str, object]]:
+        """根据任务画像选择最合适的 Agent，并返回可解释原因。"""
+        if intent.requested_agent and intent.requested_agent in self.agents:
+            return intent.requested_agent, {
+                "strategy": "explicit-agent",
+                "requested_agent": intent.requested_agent,
+                "collaboration_mode": intent.collaboration_mode,
+                "priority": priority.name,
+            }
+
+        excluded_agents = []
+        if intent.upstream_agent:
+            excluded_agents.append(intent.upstream_agent)
+        excluded_roles = []
+        if intent.upstream_role:
+            excluded_roles.append(intent.upstream_role)
+
+        if intent.collaboration_mode == "review":
+            candidate_pool = self._reviewer_candidate_pool(intent)
+            for candidate_id in candidate_pool:
+                if candidate_id not in self.agents or candidate_id in excluded_agents:
+                    continue
+                candidate = self.agents[candidate_id]
+                if candidate.role in excluded_roles:
+                    continue
+                if candidate.current_tasks < candidate.max_tasks:
+                    return candidate_id, {
+                        "strategy": "reviewer-preferred",
+                        "review_policy": intent.review_policy,
+                        "fallback_used": False,
+                        "candidate_pool": candidate_pool,
+                        "excluded_agents": excluded_agents,
+                        "excluded_roles": excluded_roles,
+                        "priority": priority.name,
+                    }
+
+        task = Task(
+            id="intent-selection",
+            type=intent.task_type,
+            content="",
+            priority=priority,
+        )
+        best_agent = None
+        best_score = -1.0
+        for agent_id, agent in self.agents.items():
+            if agent.current_tasks >= agent.max_tasks:
+                continue
+            if agent_id in excluded_agents:
+                continue
+            if agent.role in excluded_roles:
+                continue
+            score = self.calculate_agent_score(agent, task)
+            if intent.requested_role and agent.role == intent.requested_role:
+                score += 50
+            if intent.collaboration_mode == "review" and "qa" in agent_id:
+                score += 20
+            if score > best_score:
+                best_score = score
+                best_agent = agent_id
+
+        if best_agent is None:
+            best_agent = min(self.agents.keys(), key=lambda agent_id: self.agents[agent_id].current_tasks)
+
+        return best_agent, {
+            "strategy": "scored-selection",
+            "collaboration_mode": intent.collaboration_mode,
+            "review_policy": intent.review_policy,
+            "fallback_used": intent.collaboration_mode == "review",
+            "candidate_pool": self._reviewer_candidate_pool(intent) if intent.collaboration_mode == "review" else [],
+            "excluded_agents": excluded_agents,
+            "excluded_roles": excluded_roles,
+            "priority": priority.name,
+        }
     
     def calculate_agent_score(self, agent: Agent, task: Task) -> float:
         """计算Agent与任务的匹配分数"""
@@ -131,15 +289,26 @@ class TaskRouter:
         
         return score
     
-    def route_task(self, content: str, priority: TaskPriority = TaskPriority.NORMAL) -> Tuple[str, Task]:
+    def route_task(
+        self,
+        content: str,
+        priority: TaskPriority = TaskPriority.NORMAL,
+        upstream_agent: Optional[str] = None,
+        upstream_role: Optional[str] = None,
+    ) -> Tuple[str, Task]:
         """
         智能路由任务到最合适的Agent
         
         Returns:
             (agent_id, task)
         """
-        # 1. 分类任务
-        task_type = self.classify_task(content)
+        # 1. 分析任务画像
+        intent = self.analyze_task_intent(
+            content,
+            upstream_agent=upstream_agent,
+            upstream_role=upstream_role,
+        )
+        task_type = intent.task_type
         
         # 2. 创建任务对象
         task_id = f"task_{int(time.time() * 1000)}"
@@ -148,34 +317,29 @@ class TaskRouter:
             type=task_type,
             content=content,
             priority=priority,
-            created_at=time.time()
+            created_at=time.time(),
+            intent={
+                "task_type": intent.task_type.value,
+                "requested_agent": intent.requested_agent,
+                "requested_role": intent.requested_role,
+                "collaboration_mode": intent.collaboration_mode,
+                "review_policy": intent.review_policy,
+                "upstream_agent": intent.upstream_agent,
+                "upstream_role": intent.upstream_role,
+                "deliverables": list(intent.deliverables),
+                "risk_flags": list(intent.risk_flags),
+                "keywords": list(intent.keywords),
+            },
         )
         self.tasks[task_id] = task
-        
+
         # 3. 找到最合适的Agent
-        best_agent = None
-        best_score = -1
-        
-        for agent_id, agent in self.agents.items():
-            # 跳过已满载的Agent
-            if agent.current_tasks >= agent.max_tasks:
-                continue
-            
-            # 计算匹配分数
-            score = self.calculate_agent_score(agent, task)
-            
-            if score > best_score:
-                best_score = score
-                best_agent = agent_id
-        
-        if best_agent is None:
-            # 所有Agent都满载，选择负载最低的
-            best_agent = min(self.agents.keys(), 
-                           key=lambda a: self.agents[a].current_tasks)
+        best_agent, routing_reason = self.select_best_agent(intent, priority)
         
         # 4. 分配任务
         task.assigned_agent = best_agent
         task.status = "assigned"
+        task.routing_reason = routing_reason
         self.agents[best_agent].current_tasks += 1
         
         return best_agent, task
