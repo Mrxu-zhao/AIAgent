@@ -15,6 +15,7 @@ from governance.audit import AuditLogger
 from governance.rbac import build_default_rbac_policy
 from message_bus import get_bus
 from monitor import get_monitor
+from observability.metrics import refresh_repository_metrics
 from observability.prometheus_exporter import export_metrics_text
 from runner import run_task_batch
 from task_router import TaskPriority, TaskRouter
@@ -88,6 +89,7 @@ def main(argv=None):
     if args.command == "monitor":
         monitor = get_monitor()
         if args.prometheus:
+            refresh_repository_metrics()
             text = export_metrics_text()
             print(text, end="")
             return text

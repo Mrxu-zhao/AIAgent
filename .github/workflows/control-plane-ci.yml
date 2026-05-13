@@ -30,3 +30,10 @@ jobs:
           python -B -m coverage report \
             --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py" \
             --fail-under=90
+      - name: Upload control plane artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-plane-artifacts
+          path: |
+            .coverage
+            .hermes/team/control_plane/artifacts

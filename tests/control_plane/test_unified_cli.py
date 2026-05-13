@@ -83,10 +83,16 @@ class UnifiedCLITests(unittest.TestCase):
             ):
                 with patch.object(unified_cli_module, "ApprovalGate"):
                     with patch.object(unified_cli_module, "AuditLogger"):
-                        with patch.object(unified_cli_module, "export_metrics_text", return_value="metric 1\n"):
-                            result = unified_cli_module.main(["monitor", "--prometheus"])
+                        with patch.object(unified_cli_module, "refresh_repository_metrics") as refresh_mock:
+                            with patch.object(
+                                unified_cli_module,
+                                "export_metrics_text",
+                                return_value="metric 1\n",
+                            ):
+                                result = unified_cli_module.main(["monitor", "--prometheus"])
 
         self.assertEqual(result, "metric 1\n")
+        refresh_mock.assert_called_once_with()
 
     def test_control_plane_run_command_calls_shared_runner(self):
         observed = {}

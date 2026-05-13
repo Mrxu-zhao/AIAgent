@@ -28,7 +28,7 @@
 - 控制平面真实负载验证：`python %TEMP%\\run_real_load_validation.py`
 - 真实负载验证结果：`8 replicas / 16 tasks / 4 workers` 全部完成，且附带阻塞传播与版本冲突行为检查均通过。
 - 控制平面全量测试：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
-- 发现模式结果：`93 tests, OK`
+- 发现模式结果：`94 tests, OK`
 - 覆盖率：`python -m coverage run -m unittest discover -s tests/control_plane -p "test_*.py"` + `python -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py" --fail-under=90`
 - 覆盖率结果：
 -  - 交付关键路径总覆盖率：`94%`

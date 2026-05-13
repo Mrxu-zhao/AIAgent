@@ -53,6 +53,6 @@ python .hermes/team/control_plane/run_benchmarks.py
 - `performance-report.md` 现在区分 `reference`、`performance`、`correctness` 三类场景，其中 `workflow` 会额外输出显式 `step.agent` 是否被尊重的正确性结论。
 
 ## 验证基线
-- `python -m unittest discover -s tests/control_plane -p "test_*.py" -v`：`90 tests, OK`
-- `python -B -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py"`：`94%`
-- `ruff check .hermes/team/control_plane .hermes/team/调度框架/core .hermes/team/调度框架/cli/team-cli.py tests/control_plane --ignore E402,E501,E722,E741`：`All checks passed`
+- `python -m unittest discover -s tests/control_plane -p "test_*.py" -v`：`94 tests, OK`
+- `python -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py" --fail-under=90`：`94%`
+- `python -m ruff check .hermes/team/control_plane .hermes/team/调度框架/core .hermes/team/调度框架/cli/team-cli.py tests/control_plane`：`All checks passed`

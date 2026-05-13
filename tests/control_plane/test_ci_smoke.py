@@ -19,6 +19,8 @@ class CISmokeTests(unittest.TestCase):
         self.assertIn("coverage", content)
         self.assertIn("unittest", content)
         self.assertIn("--fail-under=90", content)
+        self.assertIn("actions/upload-artifact", content)
+        self.assertIn("control-plane-artifacts", content)
 
     def test_framework_readmes_include_assessment_mapping_table(self):
         readmes = [

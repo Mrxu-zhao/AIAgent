@@ -40,7 +40,7 @@ cp -r .hermes/* ~/.hermes/
 - 兼容入口：`python .hermes/team/调度框架/cli/team-cli.py control-plane-run --max-workers 2`
 - 旧脚本：`.hermes/team/调度框架/team.sh`、`scripts/team-dispatch.sh`、`tmux/team-tmux.sh` 已退化为适配层
 - 交付物：Prometheus 配置、Grafana Dashboard、告警规则、里程碑进展报告均位于 `.hermes/team/control_plane/`
-- 验证结果：`90 tests, OK`，P1 关键路径覆盖率 `94%`
+- 验证结果：`94 tests, OK`，P1 关键路径覆盖率 `94%`
 
 ## Agent知识库
 
