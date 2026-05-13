@@ -1,8 +1,8 @@
-import time
 import json
-import sys
 import subprocess
+import sys
 import threading
+import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -53,6 +53,7 @@ def _burn_cpu(iterations):
 def benchmark_callable(fn, iterations=5, timeout_seconds=None, cpu_burn_iterations=0):
     latency_samples = []
     cpu_samples = []
+    cpu_load_samples = []
     timed_out_runs = 0
     for _ in range(iterations):
         start_wall = time.perf_counter_ns()
@@ -61,10 +62,11 @@ def benchmark_callable(fn, iterations=5, timeout_seconds=None, cpu_burn_iteratio
         burn_cpu_ms = [0.0]
         if timeout_seconds is None:
             if cpu_burn_iterations:
-                _measured_burn_cpu_ms(cpu_burn_iterations)
+                burn_cpu_ms[0] = _measured_burn_cpu_ms(cpu_burn_iterations)
             fn()
             latency_samples.append((time.perf_counter_ns() - start_wall) / 1_000_000)
             cpu_samples.append((time.process_time_ns() - start_cpu) / 1_000_000)
+            cpu_load_samples.append(burn_cpu_ms[0])
             continue
 
         if cpu_burn_iterations:
@@ -88,11 +90,13 @@ def benchmark_callable(fn, iterations=5, timeout_seconds=None, cpu_burn_iteratio
                     burn_cpu_ms[0],
                 )
             )
+            cpu_load_samples.append(burn_cpu_ms[0])
             continue
         if error_holder:
             raise error_holder[0]
         latency_samples.append((time.perf_counter_ns() - start_wall) / 1_000_000)
         cpu_samples.append((time.process_time_ns() - start_cpu) / 1_000_000)
+        cpu_load_samples.append(burn_cpu_ms[0])
 
     result = {
         "iterations": iterations,
@@ -103,6 +107,10 @@ def benchmark_callable(fn, iterations=5, timeout_seconds=None, cpu_burn_iteratio
         result["timed_out_runs"] = timed_out_runs
         result["timeout_seconds"] = timeout_seconds
     result["cpu_burn_iterations"] = cpu_burn_iterations
+    result["cpu_load_ms"] = summarize_samples(cpu_load_samples or [0.0])
+    result["cpu_effective_ms"] = summarize_samples(
+        [max(0.0, cpu - load) for cpu, load in zip(cpu_samples, cpu_load_samples or [0.0] * len(cpu_samples))]
+    )
     return result
 
 

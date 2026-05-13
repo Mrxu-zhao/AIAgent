@@ -3,7 +3,6 @@ import unittest
 
 from tests.control_plane.test_support import load_framework_module
 
-
 monitor_module = load_framework_module("monitor")
 
 

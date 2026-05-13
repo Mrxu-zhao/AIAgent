@@ -6,12 +6,23 @@
 """
 
 import json
+import sys
+import threading
 import time
-from typing import Dict, List, Optional, Any
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from collections import deque
-import threading
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+CONTROL_PLANE_DIR = Path(__file__).resolve().parents[2] / "control_plane"
+if str(CONTROL_PLANE_DIR) not in sys.path:
+    sys.path.insert(0, str(CONTROL_PLANE_DIR))
+
+from config import load_control_plane_config
+from observability.metrics import get_metrics_registry
+from observability.prometheus_exporter import export_metrics_text
+
 
 @dataclass
 class Metric:
@@ -45,6 +56,7 @@ class Monitor:
     """
     
     def __init__(self, max_history: int = 10000, task_router=None):
+        config = load_control_plane_config()
         self.metrics: Dict[str, deque] = {}
         self.alerts: List[Alert] = []
         self.logs: deque = deque(maxlen=max_history)
@@ -55,12 +67,7 @@ class Monitor:
         self._monitor_thread = None
         
         # 告警阈值配置
-        self.thresholds = {
-            "agent_load_high": 0.8,      # Agent负载过高阈值
-            "task_timeout": 300,          # 任务超时时间(秒)
-            "error_rate_high": 0.1,      # 错误率过高阈值
-            "queue_length_high": 10,     # 队列过长阈值
-        }
+        self.thresholds = dict(config.thresholds)
 
     @property
     def agents(self) -> Dict[str, Any]:
@@ -135,6 +142,8 @@ class Monitor:
                 labels=labels or {}
             )
             self.metrics[name].append(metric)
+        if name == "agent_load":
+            get_metrics_registry().set_gauge("improvement_dashboard_availability_ratio", 1.0)
     
     def record_agent_metric(self, agent_id: str, metric_type: str, value: float):
         """记录Agent相关指标"""
@@ -284,7 +293,7 @@ class Monitor:
                     agent_id = name.replace("agent_load_", "")
                     agent_loads[agent_id] = values[-1].value
             
-            return {
+            payload = {
                 "summary": {
                     "total_alerts": total_alerts,
                     "unresolved_alerts": unresolved_alerts,
@@ -295,6 +304,9 @@ class Monitor:
                 "recent_alerts": self.get_alerts(resolved=False)[:5],
                 "recent_logs": self.get_logs(limit=10)
             }
+            get_metrics_registry().set_gauge("improvement_dashboard_availability_ratio", 1.0)
+            get_metrics_registry().set_gauge("improvement_high_risk_issues_total", float(critical_alerts))
+            return payload
     
     def export_metrics(self, filepath: str):
         """导出指标到文件"""
@@ -308,6 +320,10 @@ class Monitor:
             json.dump(data, f, ensure_ascii=False, indent=2)
         
         self.log("INFO", f"指标已导出到: {filepath}")
+
+    def export_prometheus_metrics(self) -> str:
+        """导出 Prometheus 文本格式指标。"""
+        return export_metrics_text()
 
 
 class RecoveryManager:

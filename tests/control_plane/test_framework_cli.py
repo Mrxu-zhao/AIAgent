@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from tests.control_plane.test_support import load_cli_module
 
-
 cli_module = load_cli_module("team-cli.py", "team_cli")
 
 

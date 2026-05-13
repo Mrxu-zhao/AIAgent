@@ -5,14 +5,24 @@ Agent间消息总线
 支持广播、点对点、组播通信模式
 """
 
-import json
-import time
 import queue
-from typing import Dict, List, Optional, Callable, Any
-from dataclasses import dataclass, field, asdict
-from enum import Enum
-from threading import Lock
+import sys
+import time
 import uuid
+from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
+from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
+
+CONTROL_PLANE_DIR = Path(__file__).resolve().parents[2] / "control_plane"
+if str(CONTROL_PLANE_DIR) not in sys.path:
+    sys.path.insert(0, str(CONTROL_PLANE_DIR))
+
+from config import load_control_plane_config
+from observability.metrics import get_metrics_registry
+from persistent_bus import PersistentMessageBus
+
 
 class MessageType(Enum):
     TASK_ASSIGN = "task_assign"           # 任务分配
@@ -83,33 +93,32 @@ class MessageBus:
     """
     
     def __init__(self):
+        config = load_control_plane_config()
         self._queues: Dict[str, queue.PriorityQueue] = {}  # Agent消息队列
         self._history: List[Message] = []  # 消息历史
         self._subscribers: Dict[MessageType, List[Callable]] = {}  # 订阅者
-        self._groups: Dict[str, List[str]] = {  # 预定义组
-            "backend": ["backend-1", "backend-2", "backend-3"],
-            "frontend": ["frontend-1", "frontend-2", "frontend-3"],
-            "qa": ["qa-functional", "qa-performance"],
-            "all": ["architect", "dba", "backend-1", "backend-2", "backend-3",
-                   "frontend-1", "frontend-2", "frontend-3", "ucd",
-                   "qa-functional", "qa-performance", "devops", "requirements-analyst"],
-            "dev": ["backend-1", "backend-2", "backend-3", "frontend-1", "frontend-2", "frontend-3"],
-            "design": ["architect", "dba", "ucd"],
-        }
+        self._groups: Dict[str, List[str]] = {group_id: list(agent_ids) for group_id, agent_ids in config.groups.items()}
         self._lock = Lock()
         self._max_history = 1000
+        self._persistent_bus = None
+        if config.feature_flags.get("persistent_bus_enabled", False):
+            self._persistent_bus = PersistentMessageBus(Path(config.directories["message_bus_dir"]))
     
     def register_agent(self, agent_id: str):
         """注册Agent到消息总线"""
         with self._lock:
             if agent_id not in self._queues:
                 self._queues[agent_id] = queue.PriorityQueue()
+        if self._persistent_bus:
+            self._persistent_bus.register_agent(agent_id)
     
     def unregister_agent(self, agent_id: str):
         """注销Agent"""
         with self._lock:
             if agent_id in self._queues:
                 del self._queues[agent_id]
+        if self._persistent_bus:
+            self._persistent_bus.unregister_agent(agent_id)
     
     def send(self, message: Message) -> bool:
         """
@@ -131,6 +140,10 @@ class MessageBus:
             self._notify_subscribers(message)
             
             # 分发消息
+            if self._persistent_bus:
+                success = self._persistent_bus.send(message)
+                get_metrics_registry().inc_counter("improvement_cross_process_trace_ratio", 1)
+                return success
             if message.to_agent is None:
                 # 广播给所有Agent
                 success = True
@@ -174,6 +187,9 @@ class MessageBus:
         Returns:
             消息对象或None
         """
+        if self._persistent_bus:
+            return self._persistent_bus.receive(agent_id)
+
         if agent_id not in self._queues:
             return None
         
@@ -223,12 +239,57 @@ class MessageBus:
     
     def get_pending_count(self, agent_id: str) -> int:
         """获取Agent待处理消息数"""
+        if self._persistent_bus:
+            return self._persistent_bus.get_pending_count(agent_id)
         if agent_id not in self._queues:
             return 0
         return self._queues[agent_id].qsize()
 
+    def ack(self, agent_id: str, message_id: str) -> bool:
+        """确认消费消息。"""
+        if self._persistent_bus:
+            return self._persistent_bus.ack(agent_id, message_id)
+        return True
+
+    def nack(self, agent_id: str, message_id: str) -> bool:
+        """拒绝消费消息。"""
+        if self._persistent_bus:
+            return self._persistent_bus.nack(agent_id, message_id)
+        return False
+
+    def requeue(self, agent_id: str, message_id: str) -> bool:
+        """重新入队消息。"""
+        if self._persistent_bus:
+            return self._persistent_bus.requeue(agent_id, message_id)
+        return False
+
+    def list_unacked(self, agent_id: str) -> List[Dict]:
+        """列出未确认消息。"""
+        if self._persistent_bus:
+            return self._persistent_bus.list_unacked(agent_id)
+        return []
+
     def stats(self) -> Dict[str, Any]:
         """返回消息总线的兼容统计快照"""
+        if self._persistent_bus:
+            persistent_snapshot = self._persistent_bus.stats()
+            snapshot = {
+                "registered_agents": len(self._queues),
+                "history_size": len(self._history),
+                "pending_counts": {
+                    agent_id: persistent_snapshot.get("pending_counts", {}).get(agent_id, 0)
+                    for agent_id in self._queues
+                },
+                "subscriber_counts": {
+                    msg_type.value: len(callbacks)
+                    for msg_type, callbacks in self._subscribers.items()
+                },
+                "groups": {
+                    group_id: list(agent_ids)
+                    for group_id, agent_ids in self._groups.items()
+                },
+            }
+            return snapshot
         with self._lock:
             pending_counts = {
                 agent_id: q.qsize()

@@ -249,6 +249,26 @@ python cli/team-cli.py workflow -n "项目"
 python cli/team-cli.py control-plane-run --max-workers 2
 ```
 
+兼容边界：
+- `team.sh` 已退化为菜单式薄适配层，默认转发到 `.hermes/team/control_plane/cli.py`。
+- `scripts/team-dispatch.sh` 负责别名解析后转发到 `cli/team-cli.py dispatch -a`。
+- `tmux/team-tmux.sh` 负责启动基于 `cli/team-cli.py interactive` 与控制平面命令的观察会话。
+
+## 评估报告实现对照表
+
+| 事项 | 状态 | 落地位置 | 里程碑 |
+|-----|------|----------|--------|
+| P1-1 统一配置中心 | [x] 已完成 | `.hermes/team/control_plane/config.py`、`core/task_router.py`、`core/monitor.py` | 里程碑-1-配置与统一入口 |
+| P1-2 持久化任务/事件存储 + 消费确认 | [x] 已完成 | `.hermes/team/control_plane/persistent_bus.py`、`core/message_bus.py` | 里程碑-2-持久化总线与工作流审计 |
+| P1-3 工作流显式状态持久化与执行日志 | [x] 已完成 | `.hermes/team/control_plane/workflow_runtime.py`、`core/workflow_engine.py` | 里程碑-2-持久化总线与工作流审计 |
+| P1-4 安全表达式解释器 | [x] 已完成 | `core/workflow_engine.py`、`tests/control_plane/test_framework_workflow.py` | 里程碑-2-持久化总线与工作流审计 |
+| P1-5 统一新旧入口 | [x] 已完成 | `.hermes/team/control_plane/cli.py`、`cli/team-cli.py`、`team.sh`、`scripts/team-dispatch.sh`、`tmux/team-tmux.sh` | 里程碑-1-配置与统一入口 |
+| P2-1 插件式 Agent Provider / Executor | [x] MVP 已完成 | `.hermes/team/control_plane/providers/`、`adapters.py` | 里程碑-3-治理与多后端插件 |
+| P2-2 RBAC、审计日志、审批点 | [x] MVP 已完成 | `.hermes/team/control_plane/governance/` | 里程碑-3-治理与多后端插件 |
+| P2-3 指标、日志、追踪 | [x] MVP 已完成 | `.hermes/team/control_plane/observability/`、Prometheus/Grafana 交付物 | 里程碑-4-观测与CI |
+| P2-4 跨会话协作协议与 Handoff Schema | [x] MVP 已完成 | `.hermes/team/control_plane/protocols/` | 里程碑-3-治理与多后端插件 |
+| P2-5 CI | [x] MVP 已完成 | `pyproject.toml`、`.github/workflows/control-plane-ci.yml` | 里程碑-4-观测与CI |
+
 ## 配置说明
 
 ### Agent配置

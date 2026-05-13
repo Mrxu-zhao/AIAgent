@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ControlPlaneHandoff",
+  "type": "object",
+  "required": ["source_backend", "target_backend", "task_id", "summary", "context", "created_at"],
+  "properties": {
+    "source_backend": {"type": "string", "enum": ["hermes", "openclaw"]},
+    "target_backend": {"type": "string", "enum": ["hermes", "openclaw"]},
+    "task_id": {"type": "string"},
+    "summary": {"type": "string"},
+    "context": {"type": "object"},
+    "created_at": {"type": "number"}
+  }
+}

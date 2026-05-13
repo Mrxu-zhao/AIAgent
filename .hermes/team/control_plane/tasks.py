@@ -1,6 +1,5 @@
 from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority
 
-
 TASKS = [
     TaskCard(
         task_id="WS-A-P0-001",

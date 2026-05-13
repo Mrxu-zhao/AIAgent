@@ -2,7 +2,6 @@ import unittest
 
 from tests.control_plane.test_support import load_framework_module
 
-
 message_bus_module = load_framework_module("message_bus")
 monitor_module = load_framework_module("monitor")
 task_router_module = load_framework_module("task_router")

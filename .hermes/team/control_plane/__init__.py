@@ -1,6 +1,7 @@
-from adapters import HermesExecutorAdapter, OpenClawExecutorAdapter
+from adapters import HermesExecutorAdapter, OpenClawExecutorAdapter, get_default_executor_adapter
 from aggregator import build_report
 from baseline import compare_runs, summarize_samples
+from config import ControlPlaneConfig, load_control_plane_config
 from conflicts import detect_conflict
 from executor import ControlPlaneExecutor
 from models import (
@@ -18,6 +19,7 @@ from runner import register_tasks, run_registered_batch, run_task_batch
 from store import TaskStore
 from tasks import TASKS
 from validation import replicate_cards, run_behavior_validation, run_real_load_validation
+from workflow_runtime import WorkflowRunStore
 
 __all__ = [
     "ControlPlaneOrchestrator",
@@ -37,8 +39,11 @@ __all__ = [
     "build_dependency_graph",
     "build_report",
     "compare_runs",
+    "ControlPlaneConfig",
     "detect_conflict",
+    "get_default_executor_adapter",
     "get_ready_tasks",
+    "load_control_plane_config",
     "register_tasks",
     "run_registered_batch",
     "run_task_batch",
@@ -46,4 +51,5 @@ __all__ = [
     "run_behavior_validation",
     "replicate_cards",
     "summarize_samples",
+    "WorkflowRunStore",
 ]

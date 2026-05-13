@@ -1,0 +1,12 @@
+{
+  "title": "Improvement Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {"id": 1, "type": "stat", "title": "Dashboard Availability", "targets": [{"expr": "improvement_dashboard_availability_ratio"}]},
+    {"id": 2, "type": "stat", "title": "Workflow Role Hit", "targets": [{"expr": "improvement_workflow_role_hit_ratio"}]},
+    {"id": 3, "type": "stat", "title": "Config Sources", "targets": [{"expr": "improvement_config_sources_total"}]},
+    {"id": 4, "type": "stat", "title": "Cross Process Trace", "targets": [{"expr": "improvement_cross_process_trace_ratio"}]},
+    {"id": 5, "type": "stat", "title": "High Risk Issues", "targets": [{"expr": "improvement_high_risk_issues_total"}]}
+  ]
+}

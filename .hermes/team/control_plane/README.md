@@ -16,7 +16,7 @@
 
 ## 当前边界
 - 第一阶段直接支持 `Hermes` 调度命令装配。
-- `OpenClaw` 仅保留统一适配接口，不在本阶段实现运行时执行。
+- `OpenClaw` 已提供 dry-run MVP 适配接口，真实 live 执行仍留待后续阶段。
 - 调度框架的 P0 修复由控制平面的测试集统一验证。
 - `TaskStore` 已支持基于 `expected_version` 的乐观并发拒绝，以及基于 `version` / `last_event_id` 的快照校验。
 - `ControlPlaneExecutor` 已在关键状态迁移中消费 `expected_version`，对完成态写入提供最小 compare-and-swap 保护。
@@ -24,6 +24,7 @@
 - 调度器不直接写 `done` / `failed` 终态，终态仍由 `ControlPlaneExecutor` 负责。
 - `runner.py` 已把 `TASKS`、`TaskStore`、`ControlPlaneExecutor` 和 `ControlPlaneOrchestrator` 装配为统一批次执行入口。
 - `run_batch.py` 与 `team-cli.py control-plane-run` 共享同一条 runner 链路，不复制调度逻辑。
+- `team.sh`、`team-dispatch.sh`、`team-tmux.sh` 已退化为薄适配层，统一转发到控制平面入口或兼容 CLI。
 
 ## 推荐执行顺序
 1. 使用 `runner.py` 或 `run_batch.py` 注册任务并建立状态仓
@@ -50,3 +51,8 @@ python .hermes/team/control_plane/run_benchmarks.py
 - `run_benchmarks.py` 会对 `current` 与 `reconstructed-before` 使用相同的负载配置，保证性能对比口径一致。
 - 当前默认负载会同时记录 `dispatch_batch_size` 与 `workflow_parallel_fanout`，让 `dispatch` 与 `workflow` 更接近真实路径而不是只跑单次调用。
 - `performance-report.md` 现在区分 `reference`、`performance`、`correctness` 三类场景，其中 `workflow` 会额外输出显式 `step.agent` 是否被尊重的正确性结论。
+
+## 验证基线
+- `python -m unittest discover -s tests/control_plane -p "test_*.py" -v`：`90 tests, OK`
+- `python -B -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py"`：`94%`
+- `ruff check .hermes/team/control_plane .hermes/team/调度框架/core .hermes/team/调度框架/cli/team-cli.py tests/control_plane --ignore E402,E501,E722,E741`：`All checks passed`

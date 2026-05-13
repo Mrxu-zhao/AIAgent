@@ -2,7 +2,6 @@ import unittest
 
 from tests.control_plane.test_support import load_framework_module
 
-
 workflow_module = load_framework_module("workflow_engine")
 router_module = load_framework_module("task_router")
 

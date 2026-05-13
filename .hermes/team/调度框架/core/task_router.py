@@ -5,12 +5,19 @@
 根据任务类型、Agent负载、技能匹配度自动分配任务
 """
 
-import json
-import re
-from typing import Dict, List, Optional, Tuple
+import sys
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-import time
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+CONTROL_PLANE_DIR = Path(__file__).resolve().parents[2] / "control_plane"
+if str(CONTROL_PLANE_DIR) not in sys.path:
+    sys.path.insert(0, str(CONTROL_PLANE_DIR))
+
+from config import load_control_plane_config
+
 
 class TaskPriority(Enum):
     CRITICAL = 1
@@ -57,67 +64,22 @@ class Task:
 
 class TaskRouter:
     """智能任务路由器"""
-    
-    # 任务类型关键词映射
-    TASK_KEYWORDS = {
-        TaskType.REQUIREMENTS: ["需求", "分析", "调研", "用户故事", "prd", "requirement"],
-        TaskType.ARCHITECTURE: ["架构", "设计", "技术选型", "架构图", "微服务", "monolith", "architecture"],
-        TaskType.DATABASE: ["数据库", "表设计", "sql", "索引", "优化", "迁移", "db", "database", "mysql", "redis"],
-        TaskType.BACKEND: ["后端", "接口", "api", "服务", "controller", "service", "dao", "java", "spring"],
-        TaskType.FRONTEND: ["前端", "页面", "组件", "ui", "vue", "react", "html", "css", "js"],
-        TaskType.UCD: ["设计", "原型", "交互", "ui", "ux", "figma", "axure", "mockup"],
-        TaskType.QA_FUNCTIONAL: ["测试", "用例", "bug", "功能测试", "回归", "test", "qa"],
-        TaskType.QA_PERFORMANCE: ["性能", "压测", "jmeter", "tps", "并发", "性能测试", "performance"],
-        TaskType.DEVOPS: ["部署", "docker", "k8s", "jenkins", "ci/cd", "运维", "服务器", "devops"],
-    }
-    
-    # Agent技能映射
-    AGENT_SKILLS = {
-        "requirements-analyst": [TaskType.REQUIREMENTS],
-        "architect": [TaskType.ARCHITECTURE],
-        "dba": [TaskType.DATABASE],
-        "backend-1": [TaskType.BACKEND],
-        "backend-2": [TaskType.BACKEND],
-        "backend-3": [TaskType.BACKEND],
-        "frontend-1": [TaskType.FRONTEND],
-        "frontend-2": [TaskType.FRONTEND],
-        "frontend-3": [TaskType.FRONTEND],
-        "ucd": [TaskType.UCD],
-        "qa-functional": [TaskType.QA_FUNCTIONAL],
-        "qa-performance": [TaskType.QA_PERFORMANCE],
-        "devops": [TaskType.DEVOPS],
-    }
-    
+
     def __init__(self):
+        self.config = load_control_plane_config()
         self.agents: Dict[str, Agent] = {}
         self.tasks: Dict[str, Task] = {}
         self._init_agents()
     
     def _init_agents(self):
         """初始化Agent配置"""
-        agent_configs = [
-            ("requirements-analyst", "吴雪梅", "需求分析师", 2),
-            ("architect", "张欣怡", "系统架构师", 2),
-            ("dba", "周嘉诚", "数据库设计师", 3),
-            ("backend-1", "陈启明", "后端开发", 3),
-            ("backend-2", "王浩然", "后端开发", 3),
-            ("backend-3", "赵文杰", "后端开发", 3),
-            ("frontend-1", "李思雨", "前端开发", 3),
-            ("frontend-2", "周晓明", "前端开发", 3),
-            ("frontend-3", "林雅婷", "前端开发", 3),
-            ("ucd", "吴俊杰", "UCD设计师", 2),
-            ("qa-functional", "郑晓彤", "功能测试", 4),
-            ("qa-performance", "孙美玲", "性能测试", 3),
-            ("devops", "黄志远", "运维", 3),
-        ]
-        
-        for agent_id, name, role, max_tasks in agent_configs:
+        for agent_id, agent_config in self.config.agents.items():
             self.agents[agent_id] = Agent(
                 id=agent_id,
-                name=name,
-                role=role,
-                skills=[t.value for t in self.AGENT_SKILLS.get(agent_id, [])],
-                max_tasks=max_tasks
+                name=agent_config.name,
+                role=agent_config.role,
+                skills=list(agent_config.skills),
+                max_tasks=agent_config.max_tasks,
             )
     
     def classify_task(self, content: str) -> TaskType:
@@ -125,7 +87,19 @@ class TaskRouter:
         content_lower = content.lower()
         scores = {task_type: 0 for task_type in TaskType}
         
-        for task_type, keywords in self.TASK_KEYWORDS.items():
+        keyword_mapping = {
+            TaskType.REQUIREMENTS: self.config.task_keywords.get("requirements", []),
+            TaskType.ARCHITECTURE: self.config.task_keywords.get("architecture", []),
+            TaskType.DATABASE: self.config.task_keywords.get("database", []),
+            TaskType.BACKEND: self.config.task_keywords.get("backend", []),
+            TaskType.FRONTEND: self.config.task_keywords.get("frontend", []),
+            TaskType.UCD: self.config.task_keywords.get("ucd", []),
+            TaskType.QA_FUNCTIONAL: self.config.task_keywords.get("qa_functional", []),
+            TaskType.QA_PERFORMANCE: self.config.task_keywords.get("qa_performance", []),
+            TaskType.DEVOPS: self.config.task_keywords.get("devops", []),
+        }
+
+        for task_type, keywords in keyword_mapping.items():
             for keyword in keywords:
                 if keyword.lower() in content_lower:
                     scores[task_type] += 1
@@ -261,6 +235,10 @@ class TaskRouter:
             for task in sorted(self.tasks.values(), 
                              key=lambda t: (t.priority.value, t.created_at))
         ]
+
+    def resolve_agent_alias(self, alias: str) -> str:
+        """从统一配置中心解析 Agent 别名。"""
+        return self.config.aliases.get(alias, alias)
 
 
 # 单例模式

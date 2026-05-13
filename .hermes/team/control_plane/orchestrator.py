@@ -1,10 +1,10 @@
+import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
 from uuid import uuid4
 
-from models import EventType, TaskEvent, TaskStatus
 from executor import ControlPlaneExecutor
+from models import EventType, TaskEvent, TaskStatus
 
 
 def build_dependency_graph(cards):

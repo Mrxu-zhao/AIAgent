@@ -57,20 +57,22 @@ def build_performance_report(output_dir: Path, current_run, previous_run=None):
             lines.append(f"- counts_toward_overall: {current_metrics['counts_toward_overall']}")
         if previous_run and scenario in previous_run.get("scenarios", {}):
             previous_metrics = previous_run["scenarios"][scenario]
+            current_cpu_avg = current_metrics.get("cpu_effective_ms", current_metrics["cpu_ms"])["avg"]
+            previous_cpu_avg = previous_metrics.get("cpu_effective_ms", previous_metrics["cpu_ms"])["avg"]
             verdict = compare_runs(
                 before={
                     "latency": previous_metrics["latency_ms"]["avg"],
-                    "cpu": previous_metrics["cpu_ms"]["avg"],
+                    "cpu": previous_cpu_avg,
                 },
                 after={
                     "latency": current_metrics["latency_ms"]["avg"],
-                    "cpu": current_metrics["cpu_ms"]["avg"],
+                    "cpu": current_cpu_avg,
                 },
             )
             lines.append(f"- latency_before_avg_ms: {previous_metrics['latency_ms']['avg']}")
             lines.append(f"- latency_after_avg_ms: {current_metrics['latency_ms']['avg']}")
-            lines.append(f"- cpu_before_avg_ms: {previous_metrics['cpu_ms']['avg']}")
-            lines.append(f"- cpu_after_avg_ms: {current_metrics['cpu_ms']['avg']}")
+            lines.append(f"- cpu_before_avg_ms: {previous_cpu_avg}")
+            lines.append(f"- cpu_after_avg_ms: {current_cpu_avg}")
             lines.append(f"- latency_ok: {verdict['latency_ok']}")
             lines.append(f"- cpu_ok: {verdict['cpu_ok']}")
             lines.append(f"- overall_ok: {verdict['overall_ok']}")

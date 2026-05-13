@@ -1,170 +1,113 @@
 #!/bin/bash
-#===============================================================================
-# tmux 团队调度框架
-# 在 tmux 中启动多个 Agent 并行工作
-#===============================================================================
+# Legacy tmux view kept as an adapter over unified entrypoints.
 
-set -e
+set -euo pipefail
 
-TMUX_SESSION="team"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRAMEWORK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+FRAMEWORK_CLI="$FRAMEWORK_ROOT/cli/team-cli.py"
+CONTROL_PLANE_CLI="$FRAMEWORK_ROOT/../control_plane/cli.py"
+PYTHON_BIN="${PYTHON_BIN:-python}"
+TMUX_SESSION="${TMUX_SESSION:-team-control-plane}"
 
-# Agent配置
-BACKEND_AGENTS=("backend-1" "backend-2" "backend-3")
-FRONTEND_AGENTS=("frontend-1" "frontend-2" "frontend-3")
-ALL_AGENTS=("architect" "dba" "requirements-analyst" "backend-1" "backend-2" "backend-3" "frontend-1" "frontend-2" "frontend-3" "ucd" "qa-functional" "qa-performance" "devops")
-
-# Agent中文名
-declare -A AGENT_NAMES=(
-  ["architect"]="张欣怡-架构师"
-  ["dba"]="周嘉诚-DBA"
-  ["backend-1"]="陈启明-后端"
-  ["backend-2"]="王浩然-后端"
-  ["backend-3"]="赵文杰-后端"
-  ["frontend-1"]="李思雨-前端"
-  ["frontend-2"]="周晓明-前端"
-  ["frontend-3"]="林雅婷-前端"
-  ["ucd"]="吴俊杰-设计"
-  ["qa-functional"]="郑晓彤-测试"
-  ["qa-performance"]="孙美玲-性能"
-  ["devops"]="黄志远-运维"
-  ["requirements-analyst"]="吴雪梅-需求"
-)
-
-# 颜色
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
 usage() {
-  echo -e "${BLUE}tmux 团队调度框架${NC}"
-  echo ""
-  echo "用法: $0 <命令> [参数]"
-  echo ""
-  echo "命令:"
-  echo "  start              启动团队工作区"
-  echo "  stop               停止团队工作区"
-  echo "  status             查看团队状态"
-  echo "  send <agent> <msg> 向指定Agent发送消息"
-  echo "  send-all <msg>     向所有Agent广播消息"
-  echo "  log <agent>        查看指定Agent日志"
-  echo "  new <agent>        为指定Agent新建session"
-  echo "  help               显示帮助"
+  cat <<EOF
+tmux 团队适配层
+
+用法: $0 <命令>
+  start            启动控制平面观察会话
+  stop             停止会话
+  status           查看窗口状态
+  send <win> <msg> 向指定窗口发送消息
+  log [win]        查看窗口日志
+  help             显示帮助
+EOF
 }
 
-# 检查tmux是否可用
 check_tmux() {
-  if ! command -v tmux &> /dev/null; then
+  if ! command -v tmux >/dev/null 2>&1; then
     echo -e "${RED}错误: tmux 未安装${NC}"
     exit 1
   fi
 }
 
-# 检查session是否存在
 session_exists() {
-  tmux has-session -t "$1" 2>/dev/null
+  tmux has-session -t "$TMUX_SESSION" 2>/dev/null
 }
 
-# 启动团队工作区
 start_team() {
   check_tmux
-  
-  if session_exists "$TMUX_SESSION"; then
-    echo -e "${GREEN}团队工作区已存在，正在附加...${NC}"
-    tmux attach -t "$TMUX_SESSION"
-    return
+  if session_exists; then
+    echo -e "${GREEN}会话已存在，正在附加...${NC}"
+    exec tmux attach -t "$TMUX_SESSION"
   fi
-  
-  echo -e "${GREEN}创建团队工作区...${NC}"
-  
-  # 创建主session，分为多个window
-  tmux new-session -d -s "$TMUX_SESSION" -n "团队控制台"
-  
-  # 创建PM控制台
-  tmux send-keys -t "$TMUX_SESSION:0" "echo '=== 徐钊研发团队控制台 ===' && echo '使用 Ctrl+b 然后按数字切换窗口' && echo '1-架构师 2-DBA 3-需求 4-6后端 7-9前端 a-测试 o-运维'" C-m
-  
-  # 创建各Agent窗口
-  local win=1
-  for agent in "${ALL_AGENTS[@]}"; do
-    tmux new-window -t "$TMUX_SESSION" -n "${AGENT_NAMES[$agent]}"
-    tmux send-keys -t "$TMUX_SESSION:$win" "hermes --profile $agent chat -q" C-m
-    ((win++))
-  done
-  
-  # 创建测试窗口
-  tmux new-window -t "$TMUX_SESSION" -n "郑晓彤-测试"
-  tmux send-keys -t "$TMUX_SESSION:$win" "hermes --profile qa-functional chat -q" C-m
-  ((win++))
-  tmux new-window -t "$TMUX_SESSION" -n "孙美玲-性能"
-  tmux send-keys -t "$TMUX_SESSION:$win" "hermes --profile qa-performance chat -q" C-m
-  ((win++))
-  tmux new-window -t "$TMUX_SESSION" -n "黄志远-运维"
-  tmux send-keys -t "$TMUX_SESSION:$win" "hermes --profile devops chat -q" C-m
-  
-  echo -e "${GREEN}团队工作区已创建！${NC}"
-  echo "窗口布局:"
-  echo "  0 - 团队控制台"
-  echo "  1 - 张欣怡(架构师)"
-  echo "  2 - 周嘉诚(DBA)"
-  echo "  3 - 吴雪梅(需求)"
-  echo "  4-6 - 后端组(陈启明/王浩然/赵文杰)"
-  echo "  7-9 - 前端组(李思雨/周晓明/林雅婷)"
-  echo "  a - 吴俊杰(UCD)"
-  echo "  o - 郑晓彤/孙美玲/黄志远"
-  echo ""
-  echo "运行 'tmux attach -t $TMUX_SESSION' 进入"
+
+  echo -e "${GREEN}创建控制平面 tmux 视图...${NC}"
+  tmux new-session -d -s "$TMUX_SESSION" -n "monitor"
+  tmux send-keys -t "$TMUX_SESSION:0" \
+    "$PYTHON_BIN $CONTROL_PLANE_CLI monitor --dashboard" C-m
+
+  tmux new-window -t "$TMUX_SESSION" -n "interactive"
+  tmux send-keys -t "$TMUX_SESSION:1" \
+    "$PYTHON_BIN $FRAMEWORK_CLI interactive" C-m
+
+  tmux new-window -t "$TMUX_SESSION" -n "batch"
+  tmux send-keys -t "$TMUX_SESSION:2" \
+    "$PYTHON_BIN $CONTROL_PLANE_CLI control-plane-run --max-workers 2" C-m
+
+  tmux new-window -t "$TMUX_SESSION" -n "validate"
+  tmux send-keys -t "$TMUX_SESSION:3" \
+    "$PYTHON_BIN $CONTROL_PLANE_CLI validate --replicas 2 --max-workers 2" C-m
+
+  echo -e "${GREEN}控制平面 tmux 视图已创建${NC}"
+  echo "窗口:"
+  echo "  0 - monitor"
+  echo "  1 - interactive"
+  echo "  2 - batch"
+  echo "  3 - validate"
 }
 
-# 停止团队工作区
 stop_team() {
   check_tmux
-  
-  if session_exists "$TMUX_SESSION"; then
-    echo -e "${GREEN}正在停止团队工作区...${NC}"
+  if session_exists; then
     tmux kill-session -t "$TMUX_SESSION"
-    echo -e "${GREEN}团队工作区已停止${NC}"
+    echo -e "${GREEN}已停止 ${TMUX_SESSION}${NC}"
   else
-    echo -e "${BLUE}团队工作区不存在${NC}"
+    echo -e "${BLUE}会话不存在${NC}"
   fi
 }
 
-# 查看状态
 status_team() {
   check_tmux
-  
-  if session_exists "$TMUX_SESSION"; then
-    echo -e "${GREEN}团队工作区状态:${NC}"
+  if session_exists; then
     tmux list-windows -t "$TMUX_SESSION"
   else
-    echo -e "${BLUE}团队工作区未运行${NC}"
-    echo "运行 '$0 start' 启动"
+    echo -e "${BLUE}会话未运行，输出当前团队状态${NC}"
+    "$PYTHON_BIN" "$FRAMEWORK_CLI" status
   fi
 }
 
-# 发送消息
 send_msg() {
-  local agent="$1"
-  local msg="$2"
-  
-  if [[ -z "$agent" || -z "$msg" ]]; then
-    echo -e "${RED}用法: $0 send <agent> <消息>${NC}"
-    return 1
+  local window="${1:-}"
+  shift || true
+  local msg="${*:-}"
+  if [[ -z "$window" || -z "$msg" ]]; then
+    echo -e "${RED}用法: $0 send <window> <消息>${NC}"
+    exit 1
   fi
-  
-  # 查找窗口索引
-  local win_idx=0
-  for a in "${ALL_AGENTS[@]}"; do
-    if [[ "$a" == "$agent" ]]; then
-      break
-    fi
-    ((win_idx++))
-  done
-  
-  tmux send-keys -t "$TMUX_SESSION:$win_idx" "$msg" C-m
-  echo -e "${GREEN}消息已发送到 ${AGENT_NAMES[$agent]}${NC}"
+  tmux send-keys -t "$TMUX_SESSION:$window" "$msg" C-m
 }
 
-# 主逻辑
+show_log() {
+  local window="${1:-0}"
+  tmux capture-pane -t "$TMUX_SESSION:$window" -p | tail -50
+}
+
 case "${1:-}" in
   start)
     start_team
@@ -176,22 +119,11 @@ case "${1:-}" in
     status_team
     ;;
   send)
-    send_msg "$2" "$3"
-    ;;
-  send-all)
-    for agent in "${ALL_AGENTS[@]}"; do
-      send_msg "$agent" "$2"
-    done
+    shift
+    send_msg "$@"
     ;;
   log)
-    tmux capture-pane -t "$TMUX_SESSION:${2:-0}" -p | tail -50
-    ;;
-  new)
-    local agent="$2"
-    if [[ -n "$agent" ]]; then
-      tmux new-window -t "$TMUX_SESSION" -n "${AGENT_NAMES[$agent]}"
-      tmux send-keys -t "$TMUX_SESSION:${#ALL_AGENTS[@]}" "hermes --profile $agent chat -q" C-m
-    fi
+    show_log "${2:-0}"
     ;;
   help|"")
     usage
@@ -199,5 +131,6 @@ case "${1:-}" in
   *)
     echo -e "${RED}未知命令: $1${NC}"
     usage
+    exit 1
     ;;
 esac

@@ -4,7 +4,6 @@ from pathlib import Path
 
 from tests.control_plane.test_support import load_control_plane_module
 
-
 models = load_control_plane_module("models")
 store_module = load_control_plane_module("store")
 executor_module = load_control_plane_module("executor")

@@ -4,7 +4,6 @@ from pathlib import Path
 
 from tests.control_plane.test_support import load_control_plane_module
 
-
 models = load_control_plane_module("models")
 aggregator_module = load_control_plane_module("aggregator")
 store_module = load_control_plane_module("store")
@@ -173,6 +172,41 @@ class AggregatorTests(unittest.TestCase):
             self.assertIn("correctness_before_passed: False", report)
             self.assertIn("correctness_after_passed: True", report)
             self.assertTrue((base / "performance-report.md").exists())
+
+    def test_build_performance_report_prefers_effective_cpu_when_available(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            report = aggregator_module.build_performance_report(
+                output_dir=base,
+                current_run={
+                    "label": "after",
+                    "scenarios": {
+                        "dashboard": {
+                            "latency_ms": {"avg": 60.0, "p95": 62.0, "max": 64.0},
+                            "cpu_ms": {"avg": 62.5, "p95": 62.5, "max": 62.5},
+                            "cpu_effective_ms": {"avg": 4.0, "p95": 4.0, "max": 4.0},
+                            "goal_type": "performance",
+                            "counts_toward_overall": True,
+                        }
+                    },
+                },
+                previous_run={
+                    "label": "before",
+                    "scenarios": {
+                        "dashboard": {
+                            "latency_ms": {"avg": 100.0, "p95": 100.0, "max": 100.0},
+                            "cpu_ms": {"avg": 80.0, "p95": 80.0, "max": 80.0},
+                            "cpu_effective_ms": {"avg": 10.0, "p95": 10.0, "max": 10.0},
+                            "goal_type": "performance",
+                            "counts_toward_overall": True,
+                        }
+                    },
+                },
+            )
+
+            self.assertIn("cpu_before_avg_ms: 10.0", report)
+            self.assertIn("cpu_after_avg_ms: 4.0", report)
+            self.assertIn("cpu_ok: True", report)
 
 
 if __name__ == "__main__":

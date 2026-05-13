@@ -1,0 +1,47 @@
+{
+  "registered_agents": [
+    "architect",
+    "backend-1",
+    "backend-2",
+    "backend-3",
+    "dba",
+    "devops",
+    "frontend-1",
+    "frontend-2",
+    "frontend-3",
+    "qa-functional",
+    "qa-performance",
+    "requirements-analyst",
+    "ucd"
+  ],
+  "pending": {
+    "requirements-analyst": [],
+    "architect": [],
+    "dba": [],
+    "backend-1": [],
+    "backend-2": [],
+    "backend-3": [],
+    "frontend-1": [],
+    "frontend-2": [],
+    "frontend-3": [],
+    "ucd": [],
+    "qa-functional": [],
+    "qa-performance": [],
+    "devops": []
+  },
+  "unacked": {
+    "requirements-analyst": [],
+    "architect": [],
+    "dba": [],
+    "backend-1": [],
+    "backend-2": [],
+    "backend-3": [],
+    "frontend-1": [],
+    "frontend-2": [],
+    "frontend-3": [],
+    "ucd": [],
+    "qa-functional": [],
+    "qa-performance": [],
+    "devops": []
+  }
+}

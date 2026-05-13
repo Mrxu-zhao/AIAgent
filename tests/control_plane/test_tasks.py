@@ -2,7 +2,6 @@
 
 from tests.control_plane.test_support import load_control_plane_module
 
-
 tasks_module = load_control_plane_module("tasks")
 
 

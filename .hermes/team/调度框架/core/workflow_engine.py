@@ -5,14 +5,24 @@
 支持定义、执行和监控复杂的多Agent协作工作流
 """
 
-import json
-import time
 import ast
-from typing import Dict, List, Optional, Any, Callable
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+CONTROL_PLANE_DIR = Path(__file__).resolve().parents[2] / "control_plane"
+if str(CONTROL_PLANE_DIR) not in sys.path:
+    sys.path.insert(0, str(CONTROL_PLANE_DIR))
+
+from config import load_control_plane_config
+from observability.metrics import get_metrics_registry
+from workflow_runtime import WorkflowRunStore
+
 
 class StepStatus(Enum):
     PENDING = "pending"
@@ -77,9 +87,14 @@ class WorkflowEngine:
     - 实时状态监控
     """
     
-    def __init__(self, task_router=None, message_bus=None):
+    def __init__(self, task_router=None, message_bus=None, runtime_store=None):
         self.task_router = task_router
         self.message_bus = message_bus
+        if runtime_store is None:
+            config = load_control_plane_config()
+            if config.feature_flags.get("workflow_runtime_enabled", False):
+                runtime_store = WorkflowRunStore()
+        self.runtime_store = runtime_store
         self.workflows: Dict[str, Workflow] = {}
         self._executors: Dict[str, ThreadPoolExecutor] = {}
         self._running: Dict[str, bool] = {}
@@ -145,6 +160,11 @@ class WorkflowEngine:
         workflow = self.workflows[workflow_id]
         workflow.status = "running"
         workflow.started_at = time.time()
+        if self.runtime_store:
+            self.runtime_store.record_workflow_started(
+                workflow_id,
+                {"name": workflow.name, "description": workflow.description},
+            )
         
         if context:
             workflow.variables.update(context)
@@ -173,6 +193,11 @@ class WorkflowEngine:
                 if not ready_steps:
                     if failed_steps:
                         workflow.status = "failed"
+                        if self.runtime_store:
+                            self.runtime_store.record_workflow_completed(
+                                workflow_id,
+                                {"status": "failed", "failed_steps": list(failed_steps)},
+                            )
                         return {"success": False, "error": f"步骤执行失败: {failed_steps}"}
                     break
                 
@@ -200,6 +225,15 @@ class WorkflowEngine:
             
             workflow.status = "completed" if not failed_steps else "failed"
             workflow.completed_at = time.time()
+            if self.runtime_store:
+                self.runtime_store.record_workflow_completed(
+                    workflow_id,
+                    {
+                        "status": workflow.status,
+                        "completed_steps": list(completed_steps),
+                        "failed_steps": list(failed_steps),
+                    },
+                )
             
             return {
                 "success": not failed_steps,
@@ -213,6 +247,11 @@ class WorkflowEngine:
         except Exception as e:
             workflow.status = "failed"
             workflow.completed_at = time.time()
+            if self.runtime_store:
+                self.runtime_store.record_workflow_completed(
+                    workflow_id,
+                    {"status": "failed", "error": str(e)},
+                )
             return {"success": False, "error": str(e)}
     
     def _build_dependency_graph(self, steps: List[WorkflowStep]) -> Dict[str, List[str]]:
@@ -254,6 +293,13 @@ class WorkflowEngine:
         """执行单个步骤"""
         step.status = StepStatus.RUNNING
         step.started_at = time.time()
+        if self.runtime_store:
+            self.runtime_store.record_step_event(
+                workflow.id,
+                step.id,
+                "running",
+                {"agent": step.agent, "task_template": step.task_template},
+            )
         
         try:
             # 渲染任务模板
@@ -285,6 +331,13 @@ class WorkflowEngine:
             step.error = str(e)
         
         step.completed_at = time.time()
+        if self.runtime_store:
+            self.runtime_store.record_step_event(
+                workflow.id,
+                step.id,
+                step.status.value,
+                {"agent": step.agent, "error": step.error, "output": step.output},
+            )
     
     def _render_template(self, template: str, variables: Dict) -> str:
         """渲染任务模板"""
@@ -306,6 +359,14 @@ class WorkflowEngine:
                 self.task_router.agents[step.agent].current_tasks += 1
                 task.assigned_agent = step.agent
                 agent_id = step.agent
+            if step.agent:
+                registry = get_metrics_registry()
+                registry.inc_counter("improvement_workflow_role_hit_total", 1)
+                if agent_id == step.agent:
+                    registry.inc_counter("improvement_workflow_role_hit_success_total", 1)
+                success = registry._counters.get("improvement_workflow_role_hit_success_total", 0.0)
+                total = registry._counters.get("improvement_workflow_role_hit_total", 0.0)
+                registry.record_ratio("improvement_workflow_role_hit_ratio", success, total)
             # 这里可以集成实际的Agent调用
             return {
                 "success": True,

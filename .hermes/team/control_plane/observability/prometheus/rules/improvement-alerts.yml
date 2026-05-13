@@ -1,0 +1,24 @@
+groups:
+  - name: improvement_goals
+    rules:
+      - alert: ImprovementDashboardAvailabilityLow
+        expr: improvement_dashboard_availability_ratio < 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Dashboard availability below target
+      - alert: ImprovementWorkflowRoleHitLow
+        expr: improvement_workflow_role_hit_ratio < 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Workflow role hit ratio below target
+      - alert: ImprovementConfigSourcesTooHigh
+        expr: improvement_config_sources_total > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Config sources exceed target

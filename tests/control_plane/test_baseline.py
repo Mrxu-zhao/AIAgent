@@ -1,11 +1,10 @@
 ﻿import json
 import tempfile
 import time
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 from tests.control_plane.test_support import load_control_plane_module
-
 
 baseline_module = load_control_plane_module("baseline")
 
@@ -54,6 +53,8 @@ class BaselineTests(unittest.TestCase):
 
         self.assertEqual(result["cpu_burn_iterations"], 50000)
         self.assertGreaterEqual(result["cpu_ms"]["max"], 0.0)
+        self.assertIn("cpu_load_ms", result)
+        self.assertIn("cpu_effective_ms", result)
 
     def test_benchmark_callable_applies_cpu_burn_even_when_timed_out(self):
         result = baseline_module.benchmark_callable(
@@ -77,6 +78,7 @@ class BaselineTests(unittest.TestCase):
         self.assertIn("dashboard", baseline["scenarios"])
         self.assertIn("workflow", baseline["scenarios"])
         self.assertEqual(baseline["load_profile"]["cpu_burn_iterations"], 25000)
+        self.assertIn("cpu_effective_ms", baseline["scenarios"]["dashboard"])
 
     def test_capture_framework_baseline_exposes_workflow_correctness_signal(self):
         baseline = baseline_module.capture_framework_baseline(

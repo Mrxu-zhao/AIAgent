@@ -10,10 +10,10 @@ AI Agent 调度框架核心模块
 - 监控和故障恢复 (monitor)
 """
 
-from .task_router import TaskRouter, get_router, TaskPriority, TaskType
-from .message_bus import MessageBus, get_bus, Message, MessageType, MessagePriority
-from .workflow_engine import WorkflowEngine, Workflow, WorkflowStep, StepStatus, StepType
+from .message_bus import Message, MessageBus, MessagePriority, MessageType, get_bus
 from .monitor import Monitor, RecoveryManager, get_monitor, get_recovery_manager
+from .task_router import TaskPriority, TaskRouter, TaskType, get_router
+from .workflow_engine import StepStatus, StepType, Workflow, WorkflowEngine, WorkflowStep
 
 __all__ = [
     'TaskRouter', 'get_router', 'TaskPriority', 'TaskType',

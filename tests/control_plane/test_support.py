@@ -1,7 +1,6 @@
-﻿import importlib.util
+import importlib.util
 import sys
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTROL_PLANE_DIR = ROOT / ".hermes" / "team" / "control_plane"
@@ -10,10 +9,14 @@ FRAMEWORK_DIR = ROOT / ".hermes" / "team" / FRAMEWORK_NAME / "core"
 CLI_DIR = ROOT / ".hermes" / "team" / FRAMEWORK_NAME / "cli"
 
 
-def load_control_plane_module(name: str):
+def ensure_control_plane_path():
     control_plane_root = str(CONTROL_PLANE_DIR)
     if control_plane_root not in sys.path:
         sys.path.insert(0, control_plane_root)
+
+
+def load_control_plane_module(name: str):
+    ensure_control_plane_path()
 
     file_path = CONTROL_PLANE_DIR / f"{name}.py"
     spec = importlib.util.spec_from_file_location(f"control_plane_{name}", file_path)

@@ -8,7 +8,9 @@
 - 已新增 `ControlPlaneOrchestrator`，支持多任务并行调度、`VERSION_CONFLICT` 解释和直接依赖阻塞传播。
 - 已新增共享 `runner.py`，把 `TASKS`、`TaskStore`、`ControlPlaneExecutor` 与 `ControlPlaneOrchestrator` 接成真实任务批次入口。
 - 已新增 `run_batch.py` 脚本入口，并在 `team-cli.py` 中增加 `control-plane-run` 桥接命令，两个入口共用同一 runner 链路。
-- 已为 `OpenClaw` 预留适配接口，当前返回 `NotImplementedError`。
+- 已为 `OpenClaw` 提供 dry-run MVP 适配接口，可生成统一执行命令并保留 live 模式扩展点。
+- 已将 `team.sh`、`team-dispatch.sh`、`team-tmux.sh` 退化为统一主入口适配层。
+- 已在 `README.md` / `README_v2.md` 增加“评估报告实现对照表”，按里程碑回填落地状态。
 - 已修复调度框架三项 P0 问题：
   - `monitor.py` 仪表盘死锁
   - `workflow_engine.py` 忽略显式 `step.agent`
@@ -26,7 +28,16 @@
 - 控制平面真实负载验证：`python %TEMP%\\run_real_load_validation.py`
 - 真实负载验证结果：`8 replicas / 16 tasks / 4 workers` 全部完成，且附带阻塞传播与版本冲突行为检查均通过。
 - 控制平面全量测试：`python -m unittest discover -s tests/control_plane -p "test_*.py" -v`
-- 发现模式结果：`60 tests, OK`
+- 发现模式结果：`93 tests, OK`
+- 覆盖率：`python -m coverage run -m unittest discover -s tests/control_plane -p "test_*.py"` + `python -m coverage report --include=".hermes/team/control_plane/config.py,.hermes/team/control_plane/persistent_bus.py,.hermes/team/control_plane/workflow_runtime.py,.hermes/team/control_plane/cli.py" --fail-under=90`
+- 覆盖率结果：
+-  - 交付关键路径总覆盖率：`94%`
+-  - `cli.py`: `92%`
+-  - `config.py`: `97%`
+-  - `persistent_bus.py`: `95%`
+-  - `workflow_runtime.py`: `91%`
+- lint：`python -m ruff check .hermes/team/control_plane .hermes/team/调度框架/core .hermes/team/调度框架/cli/team-cli.py tests/control_plane`
+- lint 结果：`All checks passed`
 - 覆盖范围：
   - 控制平面模型与适配器
   - 状态仓与冲突检测
@@ -66,8 +77,9 @@
 ## 当前边界
 - 已满足“`Hermes` 可直接执行”的第一阶段要求，控制平面执行器已具备调用适配器、执行命令、回写 started/completed/failed 事件的最小运行时能力。
 - `OpenClaw` 目前只有接口保留，没有执行实现。
-- 当前已经产出真实“当前基线”数据和“可重复重建的近似 before 基线”，且两者已统一负载口径；报告也已区分参考场景、性能场景和正确性场景。状态仓、执行器与 orchestrator 已具备最小 compare-and-swap 语义。
+- `OpenClaw` 当前为 dry-run MVP，可统一生成命令，但尚未接入真实 live 执行。
 - 当前已补充真实批次放大验证产物：`real-load-validation.json` / `real-load-validation.md`，用于记录扩展批次和关键行为验证结果。
+
 
 ## 建议下一步
 1. 如果你后续拿到真实旧版本，再补一份真实 `before` 基线，替换当前近似对照。

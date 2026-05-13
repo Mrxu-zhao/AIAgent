@@ -1,7 +1,7 @@
 import time
 from uuid import uuid4
 
-from models import EventType, TaskStatus, TaskEvent
+from models import EventType, TaskEvent, TaskStatus
 
 
 class ControlPlaneExecutor:

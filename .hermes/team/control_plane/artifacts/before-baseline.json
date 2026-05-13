@@ -1,6 +1,6 @@
 {
   "label": "reconstructed-before",
-  "captured_at": 1778565271.1228533,
+  "captured_at": 1778639342.1378415,
   "iterations": 5,
   "load_profile": {
     "cpu_burn_iterations": 2000000,
@@ -11,9 +11,9 @@
     "dispatch": {
       "iterations": 5,
       "latency_ms": {
-        "avg": 62.55237999999999,
-        "p95": 63.9631,
-        "max": 63.9631
+        "avg": 62.51484000000001,
+        "p95": 63.6871,
+        "max": 63.6871
       },
       "cpu_ms": {
         "avg": 62.5,
@@ -21,6 +21,16 @@
         "max": 62.5
       },
       "cpu_burn_iterations": 2000000,
+      "cpu_load_ms": {
+        "avg": 62.845060000000004,
+        "p95": 63.4486,
+        "max": 63.4486
+      },
+      "cpu_effective_ms": {
+        "avg": 0.0,
+        "p95": 0.0,
+        "max": 0.0
+      },
       "goal_type": "reference",
       "counts_toward_overall": false,
       "workload": {
@@ -35,29 +45,49 @@
         "max": 200.0
       },
       "cpu_ms": {
-        "avg": 66.46562,
-        "p95": 68.4737,
-        "max": 68.4737
+        "avg": 69.25232,
+        "p95": 78.125,
+        "max": 78.125
       },
       "timed_out_runs": 5,
       "timeout_seconds": 0.2,
       "cpu_burn_iterations": 2000000,
+      "cpu_load_ms": {
+        "avg": 69.15352,
+        "p95": 78.125,
+        "max": 78.125
+      },
+      "cpu_effective_ms": {
+        "avg": 0.09879999999999996,
+        "p95": 0.4939999999999998,
+        "max": 0.4939999999999998
+      },
       "goal_type": "performance",
       "counts_toward_overall": true
     },
     "workflow": {
       "iterations": 5,
       "latency_ms": {
-        "avg": 63.89020000000001,
-        "p95": 69.276,
-        "max": 69.276
+        "avg": 71.40729999999999,
+        "p95": 84.9375,
+        "max": 84.9375
       },
       "cpu_ms": {
-        "avg": 62.5,
-        "p95": 62.5,
-        "max": 62.5
+        "avg": 71.875,
+        "p95": 78.125,
+        "max": 78.125
       },
       "cpu_burn_iterations": 2000000,
+      "cpu_load_ms": {
+        "avg": 69.34206,
+        "p95": 81.0853,
+        "max": 81.0853
+      },
+      "cpu_effective_ms": {
+        "avg": 3.125,
+        "p95": 15.625,
+        "max": 15.625
+      },
       "goal_type": "correctness",
       "counts_toward_overall": false,
       "workload": {

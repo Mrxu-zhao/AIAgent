@@ -5,22 +5,27 @@
 提供增强的命令行交互界面
 """
 
-import sys
-import os
-import json
 import argparse
-from typing import Optional
+import json
+import os
+import sys
 from datetime import datetime
 
 # 添加 core 模块路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'control_plane')))
 
-from core import (
-    get_router, get_bus, get_monitor, get_recovery_manager,
-    TaskPriority, MessageType, MessagePriority
-)
 import runner as control_plane_runner
+from core import (
+    MessagePriority,
+    MessageType,
+    TaskPriority,
+    get_bus,
+    get_monitor,
+    get_recovery_manager,
+    get_router,
+)
+
 
 class Colors:
     """终端颜色"""
@@ -129,7 +134,7 @@ class TeamCLI:
             print(f"{Colors.GREEN}智能路由结果:{Colors.NC}")
             print(f"  任务类型: {task.type.value}")
             print(f"  分配给: {agent.name} ({agent.role})")
-            print(f"  匹配分数: 技能匹配 + 负载均衡 + 历史表现")
+            print("  匹配分数: 技能匹配 + 负载均衡 + 历史表现")
         
         # 发送任务消息
         msg = self.bus.create_task_message(
@@ -138,7 +143,7 @@ class TeamCLI:
         )
         self.bus.send(msg)
         
-        print(f"\n{Colors.GREEN}✓ 任务已发送{Colors.NC}")
+        print(f"\n{Colors.GREEN}[OK] 任务已发送{Colors.NC}")
         print(f"  任务: {task_content}")
         
         # 记录指标
@@ -157,7 +162,7 @@ class TeamCLI:
         )
         
         self.bus.send(msg)
-        print(f"{Colors.GREEN}✓ 广播消息已发送: {args.message}{Colors.NC}")
+        print(f"{Colors.GREEN}[OK] 广播消息已发送: {args.message}{Colors.NC}")
     
     def cmd_workflow(self, args):
         """执行工作流"""
@@ -183,17 +188,17 @@ class TeamCLI:
         
         print(f"{Colors.GREEN}启动工作流: {workflow.name}{Colors.NC}")
         print(f"步骤数: {len(workflow.steps)}")
-        print(f"\n执行中...")
+        print("\n执行中...")
         
         # 执行工作流
         result = engine.execute_workflow(workflow.id)
         
         if result['success']:
-            print(f"\n{Colors.GREEN}✓ 工作流执行完成{Colors.NC}")
+            print(f"\n{Colors.GREEN}[OK] 工作流执行完成{Colors.NC}")
             print(f"  耗时: {result.get('duration', 0):.1f}秒")
             print(f"  完成步骤: {', '.join(result['completed_steps'])}")
         else:
-            print(f"\n{Colors.RED}✗ 工作流执行失败{Colors.NC}")
+            print(f"\n{Colors.RED}[ERROR] 工作流执行失败{Colors.NC}")
             print(f"  错误: {result.get('error', '未知错误')}")
     
     def cmd_monitor(self, args):
@@ -239,12 +244,12 @@ class TeamCLI:
             # 导出指标
             filepath = args.export
             self.monitor.export_metrics(filepath)
-            print(f"{Colors.GREEN}✓ 指标已导出到: {filepath}{Colors.NC}")
+            print(f"{Colors.GREEN}[OK] 指标已导出到: {filepath}{Colors.NC}")
 
     def cmd_control_plane_run(self, args):
         """桥接控制平面批次执行"""
         result = control_plane_runner.run_task_batch(max_workers=args.max_workers)
-        print(f"{Colors.GREEN}✓ 控制平面批次执行完成{Colors.NC}")
+        print(f"{Colors.GREEN}[OK] 控制平面批次执行完成{Colors.NC}")
         print(json.dumps(result["summary"], ensure_ascii=False, indent=2))
     
     def cmd_interactive(self, args):
@@ -309,7 +314,7 @@ def main():
     subparsers = parser.add_subparsers(dest='command', help='可用命令')
     
     # status 命令
-    status_parser = subparsers.add_parser('status', help='查看团队状态')
+    subparsers.add_parser('status', help='查看团队状态')
     
     # dispatch 命令
     dispatch_parser = subparsers.add_parser('dispatch', help='调度任务')
@@ -340,7 +345,7 @@ def main():
     control_plane_parser.add_argument('--max-workers', type=int, default=2, help='并发执行数')
     
     # interactive 命令
-    interactive_parser = subparsers.add_parser('interactive', help='交互式模式')
+    subparsers.add_parser('interactive', help='交互式模式')
     
     args = parser.parse_args()
     
