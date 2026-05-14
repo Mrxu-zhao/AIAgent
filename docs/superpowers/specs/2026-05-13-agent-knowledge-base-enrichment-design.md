@@ -353,3 +353,15 @@
 - 13 个团队 agent 的知识补全重点与首批文件建议明确。
 - 装载顺序、治理规则、风险与阶段目标明确。
 - 首批优先文件与演进里程碑明确，可直接进入实施规划阶段。
+
+## 11. 实施后更新（2026-05-14）
+
+本设计最初聚焦“三层知识体系”的目录与治理方案，当前实现已在设计基础上继续推进到运行时链路：
+
+- `TaskRouter` 已不止推荐团队/角色/实例知识，还会对路径做存在性检查、基础评分，并在实例层优先考虑 `recent-lessons.md` 的关键词命中。
+- `WorkflowEngine` 已把知识推荐真正接入执行结果，生成 `knowledge_recommendations`、`knowledge_bundles`、`knowledge_feedback`，并在跨 agent handoff 中为目标步骤自动计算推荐知识包。
+- `handoff` 协议和 schema 已扩展 `knowledge_recommendation` 字段，知识交接不再只是任务摘要。
+- `decision-log.md` 与 `risk-register.md` 已从设计中的“团队资产”演进为 workflow 自动回写落点，具备 `owner`、`last_reviewed`、`source` 等 metadata，并对重复回写做去重。
+- 统一 CLI、tool runtime、dashboard 和 query 能力已经消费这套知识结构，而不是只停留在文档约定层。
+
+因此，当前代码状态已经超过本设计最初的“目录与治理”范围，进入“知识推荐 + 知识消费 + 知识回写 + 知识观测”的闭环阶段。

@@ -426,3 +426,13 @@ Expected: 无新增语法或导入错误
 git add docs/superpowers/specs/2026-05-14-control-plane-tool-runtime-mvp-design.md docs/superpowers/plans/2026-05-14-control-plane-tool-runtime-mvp.md
 git commit -m "docs: add tool runtime mvp spec and plan"
 ```
+
+
+## 当前实现状态（2026-05-14）
+
+- `ToolExecutor`、`ToolExecutionContext`、builtin tools、runtime context 与 transcript 已全部落地。
+- 在 MVP 基础上，tool runtime 进一步接入了 knowledge bundle 预加载：执行前会把已解析的知识文件内容装入 `context.knowledge_bundle['items']`。
+- `read_knowledge` 已支持优先消费预加载结果，避免重复读盘。
+- 统一 CLI 不仅支持 `tool-run`，也已经把知识包展示与 query 侧摘要能力接入 `dispatch`、`workflow`、`query workflow`、`query handoff`。
+- workflow runtime snapshot 现已记录 `knowledge_recommendations`、`knowledge_bundles` 与 `knowledge_feedback`，使 tool runtime MVP 与 workflow 主线对齐。
+- 本计划原始目标已完成，且实现范围已自然延伸到知识链路消费与摘要视图，后续变化以 session/permissions 文档和知识库 enrichment 文档为主同步。

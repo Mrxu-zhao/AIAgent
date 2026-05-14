@@ -14,12 +14,14 @@
 - 附件与风险字段：`artifacts`、`open_questions`、`risks`
 - backend 选择字段：`selected_backend`、`backend_candidates`、`backend_reason`
 - 治理字段：`review_policy`
+- 知识路由字段：`knowledge_recommendation`
 
 ## bus envelope
 
 - handoff 在 message bus 中使用 `MessageType.HANDOFF`
 - 最小信封包含业务 payload 与关联上下文，常见关键位包括 `task_id` 和 `context`
-- 消费端应先按 schema 校验，再进入 handoff materialization 与后续运行时记录
+- 消费端应先按 schema 校验，再进入 handoff `ack -> materialize -> dispatch -> continuation` 的最小链路
+- runtime 查询返回的 `continuation_status`、`continuation_*_steps`、`materialized_task_id` 属于运行时记录，不属于 payload 本体
 
 ## backend 字段语义
 
@@ -33,3 +35,10 @@
 - `source_agent` / `target_agent` 用于描述交接双方 agent。
 - `source_step` / `target_step` 用于把 handoff 与 workflow step 关联起来。
 - 若 payload 带有 `target_step` 与关联 `workflow_id`，消费端可以把 handoff 与后续 continuation 建立关联。
+
+## 运行时记录字段
+
+- handoff runtime 真源：`.hermes/team/control_plane/handoff_runtime.py`
+- 最小记录字段包括：`message_id`、`workflow_id`、`status`、`materialized_task_id`、`dispatched_at`
+- continuation 记录字段包括：`continuation_workflow_id`、`continuation_status`、`continued_at`
+- continuation 明细字段包括：`continuation_ready_steps`、`continuation_completed_steps`、`continuation_failed_steps`

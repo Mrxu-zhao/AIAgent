@@ -405,3 +405,12 @@ Expected: 无新增导入或语法错误
 git add docs/superpowers/specs/2026-05-14-control-plane-session-tools-permissions-design.md docs/superpowers/plans/2026-05-14-control-plane-session-tools-permissions.md
 git commit -m "docs: add session tools permissions plan"
 ```
+
+
+## 当前实现状态（2026-05-14）
+
+- `SessionStore`、tool 级 RBAC/审批、`tool-session` 与 8 个高频 builtin tools 已落地。
+- 在本计划基础上，query 能力进一步补齐了知识视图：`query workflow` 与 `query handoff` 支持 `--knowledge-only` 和 `--summary`。
+- `query workflow` 会返回 `knowledge_feedback` 摘要，`query handoff` 会汇总带知识推荐的交接记录与 top knowledge paths。
+- 这意味着 session、tool、permission 三条线已经不止能“恢复和拦截”，还可以直接查询知识消费与知识回写结果。
+- 本计划原始任务已完成，后续新增的知识摘要视图与 dashboard 可观测能力，建议统一视为 session/tools/permissions 在知识链路方向上的增量扩展。

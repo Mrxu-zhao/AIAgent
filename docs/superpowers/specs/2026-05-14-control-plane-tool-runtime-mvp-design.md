@@ -266,3 +266,13 @@ Claude Code 源码中最值得借鉴的部分，不是其 TUI 或 Node 实现细
 - transcript JSONL 成功落盘且包含关键字段。
 - 新增 focused tests 全部通过。
 - 现有关键 `control_plane` 测试不被破坏。
+
+## 10. 实施后更新（2026-05-14）
+
+实际落地相较原始 MVP 设计有以下扩展：
+
+- `runtime/rules.py` 新增 `preload_knowledge_bundle()`，tool runtime 从“只解析路径”升级为“执行前预加载知识内容”。
+- `ToolExecutor` 已在权限与审批检查通过后自动预加载知识包，tool handler 可以直接消费预加载内容。
+- `read_knowledge` 已支持使用预加载缓存，说明 tool runtime 不再只是 command 装配层，而是开始承担轻量上下文准备职责。
+- 统一 CLI 已把知识包和知识反馈摘要延伸到 `query workflow` / `query handoff`，说明 MVP 已与 runtime store、handoff store 和 workflow 主线打通。
+- 当前代码状态表明，本设计中的最小 runtime 已经成为控制平面知识链路的基础设施，而不是独立实验模块。

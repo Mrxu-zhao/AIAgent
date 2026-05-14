@@ -202,3 +202,16 @@ Expected: 无新增诊断错误
 git add docs/superpowers/plans/2026-05-13-agent-knowledge-base-enrichment.md .hermes/team .hermes/agents
 git commit -m "docs: enrich agent knowledge base"
 ```
+
+
+## 当前实现状态（2026-05-14）
+
+- 三层知识体系已真实落地到 `.hermes/team/knowledge/`、`.hermes/agents/*/knowledge/`、`.hermes/team/agents/*/knowledge/`。
+- 角色 `status.md` 兼容入口已补齐，相关 skill 文档已统一到 `团队层 -> 角色层 -> 实例层` 的知识装载顺序。
+- `TaskRouter` 已输出 `knowledge_recommendation`，并进一步补充 `path_scores`、`recent-lessons.md` 命中优先级与文件存在性评分。
+- `WorkflowEngine` 已把知识推荐透传到 `step_contexts`、`handoffs`、顶层结果与 runtime snapshot，同时生成 `knowledge_bundles` 与 `knowledge_feedback`。
+- `decision-log.md` 与 `risk-register.md` 已从“静态模板”升级为 workflow 自动回写目标，并具备 metadata 补齐与去重规则。
+- 统一 CLI 已支持在 `dispatch`、`workflow`、`query workflow`、`query handoff` 中展示知识推荐、知识包与知识反馈摘要，其中 `query` 额外支持 `--knowledge-only` 与 `--summary`。
+- `ToolExecutor` 已在执行前自动预加载 knowledge bundle，`read_knowledge` 会优先复用预加载内容。
+- dashboard 已新增 `recommended_knowledge` 与 `recent_knowledge_feedback` 两块知识面板。
+- 本文档原始任务主要覆盖知识资产落盘；后续围绕工具运行时、workflow、handoff、query 与 dashboard 的知识链路增强，已在本计划之上继续完成，不再单独拆回本计划复选框。

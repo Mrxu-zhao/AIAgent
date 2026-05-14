@@ -297,3 +297,12 @@ CLI 行为：
 - 工具执行前有稳定的 RBAC/审批检查。
 - 新增与修改测试全部通过。
 - 现有关键 `control_plane` CLI、executor、adapters 测试不被破坏。
+
+## 10. 实施后更新（2026-05-14）
+
+当前实现已经在原设计上继续向“知识可见性”推进：
+
+- `query workflow` 不再只返回原始 snapshot/events，而是支持知识过滤视图与知识反馈摘要。
+- `query handoff` 不再只返回交接记录，还可以聚合带 `knowledge_recommendation` 的 handoff，并给出 top knowledge paths。
+- tool runtime 的权限与 session 语义已经能覆盖知识发现、知识读取、知识摘要查询这三类高频场景。
+- 结合 workflow runtime snapshot 中新增的 `knowledge_bundles` 与 `knowledge_feedback`，session/tools/permissions 这条线已经成为知识链路观测与治理的入口之一。
