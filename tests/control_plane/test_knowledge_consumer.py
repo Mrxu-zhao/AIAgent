@@ -5,14 +5,14 @@ from pathlib import Path
 from tests.control_plane.test_support import ensure_control_plane_path
 
 ensure_control_plane_path()
-from tools.spec import ToolExecutionContext  # noqa: E402
+import runtime.rules as runtime_rules_module  # noqa: E402
+import tools.builtin as builtin_module  # noqa: E402
 from knowledge.consumer import (  # noqa: E402
     build_excerpt_bundle,
     build_excerpt_record,
     expand_excerpt_content,
 )
-import runtime.rules as runtime_rules_module  # noqa: E402
-import tools.builtin as builtin_module  # noqa: E402
+from tools.spec import ToolExecutionContext  # noqa: E402
 
 
 class KnowledgeConsumerTests(unittest.TestCase):

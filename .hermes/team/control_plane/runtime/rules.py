@@ -6,7 +6,6 @@ from typing import Dict, List
 from knowledge.catalog import build_bundle_from_recommendation
 from knowledge.consumer import build_excerpt_bundle
 
-
 _KNOWLEDGE_BUNDLE_CACHE: Dict[str, Dict[str, object]] = {}
 
 
