@@ -18,8 +18,12 @@ from message_bus import get_bus
 from monitor import get_monitor
 from observability.metrics import refresh_repository_metrics
 from observability.prometheus_exporter import export_metrics_text
+from runtime.context import build_tool_execution_context
 from runner import run_task_batch
 from task_router import TaskPriority, TaskRouter
+from tools.builtin import build_default_tool_registry
+from tools.executor import ToolExecutor
+from tools.transcript import ToolTranscriptStore
 from validation import run_real_load_validation
 from workflow_engine import WorkflowEngine, create_standard_project_workflow
 from workflow_runtime import WorkflowRunStore
@@ -58,7 +62,45 @@ def build_parser():
     validate.add_argument("--replicas", type=int, default=4)
     validate.add_argument("--max-workers", type=int, default=4)
 
+    tool_run = subparsers.add_parser("tool-run", help="运行最小工具运行时")
+    tool_run.add_argument("tool")
+    tool_run.add_argument("task")
+    tool_run.add_argument("--agent")
+    tool_run.add_argument("--backend")
+    tool_run.add_argument("--actor", default="admin")
+
     return parser
+
+
+def run_tool_command(
+    tool_name: str,
+    task: str,
+    requested_agent: str | None = None,
+    backend_override: str | None = None,
+    config=None,
+):
+    router = TaskRouter()
+    context = build_tool_execution_context(
+        task=task,
+        router=router,
+        requested_agent=requested_agent,
+        backend_override=backend_override,
+    )
+    registry = build_default_tool_registry()
+    tool = registry.get(tool_name)
+    effective_config = config or load_control_plane_config()
+    transcript_path = Path(effective_config.directories["state_dir"]) / "tool-runtime" / "tool-transcript.jsonl"
+    executor = ToolExecutor(transcript_store=ToolTranscriptStore(transcript_path))
+    payload = {
+        "task": task,
+        "agent_id": context.agent_id,
+        "backend": context.backend,
+        "workflow_id": context.task_id,
+        "handoff_dir": str(Path(effective_config.directories["state_dir"]) / "handoffs"),
+        "workflow_runtime_dir": effective_config.directories.get("workflow_runtime_dir"),
+    }
+    result = executor.execute_many(context, [(tool, payload)])[0]
+    return result.to_dict()
 
 
 def main(argv=None):
@@ -177,6 +219,18 @@ def main(argv=None):
     if args.command == "validate":
         result = run_real_load_validation(replicas=args.replicas, max_workers=args.max_workers)
         audit.log("validate", {"replicas": args.replicas, "max_workers": args.max_workers})
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return result
+
+    if args.command == "tool-run":
+        result = run_tool_command(
+            tool_name=args.tool,
+            task=args.task,
+            requested_agent=args.agent,
+            backend_override=args.backend,
+            config=config,
+        )
+        audit.log("tool-run", {"tool": args.tool, "actor": args.actor})
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
 
