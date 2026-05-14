@@ -30,6 +30,7 @@ class WorkflowRunStore:
         event = {
             "workflow_id": workflow_id,
             "step_id": step_id,
+            "event": status,
             "status": status,
             "timestamp": time.time(),
             "payload": payload,

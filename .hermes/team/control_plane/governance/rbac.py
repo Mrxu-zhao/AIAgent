@@ -9,8 +9,28 @@ class RBACPolicy:
 def build_default_rbac_policy() -> RBACPolicy:
     return RBACPolicy(
         {
-            "admin": {"control_plane.run", "control_plane.dispatch", "provider.execute_sensitive", "monitor.export"},
-            "operator": {"control_plane.run", "control_plane.dispatch", "monitor.export"},
-            "viewer": {"monitor.read"},
+            "admin": {
+                "control_plane.run",
+                "control_plane.dispatch",
+                "provider.execute_sensitive",
+                "monitor.export",
+                "query.workflow",
+                "query.handoff",
+                "query.audit.read",
+            },
+            "operator": {
+                "control_plane.run",
+                "control_plane.dispatch",
+                "monitor.export",
+                "query.workflow",
+                "query.handoff",
+                "query.audit.read",
+            },
+            "viewer": {
+                "monitor.read",
+                "query.workflow",
+                "query.handoff",
+                "query.audit.read",
+            },
         }
     )

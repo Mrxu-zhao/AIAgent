@@ -10,3 +10,35 @@
 {"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778664140.1615758, "payload": {"agent": "architect", "error": null, "output": "ok"}}
 {"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778664140.1618018, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778664140.1619918, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778666573.2733743, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778666573.2794545, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778666573.2796988, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778666573.2799962, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778666622.8185654, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778666622.8240058, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778666622.8242612, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778666622.8245995, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778666768.8529403, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778666768.859804, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778666768.860123, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778666768.860511, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "running", "timestamp": 1778666815.3737833, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "status": "completed", "timestamp": 1778666815.375127, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "running", "timestamp": 1778666815.3754525, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "status": "completed", "timestamp": 1778666815.375875, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778667031.4283745, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667031.434198, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667031.4344687, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667031.4346805, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778667280.5897536, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667280.5946624, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667280.5949357, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667280.5951867, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778667575.7914312, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667575.7968564, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667575.7970839, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667575.797352, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778667702.514587, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667702.519717, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.519944, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.5201623, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

@@ -32,3 +32,19 @@
 {"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "completed", "timestamp": 1778664020.0030704, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
 {"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "running", "timestamp": 1778664140.165836, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "completed", "timestamp": 1778664140.1660683, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "running", "timestamp": 1778666573.2837138, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "completed", "timestamp": 1778666573.2839396, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "running", "timestamp": 1778666622.828375, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "completed", "timestamp": 1778666622.8286133, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "running", "timestamp": 1778666768.8649797, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "completed", "timestamp": 1778666768.8652344, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "running", "timestamp": 1778666815.4912295, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "status": "completed", "timestamp": 1778666815.4916365, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667031.4388947, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667031.4391785, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667280.5992594, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667280.5995393, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667575.8011277, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667575.8013597, "payload": {"agent": "backend-1", "error": null, "output": "done"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.5249403, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-real-exec-success-shape", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.5252533, "payload": {"agent": "backend-1", "error": null, "output": "done"}}

@@ -13,6 +13,7 @@ from config import load_control_plane_config
 from governance.approval import ApprovalGate
 from governance.audit import AuditLogger
 from governance.rbac import build_default_rbac_policy
+from handoff_runtime import HandoffRunStore
 from message_bus import get_bus
 from monitor import get_monitor
 from observability.metrics import refresh_repository_metrics
@@ -21,6 +22,7 @@ from runner import run_task_batch
 from task_router import TaskPriority, TaskRouter
 from validation import run_real_load_validation
 from workflow_engine import WorkflowEngine, create_standard_project_workflow
+from workflow_runtime import WorkflowRunStore
 
 
 def build_parser():
@@ -34,6 +36,16 @@ def build_parser():
 
     workflow = subparsers.add_parser("workflow", help="执行标准工作流")
     workflow.add_argument("--name", default="项目开发")
+
+    query = subparsers.add_parser("query", help="查询 workflow / handoff / audit")
+    query.add_argument("resource", choices=["workflow", "handoff", "audit"])
+    query.add_argument("--id")
+    query.add_argument("--workflow-id")
+    query.add_argument("--message-id")
+    query.add_argument("--target-agent")
+    query.add_argument("--status")
+    query.add_argument("--action")
+    query.add_argument("--actor", default="viewer")
 
     monitor = subparsers.add_parser("monitor", help="查看监控数据")
     monitor.add_argument("--dashboard", action="store_true")
@@ -85,6 +97,65 @@ def main(argv=None):
         audit.log("workflow", {"workflow_id": workflow.id, "success": result.get("success", False)})
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
+
+    if args.command == "query":
+        action = {
+            "workflow": "query.workflow",
+            "handoff": "query.handoff",
+            "audit": "query.audit.read",
+        }[args.resource]
+        if not policy.is_allowed(args.actor, action):
+            raise PermissionError("actor is not allowed to query")
+
+        query_filters = {
+            "id": args.id,
+            "workflow_id": args.workflow_id,
+            "message_id": args.message_id,
+            "target_agent": args.target_agent,
+            "status": args.status,
+            "action": args.action,
+        }
+
+        if args.resource == "workflow":
+            if not args.id:
+                raise ValueError("workflow query requires --id")
+            store = WorkflowRunStore(Path(config.directories["workflow_runtime_dir"]))
+            payload = {
+                "snapshot": store.read_snapshot(args.id),
+                "events": store.list_step_events(args.id),
+            }
+            result_count = 1 if payload["snapshot"] is not None else 0
+        elif args.resource == "handoff":
+            store = HandoffRunStore(Path(config.directories["state_dir"]) / "handoffs")
+            records = store.list_records(
+                workflow_id=args.workflow_id,
+                target_agent=args.target_agent,
+                status=args.status,
+            )
+            if args.message_id:
+                records = [record for record in records if record.get("message_id") == args.message_id]
+            if args.status:
+                records = [record for record in records if record.get("status") == args.status]
+            payload = {"records": records}
+            result_count = len(records)
+        else:
+            records = audit.read_all()
+            if args.action:
+                records = [record for record in records if record.get("action") == args.action]
+            payload = {"records": records}
+            result_count = len(records)
+
+        audit.log(
+            "query",
+            {
+                "actor": args.actor,
+                "resource": args.resource,
+                "filters": query_filters,
+                "result_count": result_count,
+            },
+        )
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return payload
 
     if args.command == "monitor":
         monitor = get_monitor()
