@@ -84,6 +84,28 @@ class HandoffRunStoreTests(unittest.TestCase):
 
             self.assertEqual([record["message_id"] for record in records], ["msg-1", "msg-2"])
 
+    def test_handoff_run_store_can_mark_knowledge_consumed(self):
+        runtime_module = load_control_plane_module("handoff_runtime")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = runtime_module.HandoffRunStore(Path(tmp))
+            store.record_handoff(
+                {
+                    "message_id": "msg-1",
+                    "workflow_id": "wf-1",
+                    "target_agent": "backend-1",
+                    "status": "materialized",
+                    "knowledge_consumed": False,
+                    "knowledge_consumed_at": None,
+                }
+            )
+
+            updated = store.mark_knowledge_consumed("msg-1", consumer="backend-1")
+
+            self.assertTrue(updated["knowledge_consumed"])
+            self.assertEqual(updated["knowledge_consumer"], "backend-1")
+            self.assertIsNotNone(updated["knowledge_consumed_at"])
+
 
 if __name__ == "__main__":
     unittest.main()

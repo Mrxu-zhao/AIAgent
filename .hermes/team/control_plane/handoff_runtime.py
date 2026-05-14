@@ -33,6 +33,22 @@ class HandoffRunStore:
             return None
         return json.loads(path.read_text(encoding="utf-8"))
 
+    def mark_knowledge_consumed(
+        self,
+        message_id: str,
+        consumer: Optional[str] = None,
+        failure_reason: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        record = self.read_record(message_id)
+        if record is None:
+            raise FileNotFoundError(message_id)
+        record["knowledge_consumed"] = failure_reason is None
+        record["knowledge_consumed_at"] = time.time() if failure_reason is None else None
+        record["knowledge_consumer"] = consumer
+        record["knowledge_failure_reason"] = failure_reason
+        self.record_handoff(record)
+        return record
+
     def list_records(
         self,
         workflow_id: Optional[str] = None,

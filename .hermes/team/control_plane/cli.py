@@ -139,8 +139,8 @@ def build_parser():
     workflow = subparsers.add_parser("workflow", help="执行标准工作流")
     workflow.add_argument("--name", default="项目开发")
 
-    query = subparsers.add_parser("query", help="查询 workflow / handoff / audit")
-    query.add_argument("resource", choices=["workflow", "handoff", "audit"])
+    query = subparsers.add_parser("query", help="查询 workflow / handoff / knowledge / audit")
+    query.add_argument("resource", choices=["workflow", "handoff", "knowledge", "audit"])
     query.add_argument("--id")
     query.add_argument("--workflow-id")
     query.add_argument("--message-id")
@@ -313,6 +313,7 @@ def main(argv=None):
         action = {
             "workflow": "query.workflow",
             "handoff": "query.handoff",
+            "knowledge": "query.knowledge",
             "audit": "query.audit.read",
         }[args.resource]
         if not policy.is_allowed(args.actor, action):
@@ -498,7 +499,7 @@ def main(argv=None):
             if args.summary:
                 payload["summary"] = _handoff_knowledge_summary(normalized_records if args.knowledge_only else [_normalize_handoff_record(record) for record in records])
             result_count = len(records)
-        else:
+        elif args.resource == "knowledge":
             if args.action in {"accept", "reject", "archive"} and args.id:
                 payload = apply_governance_action(
                     knowledge_root=_knowledge_root(),
@@ -508,47 +509,34 @@ def main(argv=None):
                 )
                 print(json.dumps(payload, ensure_ascii=False, indent=2))
                 return payload
+            payload = query_knowledge_records(
+                root=_knowledge_root(),
+                query_text=extended_query_filters["search"],
+                filters={
+                    "agent": extended_query_filters["agent"],
+                    "role": extended_query_filters["role"],
+                    "task_type": extended_query_filters["task_type"],
+                    "risk_tag": extended_query_filters["risk_tag"],
+                    "review_status": extended_query_filters["review_status"],
+                    "workflow_id": args.workflow_id,
+                },
+            )
+            result_count = len(payload["records"])
+        else:
             records = audit.read_all()
-            if any(value is not None for value in extended_query_filters.values()):
-                payload = query_knowledge_records(
-                    root=_knowledge_root(),
-                    query_text=extended_query_filters["search"],
-                    filters={
-                        "agent": extended_query_filters["agent"],
-                        "role": extended_query_filters["role"],
-                        "task_type": extended_query_filters["task_type"],
-                        "risk_tag": extended_query_filters["risk_tag"],
-                        "review_status": extended_query_filters["review_status"],
-                        "workflow_id": args.workflow_id,
-                    },
-                )
-                result_count = len(payload["records"])
-                audit_filters = dict(query_filters)
-                audit_filters.update(
-                    {key: value for key, value in extended_query_filters.items() if value is not None}
-                )
-                audit.log(
-                    "query",
-                    {
-                        "actor": args.actor,
-                        "resource": "knowledge",
-                        "filters": audit_filters,
-                        "result_count": result_count,
-                    },
-                )
-                print(json.dumps(payload, ensure_ascii=False, indent=2))
-                return payload
             if args.action:
                 records = [record for record in records if record.get("action") == args.action]
             payload = {"records": records}
             result_count = len(records)
 
+        audit_filters = dict(query_filters)
+        audit_filters.update({key: value for key, value in extended_query_filters.items() if value is not None})
         audit.log(
             "query",
             {
                 "actor": args.actor,
                 "resource": args.resource,
-                "filters": query_filters,
+                "filters": audit_filters,
                 "result_count": result_count,
             },
         )

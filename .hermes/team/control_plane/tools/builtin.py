@@ -112,6 +112,13 @@ def read_knowledge_handler(context: ToolExecutionContext, _payload: Dict[str, ob
             if expand:
                 record = expand_excerpt_content(record)
             records.append(record)
+        handoff_message_id = _payload.get("handoff_message_id")
+        if handoff_message_id:
+            HandoffRunStore().mark_knowledge_consumed(
+                str(handoff_message_id),
+                consumer=context.agent_id,
+                failure_reason=None,
+            )
         return ToolResult.ok_result(
             content=f"knowledge:{len(records)}",
             structured_data={"items": records},

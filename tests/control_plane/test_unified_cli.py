@@ -380,6 +380,50 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(result["summary"]["knowledge_record_count"], 1)
         self.assertIn(".hermes/team/knowledge/status.md", result["summary"]["top_knowledge_paths"])
 
+    def test_query_knowledge_uses_dedicated_resource(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: action == "query.knowledge" and actor == "viewer"
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "query_knowledge_records",
+                            return_value={
+                                "filters": {"review_status": "pending_review"},
+                                "records": [{"entry_id": "gov-1"}],
+                                "summary": {"record_count": 1},
+                                "aggregations": {"by_review_status": {"pending_review": 1}},
+                            },
+                        ) as query_mock:
+                            result = unified_cli_module.main(
+                                [
+                                    "query",
+                                    "knowledge",
+                                    "--search",
+                                    "统一批入口",
+                                    "--review-status",
+                                    "pending_review",
+                                    "--actor",
+                                    "viewer",
+                                ]
+                            )
+
+        self.assertEqual(result["summary"]["record_count"], 1)
+        query_mock.assert_called_once()
+
     def test_query_handoff_supports_message_id_and_status_filters(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
