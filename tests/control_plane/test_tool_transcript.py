@@ -36,6 +36,8 @@ class ToolTranscriptTests(unittest.TestCase):
                 agent_id="architect",
                 backend="hermes",
                 knowledge_bundle={"paths": [".hermes/team/knowledge/status.md"]},
+                session_id="session-3",
+                actor="operator",
             )
 
             ToolExecutor(transcript_store=transcript).execute_many(
@@ -51,6 +53,8 @@ class ToolTranscriptTests(unittest.TestCase):
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["tool_name"], "dispatch_task")
             self.assertEqual(rows[0]["task_id"], "tool-task-3")
+            self.assertEqual(rows[0]["session_id"], "session-3")
+            self.assertEqual(rows[0]["permission_outcome"], "allowed")
             self.assertEqual(rows[0]["knowledge_paths"], [".hermes/team/knowledge/status.md"])
             self.assertTrue(rows[0]["ok"])
 

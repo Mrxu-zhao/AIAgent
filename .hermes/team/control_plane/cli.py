@@ -23,6 +23,7 @@ from runner import run_task_batch
 from task_router import TaskPriority, TaskRouter
 from tools.builtin import build_default_tool_registry
 from tools.executor import ToolExecutor
+from tools.session_store import SessionStore
 from tools.transcript import ToolTranscriptStore
 from validation import run_real_load_validation
 from workflow_engine import WorkflowEngine, create_standard_project_workflow
@@ -68,6 +69,14 @@ def build_parser():
     tool_run.add_argument("--agent")
     tool_run.add_argument("--backend")
     tool_run.add_argument("--actor", default="admin")
+    tool_run.add_argument("--session-id")
+    tool_run.add_argument("--resume", action="store_true")
+
+    tool_session = subparsers.add_parser("tool-session", help="查询 tool runtime session")
+    tool_session_sub = tool_session.add_subparsers(dest="tool_session_command")
+    tool_session_sub.add_parser("list", help="列出 session")
+    tool_session_get = tool_session_sub.add_parser("get", help="读取指定 session")
+    tool_session_get.add_argument("--session-id", required=True)
 
     return parser
 
@@ -75,32 +84,78 @@ def build_parser():
 def run_tool_command(
     tool_name: str,
     task: str,
+    actor: str = "admin",
     requested_agent: str | None = None,
     backend_override: str | None = None,
+    session_id: str | None = None,
+    resume: bool = False,
     config=None,
 ):
-    router = TaskRouter()
-    context = build_tool_execution_context(
-        task=task,
-        router=router,
-        requested_agent=requested_agent,
-        backend_override=backend_override,
-    )
+    effective_config = config or load_control_plane_config()
+    session_store = SessionStore(Path(effective_config.directories["state_dir"]) / "tool-runtime" / "sessions")
+    if resume:
+        if not session_id:
+            raise ValueError("--resume requires --session-id")
+        snapshot = session_store.read_session(session_id)
+        context = build_tool_execution_context(
+            task=snapshot["task"],
+            router=TaskRouter(),
+            requested_agent=snapshot["agent_id"],
+            backend_override=snapshot["backend"],
+        )
+        context.intent = snapshot["intent"]
+        context.knowledge_bundle = snapshot["knowledge_bundle"]
+        context.actor = actor
+        context.session_id = snapshot["session_id"]
+    else:
+        router = TaskRouter()
+        context = build_tool_execution_context(
+            task=task,
+            router=router,
+            requested_agent=requested_agent,
+            backend_override=backend_override,
+        )
+        context.actor = actor
+        created = session_store.create_session(
+            task=task,
+            agent_id=context.agent_id,
+            backend=context.backend,
+            knowledge_bundle=context.knowledge_bundle,
+            intent=context.intent,
+        )
+        context.session_id = created["session_id"]
     registry = build_default_tool_registry()
     tool = registry.get(tool_name)
-    effective_config = config or load_control_plane_config()
     transcript_path = Path(effective_config.directories["state_dir"]) / "tool-runtime" / "tool-transcript.jsonl"
     executor = ToolExecutor(transcript_store=ToolTranscriptStore(transcript_path))
     payload = {
-        "task": task,
+        "task": task if not resume else snapshot["task"],
         "agent_id": context.agent_id,
         "backend": context.backend,
         "workflow_id": context.task_id,
         "handoff_dir": str(Path(effective_config.directories["state_dir"]) / "handoffs"),
         "workflow_runtime_dir": effective_config.directories.get("workflow_runtime_dir"),
+        "message_bus_dir": effective_config.directories.get("message_bus_dir"),
     }
     result = executor.execute_many(context, [(tool, payload)])[0]
-    return result.to_dict()
+    session_store.update_session(
+        context.session_id,
+        status="done" if result.ok else "failed",
+        last_tool_name=tool.name,
+        last_tool_result={
+            "ok": result.ok,
+            "content_preview": result.content[:200],
+            "error": result.error,
+        },
+        history_entry={
+            "tool_name": tool.name,
+            "ok": result.ok,
+            "content_preview": result.content[:200],
+        },
+    )
+    response = result.to_dict()
+    response["session_id"] = context.session_id
+    return response
 
 
 def main(argv=None):
@@ -226,13 +281,30 @@ def main(argv=None):
         result = run_tool_command(
             tool_name=args.tool,
             task=args.task,
+            actor=args.actor,
             requested_agent=args.agent,
             backend_override=args.backend,
+            session_id=args.session_id,
+            resume=args.resume,
             config=config,
         )
-        audit.log("tool-run", {"tool": args.tool, "actor": args.actor})
+        audit.log(
+            "tool-run",
+            {"tool": args.tool, "actor": args.actor, "session_id": result.get("session_id")},
+        )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
+
+    if args.command == "tool-session":
+        session_store = SessionStore(Path(config.directories["state_dir"]) / "tool-runtime" / "sessions")
+        if args.tool_session_command == "list":
+            payload = {"sessions": session_store.list_sessions()}
+        elif args.tool_session_command == "get":
+            payload = session_store.read_session(args.session_id)
+        else:
+            payload = {"sessions": session_store.list_sessions()}
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return payload
 
     parser.print_help()
     return None

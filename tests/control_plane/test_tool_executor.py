@@ -94,6 +94,60 @@ class ToolExecutorTests(unittest.TestCase):
             ["start:write-a", "end:write-a", "start:write-b", "end:write-b"],
         )
 
+    def test_execute_many_denies_write_tool_for_viewer(self):
+        tool = ToolSpec(
+            name="route_task",
+            description="route task",
+            input_schema={},
+            is_read_only=False,
+            is_concurrency_safe=False,
+            handler=lambda *_: ToolResult.ok_result(content="should-not-run"),
+            action="tool.route",
+            requires_approval=False,
+            is_sensitive=False,
+        )
+        context = ToolExecutionContext(
+            task_id="tool-task-9",
+            agent_id="architect",
+            backend="hermes",
+            intent={},
+            knowledge_bundle={},
+            actor="viewer",
+            session_id="session-1",
+        )
+
+        result = ToolExecutor().execute_many(context, [(tool, {"task": "review"})])[0]
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.error, "PERMISSION_DENIED")
+
+    def test_execute_many_requires_approval_for_sensitive_tool(self):
+        tool = ToolSpec(
+            name="dispatch_task",
+            description="dispatch task",
+            input_schema={},
+            is_read_only=False,
+            is_concurrency_safe=False,
+            handler=lambda *_: ToolResult.ok_result(content="should-not-run"),
+            action="provider.openclaw.live",
+            requires_approval=True,
+            is_sensitive=True,
+        )
+        context = ToolExecutionContext(
+            task_id="tool-task-10",
+            agent_id="architect",
+            backend="openclaw",
+            intent={},
+            knowledge_bundle={},
+            actor="admin",
+            session_id="session-2",
+        )
+
+        result = ToolExecutor().execute_many(context, [(tool, {"task": "execute"})])[0]
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.error, "APPROVAL_REQUIRED")
+
 
 if __name__ == "__main__":
     unittest.main()

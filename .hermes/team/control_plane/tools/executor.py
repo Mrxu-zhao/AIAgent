@@ -4,6 +4,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from config import load_control_plane_config
+from governance.approval import ApprovalGate
+from governance.rbac import RBACPolicy, build_default_rbac_policy
+from governance.tool_permissions import check_tool_approval, check_tool_permission
 from tools.spec import ToolExecutionContext, ToolResult, ToolSpec
 from tools.transcript import ToolTranscriptStore
 
@@ -12,8 +16,15 @@ ToolRequest = Tuple[ToolSpec, Dict[str, object]]
 
 
 class ToolExecutor:
-    def __init__(self, transcript_store: Optional[ToolTranscriptStore] = None):
+    def __init__(
+        self,
+        transcript_store: Optional[ToolTranscriptStore] = None,
+        policy: Optional[RBACPolicy] = None,
+        approval_gate: Optional[ApprovalGate] = None,
+    ):
         self.transcript_store = transcript_store
+        self.policy = policy or build_default_rbac_policy()
+        self.approval_gate = approval_gate or ApprovalGate(load_control_plane_config().sensitive_actions)
 
     def execute_many(
         self,
@@ -59,11 +70,20 @@ class ToolExecutor:
         tool: ToolSpec,
         payload: Dict[str, object],
     ) -> ToolResult:
+        is_allowed, action = check_tool_permission(self.policy, context.actor, tool, payload, context)
+        if not is_allowed:
+            result = ToolResult.error_result(error="PERMISSION_DENIED", content="")
+            self._write_transcript(context, tool, payload, result, action, "denied")
+            return result
+        if check_tool_approval(self.approval_gate, tool, action):
+            result = ToolResult.error_result(error="APPROVAL_REQUIRED", content="")
+            self._write_transcript(context, tool, payload, result, action, "approval_required")
+            return result
         try:
             result = tool.handler(context, payload)
         except Exception as exc:
             result = ToolResult.error_result(error=str(exc), content="")
-        self._write_transcript(context, tool, payload, result)
+        self._write_transcript(context, tool, payload, result, action, "allowed")
         return result
 
     def _write_transcript(
@@ -72,13 +92,17 @@ class ToolExecutor:
         tool: ToolSpec,
         payload: Dict[str, object],
         result: ToolResult,
+        action: str,
+        permission_outcome: str,
     ) -> None:
         if self.transcript_store is None:
             return
         self.transcript_store.append_record(
             {
+                "session_id": context.session_id,
                 "task_id": context.task_id,
                 "tool_name": tool.name,
+                "action": action,
                 "agent_id": context.agent_id,
                 "backend": context.backend,
                 "input": payload,
@@ -87,6 +111,7 @@ class ToolExecutor:
                 "content_preview": result.content[:200],
                 "artifacts": list(result.artifacts),
                 "knowledge_paths": list(context.knowledge_bundle.get("paths", [])),
+                "permission_outcome": permission_outcome,
                 "timestamp": time.time(),
             }
         )

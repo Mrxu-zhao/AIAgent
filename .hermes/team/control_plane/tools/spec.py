@@ -15,6 +15,8 @@ class ToolExecutionContext:
     cwd: Optional[str] = None
     intent: Dict[str, Any] = field(default_factory=dict)
     knowledge_bundle: Dict[str, Any] = field(default_factory=dict)
+    actor: str = "admin"
+    session_id: Optional[str] = None
 
 
 @dataclass
@@ -74,3 +76,6 @@ class ToolSpec:
     is_read_only: bool
     is_concurrency_safe: bool
     handler: ToolHandler
+    action: str = ""
+    requires_approval: bool = False
+    is_sensitive: bool = False
