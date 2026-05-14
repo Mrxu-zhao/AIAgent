@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 AGENT_TEAM_SKILL_DOCS = [
     ROOT / ".hermes" / "skills" / "architect" / "SKILL.md",
