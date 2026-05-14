@@ -6,6 +6,7 @@
 """
 
 import ast
+import json
 import sys
 import threading
 import time
@@ -35,6 +36,7 @@ class StepStatus(Enum):
     PENDING = "pending"
     WAITING = "waiting"      # 等待依赖完成
     RUNNING = "running"
+    BLOCKED = "blocked"
     COMPLETED = "completed"
     FAILED = "failed"
     SKIPPED = "skipped"
@@ -59,6 +61,10 @@ class WorkflowStep:
     loop_condition: Optional[str] = None  # 循环条件
     timeout: int = 300             # 超时时间（秒）
     retries: int = 1               # 重试次数
+    entry_checks: Dict[str, Any] = field(default_factory=dict)
+    required_deliverables: List[str] = field(default_factory=list)
+    approval_required: bool = False
+    approval_role: Optional[str] = None
     
     # 运行时状态
     status: StepStatus = StepStatus.PENDING
@@ -192,6 +198,7 @@ class WorkflowEngine:
         """
         workflow_steps = []
         for i, step_config in enumerate(steps):
+            entry_checks = dict(step_config.get("entry_checks") or {})
             step = WorkflowStep(
                 id=step_config.get("id", f"step_{i}"),
                 name=step_config.get("name", f"步骤 {i}"),
@@ -202,7 +209,16 @@ class WorkflowEngine:
                 condition=step_config.get("condition"),
                 loop_condition=step_config.get("loop_condition"),
                 timeout=step_config.get("timeout", 300),
-                retries=step_config.get("retries", 1)
+                retries=step_config.get("retries", 1),
+                entry_checks=entry_checks,
+                required_deliverables=list(
+                    step_config.get("required_deliverables")
+                    or entry_checks.get("required_deliverables", [])
+                ),
+                approval_required=bool(
+                    step_config.get("approval_required", entry_checks.get("approval_required", False))
+                ),
+                approval_role=step_config.get("approval_role", entry_checks.get("approval_role")),
             )
             workflow_steps.append(step)
         
@@ -258,8 +274,9 @@ class WorkflowEngine:
             # 执行步骤
             completed_steps = set()
             failed_steps = set()
+            blocked_steps = set()
             
-            while len(completed_steps) + len(failed_steps) < len(workflow.steps):
+            while len(completed_steps) + len(failed_steps) + len(blocked_steps) < len(workflow.steps):
                 if not self._running.get(workflow_id, False):
                     workflow.status = "cancelled"
                     return {"success": False, "error": "工作流被取消"}
@@ -271,6 +288,19 @@ class WorkflowEngine:
                 )
                 
                 if not ready_steps:
+                    if blocked_steps:
+                        workflow.status = "blocked"
+                        if self.runtime_store:
+                            self.runtime_store.record_workflow_completed(
+                                workflow_id,
+                                {"status": "blocked", "blocked_steps": list(blocked_steps)},
+                            )
+                        return {
+                            "success": False,
+                            "error": f"步骤等待阻塞审批或准入条件: {sorted(blocked_steps)}",
+                            "blocked_steps": list(blocked_steps),
+                            "failed_steps": list(failed_steps),
+                        }
                     if failed_steps:
                         workflow.status = "failed"
                         if self.runtime_store:
@@ -291,6 +321,8 @@ class WorkflowEngine:
                     
                     if step.status == StepStatus.COMPLETED:
                         completed_steps.add(step.id)
+                    elif step.status == StepStatus.BLOCKED:
+                        blocked_steps.add(step.id)
                     elif step.status == StepStatus.FAILED:
                         failed_steps.add(step.id)
                         if step.retries > 0:
@@ -303,7 +335,12 @@ class WorkflowEngine:
                     if step.output:
                         workflow.variables[f"{step.id}_output"] = step.output
             
-            workflow.status = "completed" if not failed_steps else "failed"
+            if blocked_steps:
+                workflow.status = "blocked"
+            elif failed_steps:
+                workflow.status = "failed"
+            else:
+                workflow.status = "completed"
             workflow.completed_at = time.time()
             knowledge_feedback = self._sync_team_knowledge(workflow)
             knowledge_recommendations = workflow.variables.get("knowledge_recommendations", {})
@@ -319,17 +356,27 @@ class WorkflowEngine:
                         "status": workflow.status,
                         "completed_steps": list(completed_steps),
                         "failed_steps": list(failed_steps),
+                        "blocked_steps": list(blocked_steps),
                         "knowledge_recommendations": knowledge_recommendations,
                         "knowledge_bundles": knowledge_bundles,
                         "knowledge_feedback": knowledge_feedback,
                     },
                 )
-            
+            blocked_error = None
+            if blocked_steps:
+                for step_id in blocked_steps:
+                    step_context = workflow.variables.get("step_contexts", {}).get(step_id, {})
+                    if step_context.get("error"):
+                        blocked_error = step_context["error"]
+                        break
+
             return {
-                "success": not failed_steps,
+                "success": not failed_steps and not blocked_steps,
                 "workflow_id": workflow_id,
                 "completed_steps": list(completed_steps),
                 "failed_steps": list(failed_steps),
+                "blocked_steps": list(blocked_steps),
+                "error": blocked_error,
                 "variables": workflow.variables,
                 "step_contexts": workflow.variables.get("step_contexts", {}),
                 "knowledge_recommendations": knowledge_recommendations,
@@ -387,6 +434,30 @@ class WorkflowEngine:
     
     def _execute_step(self, workflow: Workflow, step: WorkflowStep):
         """执行单个步骤"""
+        task_content = self._render_template(step.task_template, workflow.variables)
+        gate_error = self._validate_entry_checks(workflow, step, workflow.variables)
+        if gate_error:
+            step.status = StepStatus.BLOCKED
+            step.started_at = time.time()
+            step.completed_at = step.started_at
+            step.error = gate_error
+            result = {
+                "success": False,
+                "error": gate_error,
+                "blocked": True,
+                "agent": step.agent,
+            }
+            step_context = self._build_step_context(step, result, task_content)
+            self._merge_step_context_into_variables(workflow, step_context)
+            if self.runtime_store:
+                self.runtime_store.record_step_event(
+                    workflow.id,
+                    step.id,
+                    step.status.value,
+                    {"agent": step.agent, "error": step.error, "output": step.output},
+                )
+            return
+
         step.status = StepStatus.RUNNING
         step.started_at = time.time()
         if self.runtime_store:
@@ -405,9 +476,7 @@ class WorkflowEngine:
                 if isinstance(workflow.variables.get("backend_recommendation"), dict)
                 else None
             )
-            # 渲染任务模板
-            task_content = self._render_template(step.task_template, workflow.variables)
-            
+
             # 根据步骤类型执行
             if step.type == StepType.SEQUENTIAL:
                 result = self._execute_agent_task(step, task_content)
@@ -418,7 +487,7 @@ class WorkflowEngine:
             elif step.type == StepType.LOOP:
                 result = self._execute_loop(step, task_content, workflow.variables)
             elif step.type == StepType.HUMAN:
-                result = self._execute_human_review(step, task_content)
+                result = self._execute_human_review(step, task_content, workflow)
             else:
                 result = {"success": False, "error": "未知的步骤类型"}
 
@@ -428,6 +497,9 @@ class WorkflowEngine:
             if result.get("success"):
                 step.status = StepStatus.COMPLETED
                 step.output = result.get("output")
+            elif result.get("blocked"):
+                step.status = StepStatus.BLOCKED
+                step.error = result.get("error")
             else:
                 step.status = StepStatus.FAILED
                 step.error = result.get("error")
@@ -450,6 +522,79 @@ class WorkflowEngine:
                 step.status.value,
                 {"agent": step.agent, "error": step.error, "output": step.output},
             )
+
+    def _validate_entry_checks(self, workflow: Workflow, step: WorkflowStep, variables: Dict[str, Any]) -> Optional[str]:
+        """校验 step 准入门槛，失败时返回错误信息。"""
+        del workflow
+        entry_checks = dict(getattr(step, "entry_checks", {}) or {})
+        deliverables = {str(item) for item in variables.get("deliverables", [])}
+        quality_gates = dict(variables.get("quality_gates", {}) or {})
+
+        required_deliverables = list(
+            entry_checks.get("required_deliverables") or getattr(step, "required_deliverables", [])
+        )
+        if required_deliverables:
+            missing = [name for name in required_deliverables if name not in deliverables]
+            if missing:
+                return f"missing required deliverables for {step.id}: {', '.join(missing)}"
+
+        coverage_threshold = entry_checks.get("coverage_threshold")
+        if coverage_threshold is not None:
+            actual_coverage = quality_gates.get("coverage", {})
+            if isinstance(coverage_threshold, dict):
+                for scope, threshold in coverage_threshold.items():
+                    actual = actual_coverage.get(scope)
+                    if actual is None or float(actual) < float(threshold):
+                        return f"coverage gate failed for {step.id}: {scope}={actual} < {threshold}"
+            else:
+                actual = actual_coverage if not isinstance(actual_coverage, dict) else actual_coverage.get("overall")
+                if actual is None or float(actual) < float(coverage_threshold):
+                    return f"coverage gate failed for {step.id}: overall={actual} < {coverage_threshold}"
+
+        test_pass_rate = entry_checks.get("test_pass_rate")
+        if test_pass_rate is not None:
+            actual_pass_rate = quality_gates.get("test_pass_rate")
+            if isinstance(test_pass_rate, dict):
+                actual_mapping = actual_pass_rate if isinstance(actual_pass_rate, dict) else {}
+                for scope, threshold in test_pass_rate.items():
+                    actual = actual_mapping.get(scope)
+                    if actual is None or float(actual) < float(threshold):
+                        return f"test pass gate failed for {step.id}: {scope}={actual} < {threshold}"
+            else:
+                actual = actual_pass_rate.get("overall") if isinstance(actual_pass_rate, dict) else actual_pass_rate
+                if actual is None or float(actual) < float(test_pass_rate):
+                    return f"test pass gate failed for {step.id}: overall={actual} < {test_pass_rate}"
+
+        defect_closure_rate = entry_checks.get("defect_closure_rate")
+        if defect_closure_rate is not None:
+            actual_closure_rate = quality_gates.get("defect_closure_rate", {})
+            if isinstance(defect_closure_rate, dict):
+                for scope, threshold in defect_closure_rate.items():
+                    actual = actual_closure_rate.get(scope)
+                    if actual is None or float(actual) < float(threshold):
+                        return f"defect closure gate failed for {step.id}: {scope}={actual} < {threshold}"
+            else:
+                actual = (
+                    actual_closure_rate.get("overall")
+                    if isinstance(actual_closure_rate, dict)
+                    else actual_closure_rate
+                )
+                if actual is None or float(actual) < float(defect_closure_rate):
+                    return f"defect closure gate failed for {step.id}: overall={actual} < {defect_closure_rate}"
+
+        approval_required = bool(
+            getattr(step, "approval_required", False) or entry_checks.get("approval_required", False)
+        )
+        approval_role = getattr(step, "approval_role", None) or entry_checks.get("approval_role")
+        if approval_required and step.type != StepType.HUMAN:
+            approvals = dict(variables.get("approvals", {}) or {})
+            approval = approvals.get(step.id)
+            if not approval:
+                return f"approval required for {step.id} by {approval_role or 'reviewer'}"
+            if not approval.get("approved"):
+                return f"approval rejected for {step.id} by {approval_role or 'reviewer'}"
+
+        return None
     
     def _render_template(self, template: str, variables: Dict) -> str:
         """渲染任务模板"""
@@ -519,6 +664,14 @@ class WorkflowEngine:
             else None
         )
         knowledge_items = list((knowledge_bundle or {}).get("items", []))
+        entry_checks = dict(getattr(step, "entry_checks", {}) or {})
+        required_deliverables = list(
+            entry_checks.get("required_deliverables") or getattr(step, "required_deliverables", [])
+        )
+        approval_required = bool(
+            getattr(step, "approval_required", False) or entry_checks.get("approval_required", False)
+        )
+        approval_role = getattr(step, "approval_role", None) or entry_checks.get("approval_role")
         return TaskCard(
             task_id=f"wf-{workflow.id}-{step.id}",
             title=f"Workflow step {step.id}",
@@ -539,6 +692,10 @@ class WorkflowEngine:
             knowledge_recommendation=knowledge_recommendation,
             knowledge_bundle=knowledge_bundle,
             knowledge_summary=build_knowledge_summary(knowledge_items) if knowledge_items else None,
+            entry_checks=entry_checks,
+            required_deliverables=required_deliverables,
+            approval_required=approval_required,
+            approval_role=approval_role,
         )
 
     def _execute_via_control_plane(
@@ -918,13 +1075,31 @@ class WorkflowEngine:
             }
         }
     
-    def _execute_human_review(self, step: WorkflowStep, task_content: str) -> Dict:
+    def _execute_human_review(self, step: WorkflowStep, task_content: str, workflow: Workflow) -> Dict:
         """人工审核步骤"""
-        # 在实际实现中，这里会发送通知等待人工确认
+        approvals = dict(workflow.variables.get("approvals", {}) or {})
+        approval = approvals.get(step.id)
+        approval_role = step.approval_role or (step.entry_checks or {}).get("approval_role") or step.agent or "reviewer"
+        if approval is None:
+            return {
+                "success": False,
+                "error": f"approval required for {step.id} by {approval_role}",
+                "requires_human": True,
+                "blocked": True,
+                "agent": step.agent,
+            }
+        if not approval.get("approved"):
+            return {
+                "success": False,
+                "error": f"approval rejected for {step.id} by {approval_role}",
+                "requires_human": True,
+                "agent": step.agent,
+            }
         return {
             "success": True,
-            "output": f"等待人工审核: {task_content}",
-            "requires_human": True
+            "output": approval.get("comment") or f"审批通过: {task_content}",
+            "requires_human": True,
+            "agent": step.agent,
         }
     
     def _evaluate_condition(self, condition: str, variables: Dict) -> bool:
@@ -1050,74 +1225,39 @@ class WorkflowEngine:
         return completed / len(workflow.steps)
 
 
+def workflow_definition_dir() -> Path:
+    return Path(__file__).resolve().parents[3] / "workflows"
+
+
+def default_workflow_definition_path(workflow_id: str = "project_delivery") -> Path:
+    return workflow_definition_dir() / f"{workflow_id}.json"
+
+
+def load_workflow_definition(path: Path | str) -> Dict[str, Any]:
+    definition_path = Path(path)
+    if not definition_path.is_absolute():
+        definition_path = workflow_definition_dir() / definition_path
+    if not definition_path.exists():
+        raise FileNotFoundError(f"workflow definition not found: {definition_path}")
+
+    suffix = definition_path.suffix.lower()
+    raw = definition_path.read_text(encoding="utf-8")
+    if suffix == ".json":
+        return json.loads(raw)
+    if suffix in {".yaml", ".yml"}:
+        try:
+            import yaml
+        except ImportError as exc:
+            raise ValueError("YAML workflow support requires PyYAML") from exc
+        return yaml.safe_load(raw)
+    raise ValueError(f"unsupported workflow definition format: {definition_path.suffix}")
+
+
 # 预定义的标准工作流
-def create_standard_project_workflow() -> List[Dict]:
-    """创建标准项目开发工作流"""
-    return [
-        {
-            "id": "requirements",
-            "name": "需求分析",
-            "type": "sequential",
-            "agent": "requirements-analyst",
-            "task": "分析项目需求，输出需求文档"
-        },
-        {
-            "id": "architecture",
-            "name": "架构设计",
-            "type": "sequential",
-            "agent": "architect",
-            "task": "基于需求文档设计系统架构",
-            "dependencies": ["requirements"]
-        },
-        {
-            "id": "database",
-            "name": "数据库设计",
-            "type": "sequential",
-            "agent": "dba",
-            "task": "设计数据库表结构",
-            "dependencies": ["architecture"]
-        },
-        {
-            "id": "ucd",
-            "name": "UI/UX设计",
-            "type": "sequential",
-            "agent": "ucd",
-            "task": "设计用户界面和交互",
-            "dependencies": ["requirements"]
-        },
-        {
-            "id": "backend_dev",
-            "name": "后端开发",
-            "type": "parallel",
-            "agent": "backend",
-            "task": "开发后端API | 实现业务逻辑 | 编写单元测试",
-            "dependencies": ["architecture", "database"]
-        },
-        {
-            "id": "frontend_dev",
-            "name": "前端开发",
-            "type": "parallel",
-            "agent": "frontend",
-            "task": "开发页面组件 | 实现页面交互 | 对接后端API",
-            "dependencies": ["ucd", "backend_dev"]
-        },
-        {
-            "id": "qa",
-            "name": "测试",
-            "type": "parallel",
-            "agent": "qa",
-            "task": "功能测试 | 性能测试",
-            "dependencies": ["frontend_dev"]
-        },
-        {
-            "id": "deploy",
-            "name": "部署上线",
-            "type": "sequential",
-            "agent": "devops",
-            "task": "部署到生产环境",
-            "dependencies": ["qa"]
-        }
-    ]
+def create_standard_project_workflow(workflow_path: Optional[Path | str] = None) -> List[Dict]:
+    """从 workflow 定义文件读取标准项目开发工作流。"""
+    definition = load_workflow_definition(workflow_path or default_workflow_definition_path())
+    return list(definition.get("steps", []))
 
 
 if __name__ == "__main__":

@@ -76,6 +76,10 @@ class TaskCard:
     knowledge_recommendation: Optional[Dict[str, object]] = None
     knowledge_bundle: Optional[Dict[str, object]] = None
     knowledge_summary: Optional[str] = None
+    entry_checks: Dict[str, object] = field(default_factory=dict)
+    required_deliverables: List[str] = field(default_factory=list)
+    approval_required: bool = False
+    approval_role: Optional[str] = None
     status: TaskStatus = TaskStatus.PLANNED
     evidence: List[str] = field(default_factory=list)
 

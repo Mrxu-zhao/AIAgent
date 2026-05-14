@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +27,33 @@ class WorkflowRuntimeTests(unittest.TestCase):
             "state/runs/workflow_runtime",
             config.directories["workflow_runtime_dir"].replace("\\", "/"),
         )
+
+    def test_default_standard_workflow_loads_from_workflow_directory(self):
+        steps = workflow_module.create_standard_project_workflow()
+
+        self.assertTrue(any(step["id"] == "requirement_confirmation" for step in steps))
+        self.assertTrue(any(step["id"] == "ucd_design" for step in steps))
+
+    def test_workflow_engine_can_load_workflow_definition_from_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "project_delivery.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "workflow_id": "project_delivery",
+                        "name": "demo",
+                        "description": "demo workflow",
+                        "steps": [{"id": "step-1", "name": "步骤1", "type": "sequential", "agent": "architect", "task": "设计"}],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            workflow = workflow_module.load_workflow_definition(path)
+
+        self.assertEqual(workflow["workflow_id"], "project_delivery")
+        self.assertEqual(workflow["steps"][0]["id"], "step-1")
 
     def test_workflow_run_store_persists_snapshot_and_step_events(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -875,6 +903,125 @@ class WorkflowRuntimeTests(unittest.TestCase):
         self.assertEqual(card.scope, ["wf-card-map", "implement"])
         self.assertEqual(card.title, "Workflow step implement")
         self.assertEqual(card.timeout_seconds, 300)
+
+    def test_workflow_builds_task_card_with_entry_checks(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-card-gates",
+            "card-gates",
+            "demo",
+            [
+                {
+                    "id": "functional_test",
+                    "name": "功能测试",
+                    "type": "sequential",
+                    "agent": "qa-functional",
+                    "task": "执行功能测试",
+                    "entry_checks": {
+                        "required_deliverables": ["后端单元测试报告.md"],
+                        "coverage_threshold": {"backend": 70},
+                        "test_pass_rate": 100,
+                    },
+                }
+            ],
+        )
+        step = workflow.steps[0]
+
+        card = engine._build_task_card_for_step(workflow, step, "执行功能测试", "qa-functional", "hermes")
+
+        self.assertEqual(card.entry_checks["coverage_threshold"]["backend"], 70)
+        self.assertIn("后端单元测试报告.md", card.required_deliverables)
+        self.assertFalse(card.approval_required)
+
+    def test_human_review_blocks_without_approval(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-blocked-approval",
+            "blocked-approval",
+            "demo",
+            [
+                {
+                    "id": "requirements_review",
+                    "name": "需求评审",
+                    "type": "human",
+                    "agent": "architect",
+                    "task": "评审需求",
+                    "entry_checks": {
+                        "required_deliverables": ["PRD.md"],
+                        "approval_required": True,
+                        "approval_role": "项目经理",
+                    },
+                }
+            ],
+            {"deliverables": ["PRD.md"], "approvals": {}},
+        )
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["blocked_steps"], ["requirements_review"])
+        self.assertIn("approval required", result["error"])
+
+    def test_entry_checks_block_on_missing_quality_gates(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-quality-gate",
+            "quality-gate",
+            "demo",
+            [
+                {
+                    "id": "functional_test",
+                    "name": "功能测试",
+                    "type": "sequential",
+                    "agent": "qa-functional",
+                    "task": "执行功能测试",
+                    "entry_checks": {
+                        "required_deliverables": ["后端单元测试报告.md"],
+                        "coverage_threshold": {"backend": 70},
+                        "test_pass_rate": 100,
+                    },
+                }
+            ],
+            {
+                "deliverables": ["后端单元测试报告.md"],
+                "quality_gates": {"coverage": {"backend": 60}, "test_pass_rate": 100},
+            },
+        )
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["blocked_steps"], ["functional_test"])
+        self.assertIn("coverage gate failed", result["error"])
+
+    def test_entry_checks_block_on_missing_deliverables(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-missing-deliverable",
+            "missing-deliverable",
+            "demo",
+            [
+                {
+                    "id": "closure_confirmation",
+                    "name": "闭环确认",
+                    "type": "human",
+                    "agent": "qa-functional",
+                    "task": "确认闭环",
+                    "entry_checks": {
+                        "required_deliverables": ["功能测试报告.md", "回归测试报告.md"],
+                        "approval_required": True,
+                        "approval_role": "项目经理",
+                    },
+                }
+            ],
+            {"deliverables": ["功能测试报告.md"]},
+        )
+
+        result = engine.execute_workflow(workflow.id)
+
+        self.assertFalse(result["success"])
+        self.assertEqual(result["blocked_steps"], ["closure_confirmation"])
+        self.assertIn("missing required deliverables", result["error"])
 
     def test_step_backend_override_beats_routing_and_inherited_backend_on_control_plane_failure(self):
         events = []

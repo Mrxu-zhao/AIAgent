@@ -1,0 +1,269 @@
+{
+  "workflow_id": "project_delivery",
+  "name": "项目开发流程",
+  "description": "按团队流程规范执行的默认项目交付 workflow",
+  "variables": {
+    "review_policy": "blocking"
+  },
+  "steps": [
+    {
+      "id": "requirement_confirmation",
+      "name": "需求确认",
+      "type": "human",
+      "agent": "requirements-analyst",
+      "task": "确认需求范围、优先级、里程碑与验收口径",
+      "entry_checks": {
+        "required_deliverables": [
+          "需求确认单.md"
+        ],
+        "approval_required": true,
+        "approval_role": "项目经理"
+      }
+    },
+    {
+      "id": "requirements_analysis",
+      "name": "需求分析",
+      "type": "sequential",
+      "agent": "requirements-analyst",
+      "task": "分析需求并输出 PRD",
+      "dependencies": [
+        "requirement_confirmation"
+      ]
+    },
+    {
+      "id": "requirements_review",
+      "name": "需求评审",
+      "type": "human",
+      "agent": "architect",
+      "task": "评审 PRD 的范围、优先级、约束与验收标准",
+      "dependencies": [
+        "requirements_analysis"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "PRD.md"
+        ],
+        "approval_required": true,
+        "approval_role": "项目经理"
+      }
+    },
+    {
+      "id": "ucd_design",
+      "name": "UCD设计",
+      "type": "sequential",
+      "agent": "ucd",
+      "task": "输出用户路径、页面原型和交互说明",
+      "dependencies": [
+        "requirements_review"
+      ]
+    },
+    {
+      "id": "ucd_review",
+      "name": "UCD评审",
+      "type": "human",
+      "agent": "ucd",
+      "task": "评审 UCD 设计稿、交互说明和异常态定义",
+      "dependencies": [
+        "ucd_design"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "UCD设计稿.md",
+          "交互说明.md"
+        ],
+        "approval_required": true,
+        "approval_role": "UCD设计师"
+      }
+    },
+    {
+      "id": "architecture_design",
+      "name": "架构设计",
+      "type": "sequential",
+      "agent": "architect",
+      "task": "基于 PRD 输出系统架构与模块拆分",
+      "dependencies": [
+        "requirements_review"
+      ]
+    },
+    {
+      "id": "architecture_review",
+      "name": "架构评审",
+      "type": "human",
+      "agent": "architect",
+      "task": "评审架构设计的边界、扩展性和风险",
+      "dependencies": [
+        "architecture_design"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "架构设计.md"
+        ],
+        "approval_required": true,
+        "approval_role": "架构师"
+      }
+    },
+    {
+      "id": "database_design",
+      "name": "数据库设计",
+      "type": "sequential",
+      "agent": "dba",
+      "task": "完成数据库表结构、索引和约束设计",
+      "dependencies": [
+        "architecture_review"
+      ]
+    },
+    {
+      "id": "database_review",
+      "name": "数据库评审",
+      "type": "human",
+      "agent": "dba",
+      "task": "评审表结构、索引与容量设计",
+      "dependencies": [
+        "database_design"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "数据库设计.md"
+        ],
+        "approval_required": true,
+        "approval_role": "DBA"
+      }
+    },
+    {
+      "id": "backend_dev",
+      "name": "后端开发",
+      "type": "parallel",
+      "agent": "backend-1",
+      "task": "实现后端接口 | 实现业务逻辑 | 编写后端单元测试",
+      "dependencies": [
+        "architecture_review",
+        "database_review"
+      ]
+    },
+    {
+      "id": "frontend_dev",
+      "name": "前端开发",
+      "type": "parallel",
+      "agent": "frontend-1",
+      "task": "实现页面组件 | 实现页面交互 | 对接后端 API",
+      "dependencies": [
+        "ucd_review",
+        "backend_dev"
+      ]
+    },
+    {
+      "id": "functional_test",
+      "name": "功能测试",
+      "type": "sequential",
+      "agent": "qa-functional",
+      "task": "执行功能测试并记录缺陷",
+      "dependencies": [
+        "frontend_dev"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "前端单元测试报告.md",
+          "后端单元测试报告.md",
+          "接口设计.md"
+        ],
+        "coverage_threshold": {
+          "frontend": 60,
+          "backend": 70
+        },
+        "test_pass_rate": 100
+      }
+    },
+    {
+      "id": "defect_fix",
+      "name": "缺陷修复",
+      "type": "sequential",
+      "agent": "backend-2",
+      "task": "按缺陷报告完成缺陷修复并提交修复说明",
+      "dependencies": [
+        "functional_test"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "缺陷报告.md"
+        ]
+      }
+    },
+    {
+      "id": "regression_test",
+      "name": "回归测试",
+      "type": "sequential",
+      "agent": "qa-functional",
+      "task": "回归验证缺陷修复结果和核心链路",
+      "dependencies": [
+        "defect_fix"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "缺陷报告.md",
+          "功能测试报告.md"
+        ],
+        "defect_closure_rate": {
+          "P0": 100,
+          "P1": 100,
+          "P2": 90
+        }
+      }
+    },
+    {
+      "id": "closure_confirmation",
+      "name": "闭环确认",
+      "type": "human",
+      "agent": "qa-functional",
+      "task": "确认测试闭环、缺陷关闭率和交付物完整性",
+      "dependencies": [
+        "regression_test"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "功能测试报告.md",
+          "缺陷关闭报告.md",
+          "回归测试报告.md"
+        ],
+        "defect_closure_rate": {
+          "P0": 100,
+          "P1": 100,
+          "P2": 90
+        },
+        "approval_required": true,
+        "approval_role": "项目经理"
+      }
+    },
+    {
+      "id": "release_approval",
+      "name": "发布审批",
+      "type": "human",
+      "agent": "devops",
+      "task": "审批发布检查清单并确认可上线",
+      "dependencies": [
+        "closure_confirmation"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "发布检查清单.md"
+        ],
+        "approval_required": true,
+        "approval_role": "项目经理"
+      }
+    },
+    {
+      "id": "deploy",
+      "name": "部署上线",
+      "type": "sequential",
+      "agent": "devops",
+      "task": "执行部署上线并记录发布结果",
+      "dependencies": [
+        "release_approval"
+      ],
+      "entry_checks": {
+        "required_deliverables": [
+          "发布检查清单.md"
+        ]
+      }
+    }
+  ]
+}

@@ -135,14 +135,19 @@ class UnifiedCLITests(unittest.TestCase):
                     with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
                         with patch.object(
                             unified_cli_module,
-                            "run_task_batch",
-                            return_value={"summary": {"done_tasks": ["WS-A-P0-001"]}},
+                            "_execute_workflow_definition",
+                            return_value={"workflow_id": "project_delivery", "success": True},
                         ):
-                            result = unified_cli_module.main(
-                                ["control-plane-run", "--max-workers", "3"]
-                            )
+                            with patch.object(
+                                unified_cli_module,
+                                "default_workflow_definition_path",
+                                return_value=Path("/workspace/.hermes/workflows/project_delivery.json"),
+                            ):
+                                result = unified_cli_module.main(
+                                    ["control-plane-run", "--max-workers", "3"]
+                                )
 
-        self.assertEqual(result["summary"]["done_tasks"], ["WS-A-P0-001"])
+        self.assertEqual(result["workflow_id"], "project_delivery")
         self.assertEqual(observed["action"], "control-plane-run")
         self.assertEqual(observed["max_workers"], 3)
 
@@ -179,15 +184,6 @@ class UnifiedCLITests(unittest.TestCase):
             directories={"audit_log": "audit-log.jsonl"},
         )
         fake_audit = SimpleNamespace(log=lambda *args: None)
-        fake_engine = SimpleNamespace(
-            create_workflow=lambda *args: SimpleNamespace(id="wf-1"),
-            execute_workflow=lambda workflow_id: {
-                "success": True,
-                "workflow_id": workflow_id,
-                "step_contexts": {"step-1": {"summary": "done"}},
-                "handoffs": [],
-            },
-        )
 
         with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
             with patch.object(
@@ -197,16 +193,24 @@ class UnifiedCLITests(unittest.TestCase):
             ):
                 with patch.object(unified_cli_module, "ApprovalGate"):
                     with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
-                        with patch.object(unified_cli_module, "TaskRouter"):
-                            with patch.object(unified_cli_module, "WorkflowEngine", return_value=fake_engine):
-                                with patch.object(
-                                    unified_cli_module,
-                                    "create_standard_project_workflow",
-                                    return_value=[{"id": "step-1"}],
-                                ):
-                                    result = unified_cli_module.main(
-                                        ["workflow", "--name", "demo-project"]
-                                    )
+                        with patch.object(
+                            unified_cli_module,
+                            "_execute_workflow_definition",
+                            return_value={
+                                "success": True,
+                                "workflow_id": "wf-1",
+                                "step_contexts": {"step-1": {"summary": "done"}},
+                                "handoffs": [],
+                            },
+                        ):
+                            with patch.object(
+                                unified_cli_module,
+                                "default_workflow_definition_path",
+                                return_value=Path("/workspace/.hermes/workflows/project_delivery.json"),
+                            ):
+                                result = unified_cli_module.main(
+                                    ["workflow", "--name", "demo-project"]
+                                )
 
         self.assertTrue(result["success"])
         self.assertEqual(result["workflow_id"], "wf-1")
@@ -219,23 +223,6 @@ class UnifiedCLITests(unittest.TestCase):
             directories={"audit_log": "audit-log.jsonl"},
         )
         fake_audit = SimpleNamespace(log=lambda *args: None)
-        fake_engine = SimpleNamespace(
-            create_workflow=lambda *args: SimpleNamespace(id="wf-knowledge"),
-            execute_workflow=lambda workflow_id: {
-                "success": True,
-                "workflow_id": workflow_id,
-                "step_contexts": {"step-1": {"summary": "done"}},
-                "knowledge_recommendations": {
-                    "step-1": {
-                        "load_order": ["team", "role", "instance"],
-                        "team": [".hermes/team/knowledge/status.md"],
-                        "role": [".hermes/agents/architect/knowledge/status.md"],
-                        "instance": [".hermes/team/agents/architect/knowledge/expertise.md"],
-                    }
-                },
-                "handoffs": [],
-            },
-        )
 
         with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
             with patch.object(
@@ -245,16 +232,42 @@ class UnifiedCLITests(unittest.TestCase):
             ):
                 with patch.object(unified_cli_module, "ApprovalGate"):
                     with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
-                        with patch.object(unified_cli_module, "TaskRouter"):
-                            with patch.object(unified_cli_module, "WorkflowEngine", return_value=fake_engine):
-                                with patch.object(
-                                    unified_cli_module,
-                                    "create_standard_project_workflow",
-                                    return_value=[{"id": "step-1"}],
-                                ):
-                                    result = unified_cli_module.main(
-                                        ["workflow", "--name", "knowledge-demo"]
+                        with patch.object(
+                            unified_cli_module,
+                            "_execute_workflow_definition",
+                            return_value={
+                                "success": True,
+                                "workflow_id": "wf-knowledge",
+                                "step_contexts": {"step-1": {"summary": "done"}},
+                                "knowledge_recommendations": {
+                                    "step-1": {
+                                        "load_order": ["team", "role", "instance"],
+                                        "team": [".hermes/team/knowledge/status.md"],
+                                        "role": [".hermes/agents/architect/knowledge/status.md"],
+                                        "instance": [".hermes/team/agents/architect/knowledge/expertise.md"],
+                                    }
+                                },
+                                "knowledge_bundles": {
+                                    "step-1": runtime_rules_module.build_knowledge_bundle(
+                                        {
+                                            "load_order": ["team", "role", "instance"],
+                                            "team": [".hermes/team/knowledge/status.md"],
+                                            "role": [".hermes/agents/architect/knowledge/status.md"],
+                                            "instance": [".hermes/team/agents/architect/knowledge/expertise.md"],
+                                        }
                                     )
+                                },
+                                "handoffs": [],
+                            },
+                        ):
+                            with patch.object(
+                                unified_cli_module,
+                                "default_workflow_definition_path",
+                                return_value=Path("/workspace/.hermes/workflows/project_delivery.json"),
+                            ):
+                                result = unified_cli_module.main(
+                                    ["workflow", "--name", "knowledge-demo"]
+                                )
 
         self.assertIn("knowledge_bundles", result)
         self.assertEqual(

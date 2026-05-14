@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 FRAMEWORK_CORE_DIR = Path(__file__).resolve().parents[1] / "调度框架" / "core"
 if str(FRAMEWORK_CORE_DIR) not in sys.path:
@@ -27,7 +28,6 @@ from message_bus import get_bus
 from monitor import get_monitor
 from observability.metrics import refresh_repository_metrics
 from observability.prometheus_exporter import export_metrics_text
-from runner import run_task_batch
 from runtime.context import build_tool_execution_context
 from runtime.rules import build_knowledge_bundle
 from task_router import TaskPriority, TaskRouter
@@ -36,7 +36,11 @@ from tools.executor import ToolExecutor
 from tools.session_store import SessionStore
 from tools.transcript import ToolTranscriptStore
 from validation import run_real_load_validation
-from workflow_engine import WorkflowEngine, create_standard_project_workflow
+from workflow_engine import (
+    WorkflowEngine,
+    default_workflow_definition_path,
+    load_workflow_definition,
+)
 from workflow_runtime import WorkflowRunStore
 
 
@@ -127,6 +131,39 @@ def _knowledge_root() -> Path:
     return Path(__file__).resolve().parents[1] / "knowledge"
 
 
+def _load_workflow_context(context_file: Optional[str]) -> Dict[str, Any]:
+    if not context_file:
+        return {}
+    return json.loads(Path(context_file).read_text(encoding="utf-8"))
+
+
+def _execute_workflow_definition(
+    workflow_path: Path,
+    display_name: Optional[str] = None,
+    context: Optional[Dict[str, Any]] = None,
+):
+    definition = load_workflow_definition(workflow_path)
+    engine = WorkflowEngine(task_router=TaskRouter(), message_bus=None)
+    variables = dict(definition.get("variables") or {})
+    if context:
+        variables.update(context)
+    workflow = engine.create_workflow(
+        str(definition.get("workflow_id") or workflow_path.stem),
+        display_name or str(definition.get("name") or workflow_path.stem),
+        str(definition.get("description") or "workflow from definition"),
+        list(definition.get("steps") or []),
+        variables,
+    )
+    result = engine.execute_workflow(workflow.id)
+    result["workflow_file"] = str(workflow_path)
+    result["workflow_definition"] = {
+        "workflow_id": definition.get("workflow_id"),
+        "name": definition.get("name"),
+    }
+    result["knowledge_bundles"] = _build_knowledge_bundles(result)
+    return result
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Control plane unified CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -138,6 +175,8 @@ def build_parser():
 
     workflow = subparsers.add_parser("workflow", help="执行标准工作流")
     workflow.add_argument("--name", default="项目开发")
+    workflow.add_argument("--workflow-file")
+    workflow.add_argument("--context-file")
 
     query = subparsers.add_parser("query", help="查询 workflow / handoff / knowledge / audit")
     query.add_argument("resource", choices=["workflow", "handoff", "knowledge", "audit"])
@@ -166,6 +205,9 @@ def build_parser():
 
     batch = subparsers.add_parser("control-plane-run", help="运行控制平面批次")
     batch.add_argument("--max-workers", type=int, default=2)
+    batch.add_argument("--workflow-file")
+    batch.add_argument("--context-file")
+    batch.add_argument("--name", default="项目开发")
 
     validate = subparsers.add_parser("validate", help="运行真实负载验证")
     validate.add_argument("--replicas", type=int, default=4)
@@ -294,17 +336,22 @@ def main(argv=None):
         return payload
 
     if args.command == "workflow":
-        engine = WorkflowEngine(task_router=TaskRouter(), message_bus=None)
-        workflow = engine.create_workflow(
-            "unified_cli_workflow",
-            args.name,
-            "standard workflow",
-            create_standard_project_workflow(),
-            {"project_name": args.name},
+        workflow_path = Path(args.workflow_file) if args.workflow_file else default_workflow_definition_path()
+        context = _load_workflow_context(getattr(args, "context_file", None))
+        context.setdefault("project_name", args.name)
+        result = _execute_workflow_definition(
+            workflow_path=workflow_path,
+            display_name=args.name,
+            context=context,
         )
-        result = engine.execute_workflow(workflow.id)
-        result["knowledge_bundles"] = _build_knowledge_bundles(result)
-        audit.log("workflow", {"workflow_id": workflow.id, "success": result.get("success", False)})
+        audit.log(
+            "workflow",
+            {
+                "workflow_id": result.get("workflow_id"),
+                "workflow_file": str(workflow_path),
+                "success": result.get("success", False),
+            },
+        )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
 
@@ -566,9 +613,25 @@ def main(argv=None):
         return payload
 
     if args.command == "control-plane-run":
-        result = run_task_batch(max_workers=args.max_workers)
-        audit.log("control-plane-run", {"max_workers": args.max_workers})
-        print(json.dumps(result["summary"], ensure_ascii=False, indent=2))
+        workflow_path = Path(args.workflow_file) if args.workflow_file else default_workflow_definition_path()
+        context = _load_workflow_context(getattr(args, "context_file", None))
+        context.setdefault("max_workers", args.max_workers)
+        context.setdefault("project_name", args.name)
+        result = _execute_workflow_definition(
+            workflow_path=workflow_path,
+            display_name=args.name,
+            context=context,
+        )
+        audit.log(
+            "control-plane-run",
+            {
+                "max_workers": args.max_workers,
+                "workflow_id": result.get("workflow_id"),
+                "workflow_file": str(workflow_path),
+                "success": result.get("success", False),
+            },
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
 
     if args.command == "validate":
