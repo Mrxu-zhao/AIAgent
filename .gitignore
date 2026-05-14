@@ -4,3 +4,4 @@ claude code源码/*
 # Generated control plane runtime artifacts
 .hermes/team/control_plane/state/runs/workflow_runtime/
 .hermes/team/control_plane/state/tool-runtime/
+.hermes/team/knowledge/.governance/

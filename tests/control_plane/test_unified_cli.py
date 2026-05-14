@@ -1013,6 +1013,166 @@ class UnifiedCLITests(unittest.TestCase):
                             with self.assertRaises(PermissionError):
                                 unified_cli_module.main(["query", "handoff", "--prune"])
 
+    def test_query_knowledge_action_applies_governance_directly(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: action == "query.knowledge" and actor == "viewer"
+        )
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger"):
+                        with patch.object(
+                            unified_cli_module,
+                            "apply_governance_action",
+                            return_value={"ok": True, "entry_id": "gov-1"},
+                        ) as action_mock:
+                            result = unified_cli_module.main(
+                                [
+                                    "query",
+                                    "knowledge",
+                                    "--action",
+                                    "accept",
+                                    "--id",
+                                    "gov-1",
+                                    "--actor",
+                                    "viewer",
+                                ]
+                            )
+
+        self.assertEqual(result, {"ok": True, "entry_id": "gov-1"})
+        action_mock.assert_called_once()
+
+    def test_monitor_dashboard_enriches_payload_with_knowledge_metrics(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+        )
+        fake_monitor = SimpleNamespace(
+            get_dashboard_data=lambda: {"queue_depth": 3},
+            task_router="router",
+            workflow_runtime_dir="workflow-runtime",
+        )
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger"):
+                        with patch.object(unified_cli_module, "get_monitor", return_value=fake_monitor):
+                            with patch.object(
+                                unified_cli_module,
+                                "build_knowledge_heat_ranking",
+                                return_value=[{"path": "a.md", "count": 2}],
+                            ):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "build_consumption_by_agent",
+                                    return_value={"architect": 1},
+                                ):
+                                    with patch.object(
+                                        unified_cli_module,
+                                        "build_unused_recommendations",
+                                        return_value=["unused.md"],
+                                    ):
+                                        with patch.object(
+                                            unified_cli_module,
+                                            "build_high_risk_coverage",
+                                            return_value={"covered": 2},
+                                        ):
+                                            with patch.object(
+                                                unified_cli_module,
+                                                "build_pending_governance_counts",
+                                                return_value={"pending_review": 1},
+                                            ):
+                                                result = unified_cli_module.main(["monitor", "--dashboard"])
+
+        self.assertEqual(result["queue_depth"], 3)
+        self.assertEqual(result["knowledge_heat_ranking"][0]["path"], "a.md")
+        self.assertEqual(result["knowledge_consumption_by_agent"]["architect"], 1)
+        self.assertEqual(result["unused_recommendations"], ["unused.md"])
+        self.assertEqual(result["high_risk_workflow_coverage"]["covered"], 2)
+        self.assertEqual(result["pending_governance_counts"]["pending_review"], 1)
+
+    def test_tool_session_list_and_default_paths_return_sessions(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+            },
+        )
+
+        class FakeSessionStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def list_sessions(self):
+                return [{"session_id": "session-1"}]
+
+            def read_session(self, session_id):
+                return {"session_id": session_id}
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger"):
+                        with patch.object(unified_cli_module, "SessionStore", FakeSessionStore):
+                            listed = unified_cli_module.main(["tool-session", "list"])
+                            defaulted = unified_cli_module.main(["tool-session"])
+
+        self.assertEqual(listed, {"sessions": [{"session_id": "session-1"}]})
+        self.assertEqual(defaulted, {"sessions": [{"session_id": "session-1"}]})
+
+    def test_tool_session_get_reads_target_session(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+            },
+        )
+
+        class FakeSessionStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def list_sessions(self):
+                return [{"session_id": "session-1"}]
+
+            def read_session(self, session_id):
+                return {"session_id": session_id, "status": "done"}
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger"):
+                        with patch.object(unified_cli_module, "SessionStore", FakeSessionStore):
+                            result = unified_cli_module.main(
+                                ["tool-session", "get", "--session-id", "session-9"]
+                            )
+
+        self.assertEqual(result, {"session_id": "session-9", "status": "done"})
+
     def test_main_without_command_prints_help(self):
         stream = io.StringIO()
         with redirect_stdout(stream):

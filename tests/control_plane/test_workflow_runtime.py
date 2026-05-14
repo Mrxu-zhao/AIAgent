@@ -57,6 +57,70 @@ class WorkflowRuntimeTests(unittest.TestCase):
                 },
             )
 
+    def test_workflow_run_store_returns_pending_defaults_for_unknown_workflow(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = workflow_runtime_module.WorkflowRunStore(Path(tmp))
+
+            self.assertEqual(
+                store.read_snapshot("wf-missing"),
+                {"workflow_id": "wf-missing", "status": "pending"},
+            )
+            self.assertEqual(store.list_step_events("wf-missing"), [])
+
+    def test_workflow_run_store_filters_workflow_and_blank_events_from_step_statuses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = workflow_runtime_module.WorkflowRunStore(Path(tmp))
+            store.record_workflow_started("wf-1", {"name": "demo"})
+            store.record_workflow_event("wf-1", "running", {"phase": "boot"})
+            store.record_step_event("wf-1", "design", "completed", {"summary": "ok"})
+            store.record_step_event("wf-1", "  ", "completed", {})
+            store.record_step_event("wf-1", "implement", " ", {})
+
+            self.assertEqual(
+                store.get_step_statuses("wf-1"),
+                {"design": "completed"},
+            )
+
+    def test_workflow_run_store_can_delete_prune_and_archive_workflows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = workflow_runtime_module.WorkflowRunStore(Path(tmp))
+            store.record_workflow_started("wf-delete", {"name": "delete"})
+            store.record_step_event("wf-delete", "step-1", "running", {})
+            delete_result = store.delete_workflow("wf-delete")
+
+            self.assertEqual(delete_result["deleted_files"], 2)
+            self.assertEqual(store.delete_workflow("wf-delete")["deleted_files"], 0)
+
+            store.record_workflow_started("wf-running", {"name": "running"})
+            store.record_step_event("wf-running", "step-1", "running", {})
+            store.record_workflow_started("wf-done", {"name": "done"})
+            store.record_workflow_completed("wf-done", {"status": "completed"})
+            store.record_step_event("wf-done", "step-1", "completed", {})
+
+            prune_result = store.prune_workflows(status="completed")
+
+            self.assertEqual(
+                prune_result,
+                {"deleted_workflows": 1, "deleted_files": 2},
+            )
+            self.assertTrue(store._snapshot_path("wf-running").exists())
+            self.assertFalse(store._snapshot_path("wf-done").exists())
+
+            store.record_workflow_started("wf-archive", {"name": "archive"})
+            store.record_step_event("wf-archive", "step-1", "running", {})
+            first_archive = store.archive_workflow("wf-archive")
+
+            self.assertEqual(first_archive["archived_files"], 2)
+            self.assertTrue((Path(first_archive["archive_path"]) / "wf-archive.json").exists())
+            self.assertTrue((Path(first_archive["archive_path"]) / "wf-archive.jsonl").exists())
+
+            store.record_workflow_started("wf-archive", {"name": "archive"})
+            store.record_step_event("wf-archive", "step-2", "completed", {})
+            second_archive = store.archive_workflow("wf-archive")
+
+            self.assertEqual(second_archive["archived_files"], 2)
+            self.assertTrue((Path(second_archive["archive_path"]) / "wf-archive.json").exists())
+
     def test_workflow_engine_writes_runtime_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime = workflow_runtime_module.WorkflowRunStore(Path(tmp))

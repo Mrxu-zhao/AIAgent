@@ -13,6 +13,24 @@ message_bus_module = load_framework_module("message_bus")
 
 
 class PersistentMessageBusTests(unittest.TestCase):
+    def test_persistent_message_accepts_already_normalized_payload(self):
+        message = persistent_bus_module.PersistentMessage.from_message(
+            {
+                "id": "msg-1",
+                "type": "task_assign",
+                "from_agent": "architect",
+                "to_agent": "backend-1",
+                "content": {"task": "implement"},
+                "priority": 1,
+                "timestamp": 123.0,
+                "reply_to": None,
+            }
+        )
+
+        self.assertEqual(message.from_agent, "architect")
+        self.assertEqual(message.to_agent, "backend-1")
+        self.assertEqual(message.content["task"], "implement")
+
     def test_send_receive_and_ack_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmp:
             bus = persistent_bus_module.PersistentMessageBus(base_dir=Path(tmp))
@@ -145,6 +163,28 @@ class PersistentMessageBusTests(unittest.TestCase):
             self.assertEqual(stats["registered_agents"], 4)
             self.assertIn("backend", stats["groups"])
             self.assertEqual(bus.stats()["registered_agents"], 3)
+
+    def test_receive_and_requeue_return_falsey_results_when_message_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bus = persistent_bus_module.PersistentMessageBus(base_dir=Path(tmp))
+            bus.register_agent("backend-1")
+
+            self.assertIsNone(bus.receive("backend-1"))
+            self.assertFalse(bus.requeue("backend-1", "missing"))
+
+    def test_send_swallow_metrics_failures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bus = persistent_bus_module.PersistentMessageBus(base_dir=Path(tmp))
+            bus.register_agent("backend-1")
+            msg = message_bus_module.Message.create(
+                message_bus_module.MessageType.TASK_ASSIGN,
+                "architect",
+                "backend-1",
+                {"task": "keep going"},
+            )
+
+            with patch("observability.metrics.get_metrics_registry", side_effect=RuntimeError("boom")):
+                self.assertTrue(bus.send(msg))
 
 
 if __name__ == "__main__":
