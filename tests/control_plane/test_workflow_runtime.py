@@ -28,11 +28,25 @@ class WorkflowRuntimeTests(unittest.TestCase):
             config.directories["workflow_runtime_dir"].replace("\\", "/"),
         )
 
+    def test_default_agents_include_project_manager_virtual_role(self):
+        config = config_module.load_control_plane_config()
+
+        self.assertIn("project-manager", config.agents)
+        self.assertEqual(config.agents["project-manager"].name, "Hermes")
+        self.assertEqual(config.agents["project-manager"].role, "项目经理")
+        self.assertEqual(config.aliases["项目经理"], "project-manager")
+        self.assertEqual(config.aliases["Hermes"], "project-manager")
+
     def test_default_standard_workflow_loads_from_workflow_directory(self):
         steps = workflow_module.create_standard_project_workflow()
 
         self.assertTrue(any(step["id"] == "requirement_confirmation" for step in steps))
         self.assertTrue(any(step["id"] == "ucd_design" for step in steps))
+        manager_steps = [
+            step for step in steps if (step.get("entry_checks") or {}).get("approval_role") == "项目经理"
+        ]
+        self.assertTrue(manager_steps)
+        self.assertTrue(all(step["agent"] == "project-manager" for step in manager_steps))
 
     def test_workflow_engine_can_load_workflow_definition_from_file(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -54,6 +68,28 @@ class WorkflowRuntimeTests(unittest.TestCase):
 
         self.assertEqual(workflow["workflow_id"], "project_delivery")
         self.assertEqual(workflow["steps"][0]["id"], "step-1")
+
+    def test_human_project_manager_review_defaults_to_virtual_agent(self):
+        engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-pm-default",
+            "pm-default",
+            "demo",
+            [
+                {
+                    "id": "milestone_review",
+                    "name": "里程碑评审",
+                    "type": "human",
+                    "task": "项目经理审批里程碑",
+                    "entry_checks": {
+                        "approval_required": True,
+                        "approval_role": "项目经理",
+                    },
+                }
+            ],
+        )
+
+        self.assertEqual(workflow.steps[0].agent, "project-manager")
 
     def test_workflow_run_store_persists_snapshot_and_step_events(self):
         with tempfile.TemporaryDirectory() as tmp:

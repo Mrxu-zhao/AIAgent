@@ -199,11 +199,16 @@ class WorkflowEngine:
         workflow_steps = []
         for i, step_config in enumerate(steps):
             entry_checks = dict(step_config.get("entry_checks") or {})
+            step_type = StepType(step_config.get("type", "sequential"))
+            approval_role = step_config.get("approval_role", entry_checks.get("approval_role"))
+            agent = step_config.get("agent")
+            if not agent and step_type == StepType.HUMAN and approval_role == "项目经理":
+                agent = "project-manager"
             step = WorkflowStep(
                 id=step_config.get("id", f"step_{i}"),
                 name=step_config.get("name", f"步骤 {i}"),
-                type=StepType(step_config.get("type", "sequential")),
-                agent=step_config.get("agent"),
+                type=step_type,
+                agent=agent,
                 task_template=step_config.get("task", ""),
                 dependencies=step_config.get("dependencies", []),
                 condition=step_config.get("condition"),
@@ -218,7 +223,7 @@ class WorkflowEngine:
                 approval_required=bool(
                     step_config.get("approval_required", entry_checks.get("approval_required", False))
                 ),
-                approval_role=step_config.get("approval_role", entry_checks.get("approval_role")),
+                approval_role=approval_role,
             )
             workflow_steps.append(step)
         

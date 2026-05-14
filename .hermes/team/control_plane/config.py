@@ -76,6 +76,7 @@ def _default_directories() -> Dict[str, str]:
 
 def _build_default_agents() -> Dict[str, AgentConfig]:
     raw = [
+        ("project-manager", "Hermes", "项目经理", 4, ["governance", "approval"], ["项目经理", "PM", "Hermes", "hermes"]),
         ("requirements-analyst", "吴雪梅", "需求分析师", 2, ["requirements"], ["需求", "吴雪梅"]),
         ("architect", "张欣怡", "系统架构师", 2, ["architecture"], ["架构师", "张欣怡"]),
         ("dba", "周嘉诚", "数据库设计师", 3, ["database"], ["dba", "周嘉诚"]),
@@ -117,6 +118,7 @@ def _default_payload() -> Dict[str, object]:
     agents = _build_default_agents()
     return {
         "task_keywords": {
+            "governance": ["项目经理", "审批", "治理", "流程", "风险", "milestone", "governance"],
             "requirements": ["需求", "分析", "调研", "用户故事", "prd", "requirement"],
             "architecture": ["架构", "设计", "技术选型", "架构图", "architecture"],
             "database": ["数据库", "数据库表设计", "sql", "索引", "mysql", "redis"],
@@ -129,6 +131,7 @@ def _default_payload() -> Dict[str, object]:
         },
         "agents": agents,
         "groups": {
+            "governance": ["project-manager"],
             "backend": ["backend-1", "backend-2", "backend-3"],
             "frontend": ["frontend-1", "frontend-2", "frontend-3"],
             "qa": ["qa-functional", "qa-performance"],

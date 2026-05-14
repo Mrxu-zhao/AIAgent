@@ -10,7 +10,7 @@
       "id": "requirement_confirmation",
       "name": "需求确认",
       "type": "human",
-      "agent": "requirements-analyst",
+      "agent": "project-manager",
       "task": "确认需求范围、优先级、里程碑与验收口径",
       "entry_checks": {
         "required_deliverables": [
@@ -34,7 +34,7 @@
       "id": "requirements_review",
       "name": "需求评审",
       "type": "human",
-      "agent": "architect",
+      "agent": "project-manager",
       "task": "评审 PRD 的范围、优先级、约束与验收标准",
       "dependencies": [
         "requirements_analysis"
@@ -213,7 +213,7 @@
       "id": "closure_confirmation",
       "name": "闭环确认",
       "type": "human",
-      "agent": "qa-functional",
+      "agent": "project-manager",
       "task": "确认测试闭环、缺陷关闭率和交付物完整性",
       "dependencies": [
         "regression_test"
@@ -237,7 +237,7 @@
       "id": "release_approval",
       "name": "发布审批",
       "type": "human",
-      "agent": "devops",
+      "agent": "project-manager",
       "task": "审批发布检查清单并确认可上线",
       "dependencies": [
         "closure_confirmation"
