@@ -68,6 +68,7 @@ class Monitor:
         
         # 告警阈值配置
         self.thresholds = dict(config.thresholds)
+        self.workflow_runtime_dir = Path(config.directories.get("workflow_runtime_dir", "")).resolve() if config.directories.get("workflow_runtime_dir") else None
 
     @property
     def agents(self) -> Dict[str, Any]:
@@ -301,12 +302,61 @@ class Monitor:
                     "total_logs": len(self.logs)
                 },
                 "agent_loads": agent_loads,
+                "recommended_knowledge": self._collect_recommended_knowledge(),
+                "recent_knowledge_feedback": self._collect_recent_knowledge_feedback(),
                 "recent_alerts": self.get_alerts(resolved=False)[:5],
                 "recent_logs": self.get_logs(limit=10)
             }
             get_metrics_registry().set_gauge("improvement_dashboard_availability_ratio", 1.0)
             get_metrics_registry().set_gauge("improvement_high_risk_issues_total", float(critical_alerts))
             return payload
+
+    def _collect_recommended_knowledge(self) -> List[Dict]:
+        if self.task_router is None:
+            return []
+        tasks = sorted(
+            getattr(self.task_router, "tasks", {}).values(),
+            key=lambda task: getattr(task, "created_at", 0),
+            reverse=True,
+        )
+        result = []
+        for task in tasks[:5]:
+            recommendation = getattr(task, "routing_reason", {}).get("knowledge_recommendation")
+            if not recommendation:
+                continue
+            result.append(
+                {
+                    "task_id": task.id,
+                    "agent": task.assigned_agent,
+                    "load_order": list(recommendation.get("load_order", [])),
+                    "team_paths": list(recommendation.get("team", []))[:3],
+                    "role_paths": list(recommendation.get("role", []))[:3],
+                    "instance_paths": list(recommendation.get("instance", []))[:3],
+                }
+            )
+        return result
+
+    def _collect_recent_knowledge_feedback(self) -> List[Dict]:
+        if self.workflow_runtime_dir is None:
+            return []
+        snapshots_dir = self.workflow_runtime_dir / "snapshots"
+        if not snapshots_dir.exists():
+            return []
+        records = []
+        for path in sorted(snapshots_dir.glob("*.json"), reverse=True):
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+            feedback = snapshot.get("knowledge_feedback")
+            if not feedback:
+                continue
+            records.append(
+                {
+                    "workflow_id": snapshot.get("workflow_id"),
+                    "status": snapshot.get("status"),
+                    "decision_count": len(feedback.get("appended_decisions", [])),
+                    "risk_count": len(feedback.get("appended_risks", [])),
+                }
+            )
+        return records[:5]
     
     def export_metrics(self, filepath: str):
         """导出指标到文件"""

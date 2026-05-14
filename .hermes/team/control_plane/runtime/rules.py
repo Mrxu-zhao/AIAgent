@@ -25,3 +25,25 @@ def build_knowledge_bundle(recommendation: Dict[str, object]) -> Dict[str, List[
                 relative_paths.append(str(item))
                 resolved_paths.append(str(resolved))
     return {"paths": relative_paths, "resolved_paths": resolved_paths}
+
+
+def preload_knowledge_bundle(bundle: Dict[str, object]) -> Dict[str, object]:
+    items = []
+    for relative_path, resolved_path in zip(
+        list(bundle.get("paths", [])),
+        list(bundle.get("resolved_paths", [])),
+    ):
+        path = Path(str(resolved_path))
+        if not path.exists():
+            continue
+        items.append(
+            {
+                "path": str(relative_path),
+                "resolved_path": str(path),
+                "content": path.read_text(encoding="utf-8"),
+            }
+        )
+    loaded = dict(bundle)
+    loaded["items"] = items
+    loaded["preloaded"] = True
+    return loaded

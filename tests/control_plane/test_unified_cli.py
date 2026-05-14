@@ -312,6 +312,74 @@ class UnifiedCLITests(unittest.TestCase):
 
         self.assertEqual([record["message_id"] for record in result["records"]], ["msg-1"])
 
+    def test_query_handoff_supports_knowledge_summary_view(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: action == "query.handoff" and actor == "viewer"
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+        fake_records = [
+            {
+                "message_id": "msg-1",
+                "workflow_id": "wf-1",
+                "target_agent": "backend-1",
+                "status": "materialized",
+                "knowledge_recommendation": {
+                    "team": [".hermes/team/knowledge/status.md"],
+                    "role": [".hermes/agents/backend-dev/knowledge/status.md"],
+                    "instance": [".hermes/team/agents/backend-1/knowledge/expertise.md"],
+                },
+            },
+            {
+                "message_id": "msg-2",
+                "workflow_id": "wf-1",
+                "target_agent": "backend-2",
+                "status": "materialized",
+                "knowledge_recommendation": None,
+            },
+        ]
+
+        class FakeHandoffStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def list_records(self, workflow_id=None, target_agent=None, status=None, message_id=None):
+                del workflow_id, target_agent, status, message_id
+                return list(fake_records)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "HandoffRunStore",
+                            FakeHandoffStore,
+                            create=True,
+                        ):
+                            result = unified_cli_module.main(
+                                [
+                                    "query",
+                                    "handoff",
+                                    "--workflow-id",
+                                    "wf-1",
+                                    "--knowledge-only",
+                                    "--summary",
+                                    "--actor",
+                                    "viewer",
+                                ]
+                            )
+
+        self.assertEqual(result["summary"]["knowledge_record_count"], 1)
+        self.assertIn(".hermes/team/knowledge/status.md", result["summary"]["top_knowledge_paths"])
+
     def test_query_handoff_supports_message_id_and_status_filters(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
@@ -512,6 +580,64 @@ class UnifiedCLITests(unittest.TestCase):
 
         self.assertEqual(result["snapshot"]["workflow_id"], "wf-1")
         self.assertEqual(result["events"][0]["event"], "handoff_materialized")
+
+    def test_query_workflow_supports_knowledge_only_summary_view(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: action == "query.workflow" and actor == "viewer"
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        class FakeWorkflowStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def read_snapshot(self, workflow_id):
+                return {
+                    "workflow_id": workflow_id,
+                    "status": "completed",
+                    "knowledge_feedback": {
+                        "appended_decisions": ["d1"],
+                        "appended_risks": ["r1"],
+                    },
+                }
+
+            def list_step_events(self, workflow_id):
+                return [{"workflow_id": workflow_id, "event": "completed"}]
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "WorkflowRunStore",
+                            FakeWorkflowStore,
+                            create=True,
+                        ):
+                            result = unified_cli_module.main(
+                                [
+                                    "query",
+                                    "workflow",
+                                    "--id",
+                                    "wf-1",
+                                    "--knowledge-only",
+                                    "--summary",
+                                    "--actor",
+                                    "viewer",
+                                ]
+                            )
+
+        self.assertEqual(result["summary"]["knowledge_feedback"]["decision_count"], 1)
+        self.assertEqual(result["summary"]["knowledge_feedback"]["risk_count"], 1)
+        self.assertEqual(result["snapshot"]["workflow_id"], "wf-1")
 
     def test_query_audit_returns_filtered_records_and_writes_audit_entry(self):
         with tempfile.TemporaryDirectory() as tmp:

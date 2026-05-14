@@ -1,4 +1,6 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 from tests.control_plane.test_support import load_framework_module
 
@@ -86,6 +88,41 @@ class TaskRouterIntentTests(unittest.TestCase):
         self.assertIn(".hermes/team/knowledge/status.md", knowledge["team"])
         self.assertIn(".hermes/agents/backend-dev/knowledge/status.md", knowledge["role"])
         self.assertIn(".hermes/team/agents/backend-1/knowledge/expertise.md", knowledge["instance"])
+
+    def test_knowledge_recommendation_prefers_recent_lessons_when_keyword_matches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".hermes/team/knowledge/status.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/team/knowledge/status.md").write_text("status", encoding="utf-8")
+            (root / ".hermes/team/knowledge/project-overview.md").write_text("overview", encoding="utf-8")
+            (root / ".hermes/team/knowledge/workflow-playbook.md").write_text("workflow", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/status.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/status.md").write_text("role", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/overview.md").write_text("overview", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/playbooks/common-tasks.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/playbooks/common-tasks.md").write_text("common", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/checklists/delivery-checklist.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/checklists/delivery-checklist.md").write_text("delivery", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/expertise.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/team/agents/backend-1/knowledge/expertise.md").write_text("backend", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/owned-modules.md").write_text("orders", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/delivery-style.md").write_text("style", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/recent-lessons.md").write_text(
+                "redis cache invalidation checklist",
+                encoding="utf-8",
+            )
+
+            router = task_router_module.TaskRouter(knowledge_root=root / ".hermes")
+
+            agent_id, task = router.route_task("请 backend-1 处理 redis cache 一致性问题")
+
+        self.assertEqual(agent_id, "backend-1")
+        knowledge = task.routing_reason["knowledge_recommendation"]
+        self.assertEqual(
+            knowledge["instance"][0],
+            ".hermes/team/agents/backend-1/knowledge/recent-lessons.md",
+        )
+        self.assertGreater(knowledge["path_scores"]["instance"]["recent-lessons.md"]["score"], 0)
 
 
 if __name__ == "__main__":

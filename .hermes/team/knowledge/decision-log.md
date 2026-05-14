@@ -1,3 +1,9 @@
+---
+owner: control-plane
+last_reviewed: 2026-05-14
+source: workflow-feedback
+---
+
 # 关键决策记录
 
 | 日期 | 决策 | 理由 | 影响范围 |

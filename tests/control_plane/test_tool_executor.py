@@ -1,6 +1,8 @@
 import threading
 import time
 import unittest
+import tempfile
+from pathlib import Path
 
 from tests.control_plane.test_support import ensure_control_plane_path
 
@@ -147,6 +149,41 @@ class ToolExecutorTests(unittest.TestCase):
 
         self.assertFalse(result.ok)
         self.assertEqual(result.error, "APPROVAL_REQUIRED")
+
+    def test_execute_many_preloads_knowledge_bundle_before_handler_runs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            knowledge_path = Path(tmp) / "knowledge.md"
+            knowledge_path.write_text("# 知识\n\n- redis cache\n", encoding="utf-8")
+            observed = {}
+
+            def handler(context, _payload):
+                observed["items"] = list(context.knowledge_bundle.get("items", []))
+                return ToolResult.ok_result(content="ok")
+
+            tool = ToolSpec(
+                name="read_knowledge",
+                description="read knowledge",
+                input_schema={},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=handler,
+            )
+            context = ToolExecutionContext(
+                task_id="tool-task-11",
+                agent_id="backend-1",
+                backend="hermes",
+                knowledge_bundle={
+                    "paths": [".hermes/team/knowledge/status.md"],
+                    "resolved_paths": [str(knowledge_path)],
+                },
+            )
+
+            result = ToolExecutor().execute_many(context, [(tool, {})])[0]
+
+        self.assertTrue(result.ok)
+        self.assertEqual(len(observed["items"]), 1)
+        self.assertEqual(observed["items"][0]["path"], ".hermes/team/knowledge/status.md")
+        self.assertIn("redis cache", observed["items"][0]["content"])
 
 
 if __name__ == "__main__":

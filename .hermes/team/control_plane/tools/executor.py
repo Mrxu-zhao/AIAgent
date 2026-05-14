@@ -8,6 +8,7 @@ from config import load_control_plane_config
 from governance.approval import ApprovalGate
 from governance.rbac import RBACPolicy, build_default_rbac_policy
 from governance.tool_permissions import check_tool_approval, check_tool_permission
+from runtime.rules import preload_knowledge_bundle
 from tools.spec import ToolExecutionContext, ToolResult, ToolSpec
 from tools.transcript import ToolTranscriptStore
 
@@ -78,6 +79,8 @@ class ToolExecutor:
             result = ToolResult.error_result(error="APPROVAL_REQUIRED", content="")
             self._write_transcript(context, tool, payload, result, action, "approval_required")
             return result
+        if context.knowledge_bundle and not context.knowledge_bundle.get("preloaded"):
+            context.knowledge_bundle = preload_knowledge_bundle(context.knowledge_bundle)
         try:
             result = tool.handler(context, payload)
         except Exception as exc:

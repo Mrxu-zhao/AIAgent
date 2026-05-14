@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 
+METADATA_TEMPLATE = "---\nowner: control-plane\nlast_reviewed: {date}\nsource: workflow-feedback\n---\n\n"
 DECISION_HEADER = "# 关键决策记录\n\n| 日期 | 决策 | 理由 | 影响范围 |\n|------|------|------|----------|\n"
 RISK_HEADER = "# 风险登记册\n\n| 风险 | 影响范围 | 预警信号 | 缓解策略 |\n|------|----------|----------|----------|\n"
 
@@ -39,8 +40,23 @@ def sync_workflow_feedback(
 
 
 def _ensure_file(path: Path, header: str) -> None:
+    today = datetime.now().strftime("%Y-%m-%d")
     if not path.exists():
-        path.write_text(header, encoding="utf-8")
+        path.write_text(METADATA_TEMPLATE.format(date=today) + header, encoding="utf-8")
+        return
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        path.write_text(METADATA_TEMPLATE.format(date=today) + text, encoding="utf-8")
+        text = path.read_text(encoding="utf-8")
+    if "last_reviewed:" not in text:
+        path.write_text(text.replace("owner: control-plane", f"owner: control-plane\nlast_reviewed: {today}"), encoding="utf-8")
+    else:
+        lines = text.splitlines()
+        for index, line in enumerate(lines):
+            if line.startswith("last_reviewed:"):
+                lines[index] = f"last_reviewed: {today}"
+                break
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _append_decisions(path: Path, workflow_id: str, decisions: List[Any]) -> List[str]:

@@ -102,6 +102,20 @@ def find_knowledge_files_handler(
 
 def read_knowledge_handler(context: ToolExecutionContext, _payload: Dict[str, object]) -> ToolResult:
     records = []
+    preloaded_items = list(context.knowledge_bundle.get("items", []))
+    if preloaded_items:
+        for item in preloaded_items:
+            records.append(
+                {
+                    "path": item["path"],
+                    "content": item["content"],
+                }
+            )
+        return ToolResult.ok_result(
+            content=f"knowledge:{len(records)}",
+            structured_data={"items": records},
+            artifacts=[item["path"] for item in records],
+        )
     for relative_path, resolved_path in zip(
         context.knowledge_bundle.get("paths", []),
         context.knowledge_bundle.get("resolved_paths", []),

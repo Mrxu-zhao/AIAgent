@@ -83,10 +83,11 @@ class Task:
 class TaskRouter:
     """智能任务路由器"""
 
-    def __init__(self):
+    def __init__(self, knowledge_root: Optional[Path] = None):
         self.config = load_control_plane_config()
         self.agents: Dict[str, Agent] = {}
         self.tasks: Dict[str, Task] = {}
+        self.knowledge_root = Path(knowledge_root) if knowledge_root is not None else Path(__file__).resolve().parents[4] / ".hermes"
         self._init_agents()
     
     def _init_agents(self):
@@ -212,6 +213,67 @@ class TaskRouter:
             return "frontend-dev"
         return agent_id
 
+    def _resolve_knowledge_path(self, relative_path: str) -> Path:
+        path = Path(relative_path)
+        if path.is_absolute():
+            return path
+        if relative_path.startswith(".hermes/"):
+            return self.knowledge_root / Path(relative_path).relative_to(".hermes")
+        return Path(__file__).resolve().parents[4] / path
+
+    def _recent_lessons_bonus(self, path: Path, intent: TaskIntent) -> float:
+        if path.name != "recent-lessons.md" or not path.exists():
+            return 0.0
+        text = path.read_text(encoding="utf-8").lower()
+        score = 0.0
+        for keyword in intent.keywords:
+            if keyword.lower() in text:
+                score += 8.0
+        return score
+
+    def _score_knowledge_path(self, relative_path: str, intent: TaskIntent) -> Dict[str, object]:
+        resolved = self._resolve_knowledge_path(relative_path)
+        score = 0.0
+        reasons = []
+        if resolved.exists():
+            score += 50.0
+            reasons.append("exists")
+        else:
+            reasons.append("missing")
+        if resolved.name == "status.md":
+            score += 8.0
+            reasons.append("entrypoint")
+        if "risk-register.md" in relative_path and intent.risk_flags:
+            score += 10.0
+            reasons.append("risk-match")
+        if "handoff-templates.md" in relative_path and intent.collaboration_mode != "single":
+            score += 10.0
+            reasons.append("handoff-match")
+        if "recent-lessons.md" in relative_path:
+            lessons_bonus = self._recent_lessons_bonus(resolved, intent)
+            if lessons_bonus:
+                score += lessons_bonus
+                reasons.append("recent-lessons-keyword")
+        for keyword in intent.keywords:
+            keyword_lower = keyword.lower()
+            if keyword_lower and keyword_lower in relative_path.lower():
+                score += 3.0
+                reasons.append(f"keyword:{keyword_lower}")
+        return {
+            "path": relative_path,
+            "resolved_path": str(resolved),
+            "exists": resolved.exists(),
+            "score": score,
+            "reasons": reasons,
+        }
+
+    def _rank_knowledge_paths(self, paths: List[str], intent: TaskIntent) -> Tuple[List[str], Dict[str, Dict[str, object]]]:
+        scored = [self._score_knowledge_path(path, intent) for path in paths]
+        scored.sort(key=lambda item: (-float(item["score"]), str(item["path"])))
+        ordered_paths = [str(item["path"]) for item in scored]
+        path_scores = {Path(str(item["path"])).name: item for item in scored}
+        return ordered_paths, path_scores
+
     def _build_knowledge_recommendation(self, intent: TaskIntent, agent_id: str) -> Dict[str, object]:
         """为执行层和协作层提供稳定的知识加载建议。"""
         role_key = self._resolve_role_knowledge_key(agent_id)
@@ -240,15 +302,25 @@ class TaskRouter:
             f".hermes/team/agents/{agent_id}/knowledge/expertise.md",
             f".hermes/team/agents/{agent_id}/knowledge/owned-modules.md",
             f".hermes/team/agents/{agent_id}/knowledge/delivery-style.md",
+            f".hermes/team/agents/{agent_id}/knowledge/recent-lessons.md",
         ]
         if intent.collaboration_mode != "single":
             instance_paths.append(f".hermes/team/agents/{agent_id}/knowledge/collaboration-preferences.md")
 
+        ordered_team, team_scores = self._rank_knowledge_paths(team_paths, intent)
+        ordered_role, role_scores = self._rank_knowledge_paths(role_paths, intent)
+        ordered_instance, instance_scores = self._rank_knowledge_paths(instance_paths, intent)
+
         return {
             "load_order": ["team", "role", "instance"],
-            "team": team_paths,
-            "role": role_paths,
-            "instance": instance_paths,
+            "team": ordered_team,
+            "role": ordered_role,
+            "instance": ordered_instance,
+            "path_scores": {
+                "team": team_scores,
+                "role": role_scores,
+                "instance": instance_scores,
+            },
         }
 
     def select_best_agent(self, intent: TaskIntent, priority: TaskPriority) -> Tuple[str, Dict[str, object]]:

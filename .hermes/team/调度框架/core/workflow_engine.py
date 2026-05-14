@@ -25,6 +25,7 @@ from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriorit
 from observability.metrics import get_metrics_registry
 from protocols.handoff import HandoffPayload
 from providers.registry import build_default_provider_registry
+from runtime.rules import build_knowledge_bundle
 from workflow_runtime import WorkflowRunStore
 
 
@@ -303,6 +304,12 @@ class WorkflowEngine:
             workflow.status = "completed" if not failed_steps else "failed"
             workflow.completed_at = time.time()
             knowledge_feedback = self._sync_team_knowledge(workflow)
+            knowledge_recommendations = workflow.variables.get("knowledge_recommendations", {})
+            knowledge_bundles = {
+                step_id: build_knowledge_bundle(recommendation)
+                for step_id, recommendation in knowledge_recommendations.items()
+                if isinstance(recommendation, dict)
+            }
             if self.runtime_store:
                 self.runtime_store.record_workflow_completed(
                     workflow_id,
@@ -310,6 +317,8 @@ class WorkflowEngine:
                         "status": workflow.status,
                         "completed_steps": list(completed_steps),
                         "failed_steps": list(failed_steps),
+                        "knowledge_recommendations": knowledge_recommendations,
+                        "knowledge_bundles": knowledge_bundles,
                         "knowledge_feedback": knowledge_feedback,
                     },
                 )
@@ -321,7 +330,8 @@ class WorkflowEngine:
                 "failed_steps": list(failed_steps),
                 "variables": workflow.variables,
                 "step_contexts": workflow.variables.get("step_contexts", {}),
-                "knowledge_recommendations": workflow.variables.get("knowledge_recommendations", {}),
+                "knowledge_recommendations": knowledge_recommendations,
+                "knowledge_bundles": knowledge_bundles,
                 "knowledge_feedback": knowledge_feedback,
                 "collaboration_context": workflow.variables.get("collaboration_context", {}),
                 "handoffs": list(workflow.handoffs),

@@ -68,6 +68,52 @@ def _build_knowledge_bundles(result):
     return bundles
 
 
+def _workflow_knowledge_payload(payload):
+    snapshot = dict(payload.get("snapshot") or {})
+    knowledge_feedback = snapshot.get("knowledge_feedback") or {}
+    filtered_snapshot = {
+        "workflow_id": snapshot.get("workflow_id"),
+        "status": snapshot.get("status"),
+        "knowledge_feedback": knowledge_feedback,
+    }
+    if snapshot.get("knowledge_recommendations") is not None:
+        filtered_snapshot["knowledge_recommendations"] = snapshot.get("knowledge_recommendations")
+    if snapshot.get("knowledge_bundles") is not None:
+        filtered_snapshot["knowledge_bundles"] = snapshot.get("knowledge_bundles")
+    return {"snapshot": filtered_snapshot, "events": payload.get("events", [])}
+
+
+def _workflow_knowledge_summary(payload):
+    snapshot = payload.get("snapshot") or {}
+    feedback = snapshot.get("knowledge_feedback") or {}
+    return {
+        "knowledge_feedback": {
+            "decision_count": len(feedback.get("appended_decisions", [])),
+            "risk_count": len(feedback.get("appended_risks", [])),
+        }
+    }
+
+
+def _handoff_knowledge_only(records):
+    return [record for record in records if record.get("knowledge_recommendation")]
+
+
+def _handoff_knowledge_summary(records):
+    knowledge_records = _handoff_knowledge_only(records)
+    top_paths = []
+    for record in knowledge_records:
+        recommendation = record.get("knowledge_recommendation") or {}
+        for group in ("team", "role", "instance"):
+            for path in recommendation.get(group, []):
+                if path not in top_paths:
+                    top_paths.append(path)
+    return {
+        "record_count": len(records),
+        "knowledge_record_count": len(knowledge_records),
+        "top_knowledge_paths": top_paths[:10],
+    }
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Control plane unified CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -92,6 +138,8 @@ def build_parser():
     query.add_argument("--prune", action="store_true")
     query.add_argument("--archive", action="store_true")
     query.add_argument("--delete", action="store_true")
+    query.add_argument("--knowledge-only", action="store_true")
+    query.add_argument("--summary", action="store_true")
 
     monitor = subparsers.add_parser("monitor", help="查看监控数据")
     monitor.add_argument("--dashboard", action="store_true")
@@ -318,6 +366,10 @@ def main(argv=None):
                 "snapshot": store.read_snapshot(args.id),
                 "events": store.list_step_events(args.id),
             }
+            if args.knowledge_only:
+                payload = _workflow_knowledge_payload(payload)
+            if args.summary:
+                payload["summary"] = _workflow_knowledge_summary(payload)
             result_count = 1 if payload["snapshot"] is not None else 0
         elif args.resource == "handoff":
             handoff_dir = config.directories.get("handoff_runtime_dir")
@@ -410,7 +462,12 @@ def main(argv=None):
                     records = [record for record in records if record.get("message_id") == args.message_id]
             if args.status:
                 records = [record for record in records if record.get("status") == args.status]
-            payload = {"records": [_normalize_handoff_record(record) for record in records]}
+            normalized_records = [_normalize_handoff_record(record) for record in records]
+            if args.knowledge_only:
+                normalized_records = _handoff_knowledge_only(normalized_records)
+            payload = {"records": normalized_records}
+            if args.summary:
+                payload["summary"] = _handoff_knowledge_summary(normalized_records if args.knowledge_only else [_normalize_handoff_record(record) for record in records])
             result_count = len(records)
         else:
             records = audit.read_all()

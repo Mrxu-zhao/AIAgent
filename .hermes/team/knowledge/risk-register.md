@@ -1,3 +1,9 @@
+---
+owner: control-plane
+last_reviewed: 2026-05-14
+source: workflow-feedback
+---
+
 # 风险登记册
 
 | 风险 | 影响范围 | 预警信号 | 缓解策略 |

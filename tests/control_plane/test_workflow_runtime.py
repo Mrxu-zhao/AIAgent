@@ -579,6 +579,60 @@ class WorkflowRuntimeTests(unittest.TestCase):
         self.assertIn("接口变更影响现有调用方", risk_register)
         self.assertIn("workflow: wf-knowledge-sync", risk_register)
 
+    def test_workflow_feedback_writes_metadata_and_deduplicates_entries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            knowledge_root = Path(tmp) / ".hermes" / "team" / "knowledge"
+            engine = workflow_module.WorkflowEngine(
+                task_router=router_module.TaskRouter(),
+                message_bus=None,
+                runtime_store=None,
+                knowledge_root=knowledge_root,
+            )
+            workflow = engine.create_workflow(
+                "wf-knowledge-dedupe",
+                "knowledge-dedupe",
+                "demo",
+                [
+                    {
+                        "id": "implement",
+                        "name": "实现",
+                        "type": "sequential",
+                        "agent": "backend-1",
+                        "task": "实现接口",
+                    }
+                ],
+            )
+            engine._execute_agent_task = lambda step, task_content: {
+                "success": True,
+                "output": "ok",
+                "agent": step.agent,
+                "risks": ["缓存一致性风险"],
+                "decisions": [
+                    {
+                        "summary": "采用接口版本化",
+                        "rationale": "降低兼容性风险",
+                        "impact": "接口层",
+                        "next_action": "同步前端联调",
+                    }
+                ],
+            }
+
+            first = engine.execute_workflow(workflow.id)
+            workflow.status = "pending"
+            workflow.completed_at = None
+            workflow.started_at = None
+            workflow.steps[0].status = workflow_module.StepStatus.PENDING
+            second = engine.execute_workflow(workflow.id)
+            decision_log = (knowledge_root / "decision-log.md").read_text(encoding="utf-8")
+            risk_register = (knowledge_root / "risk-register.md").read_text(encoding="utf-8")
+
+        self.assertTrue(first["success"])
+        self.assertTrue(second["success"])
+        self.assertIn("owner: control-plane", decision_log)
+        self.assertIn("last_reviewed:", decision_log)
+        self.assertEqual(decision_log.count("采用接口版本化"), 1)
+        self.assertEqual(risk_register.count("缓存一致性风险"), 1)
+
     def test_workflow_engine_passes_upstream_agent_and_role_into_review_route(self):
         router = router_module.TaskRouter()
         engine = workflow_module.WorkflowEngine(task_router=router, message_bus=None, runtime_store=None)
