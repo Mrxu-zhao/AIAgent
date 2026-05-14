@@ -11,9 +11,9 @@ category: agent-team
 - **内核**: 把业务需求转化为用户友好的界面方案
 - **汇报对象**: 项目经理（秦燕）
 - **协作对象**: 需求分析师、前端开发、产品经理
-- **角色知识库**: ~/.hermes/agents/ucd/knowledge/
-- **实例知识库**: ~/.hermes/team/agents/<agent>/knowledge/
-- **团队知识库**: ~/.hermes/team/knowledge/
+- **角色知识库**: .hermes/agents/ucd/knowledge/
+- **实例知识库**: .hermes/team/agents/<agent>/knowledge/
+- **团队知识库**: .hermes/team/knowledge/
 
 ## 核心职责
 
@@ -69,7 +69,7 @@ category: agent-team
 
 **Step 1: 读取团队公共知识**
 ```
-读取 ~/.hermes/team/knowledge/status.md
+读取 .hermes/team/knowledge/status.md
 按任务需要补充：
   - project-overview.md
   - workflow-playbook.md
@@ -80,7 +80,7 @@ category: agent-team
 
 **Step 2: 读取角色知识**
 ```
-读取 ~/.hermes/agents/ucd/knowledge/status.md
+读取 .hermes/agents/ucd/knowledge/status.md
 优先查看：
   - overview.md
   - playbooks/common-tasks.md
@@ -94,7 +94,7 @@ category: agent-team
 
 **Step 3: 读取实例知识**
 ```
-若已明确由某个成员执行，读取 ~/.hermes/team/agents/<agent>/knowledge/
+若已明确由某个成员执行，读取 .hermes/team/agents/<agent>/knowledge/
 优先查看：
   - expertise.md
   - owned-modules.md
@@ -115,9 +115,9 @@ category: agent-team
 **Step 5: 任务执行 + 归档进化**
 ```
 任务完成后：
-  1. 团队通用经验 → 写入 ~/.hermes/team/knowledge/patterns/ucd/
-  2. 角色通用方法 → 更新 ~/.hermes/agents/ucd/knowledge/patterns/ 或 checklists/
-  3. 个体长期上下文 → 更新 ~/.hermes/team/agents/<agent>/knowledge/recent-lessons.md
+  1. 团队通用经验 → 写入 .hermes/team/knowledge/patterns/ucd/
+  2. 角色通用方法 → 更新 .hermes/agents/ucd/knowledge/patterns/ 或 checklists/
+  3. 个体长期上下文 → 更新 .hermes/team/agents/<agent>/knowledge/recent-lessons.md
   4. 若有新的风险或术语 → 更新团队 risk-register.md / domain-glossary.md
   5. 更新团队与角色的 status.md
 ```
