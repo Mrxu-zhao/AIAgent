@@ -489,6 +489,96 @@ class WorkflowRuntimeTests(unittest.TestCase):
             self.assertEqual(received.content["context"], result["handoffs"][0])
             self.assertTrue(handoff_module.validate_handoff_payload(received.content["context"]))
 
+    def test_workflow_handoff_contains_target_knowledge_recommendation(self):
+        engine = workflow_module.WorkflowEngine(task_router=router_module.TaskRouter(), message_bus=None, runtime_store=None)
+        workflow = engine.create_workflow(
+            "wf-handoff-knowledge",
+            "handoff-knowledge",
+            "demo",
+            [
+                {"id": "design", "name": "设计", "type": "sequential", "agent": "architect", "task": "设计方案"},
+                {
+                    "id": "implement",
+                    "name": "实现",
+                    "type": "sequential",
+                    "agent": "backend-1",
+                    "task": "实现代码",
+                    "dependencies": ["design"],
+                },
+            ],
+        )
+        engine._execute_agent_task = lambda step, task_content: {
+            "success": True,
+            "output": "ok",
+            "agent": step.agent,
+        }
+
+        result = engine.execute_workflow(workflow.id)
+
+        knowledge = result["handoffs"][0]["knowledge_recommendation"]
+        self.assertEqual(knowledge["load_order"], ["team", "role", "instance"])
+        self.assertIn(".hermes/team/knowledge/status.md", knowledge["team"])
+        self.assertIn(".hermes/agents/backend-dev/knowledge/status.md", knowledge["role"])
+        self.assertIn(".hermes/team/agents/backend-1/knowledge/expertise.md", knowledge["instance"])
+
+    def test_workflow_engine_writes_decisions_and_risks_back_to_team_knowledge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            knowledge_root = Path(tmp) / ".hermes" / "team" / "knowledge"
+            knowledge_root.mkdir(parents=True, exist_ok=True)
+            (knowledge_root / "decision-log.md").write_text(
+                "# 关键决策记录\n\n| 日期 | 决策 | 理由 | 影响范围 |\n|------|------|------|----------|\n",
+                encoding="utf-8",
+            )
+            (knowledge_root / "risk-register.md").write_text(
+                "# 风险登记册\n\n| 风险 | 影响范围 | 预警信号 | 缓解策略 |\n|------|----------|----------|----------|\n",
+                encoding="utf-8",
+            )
+
+            engine = workflow_module.WorkflowEngine(
+                task_router=router_module.TaskRouter(),
+                message_bus=None,
+                runtime_store=None,
+                knowledge_root=knowledge_root,
+            )
+            workflow = engine.create_workflow(
+                "wf-knowledge-sync",
+                "knowledge-sync",
+                "demo",
+                [
+                    {
+                        "id": "implement",
+                        "name": "实现",
+                        "type": "sequential",
+                        "agent": "backend-1",
+                        "task": "实现接口",
+                    }
+                ],
+            )
+            engine._execute_agent_task = lambda step, task_content: {
+                "success": True,
+                "output": "ok",
+                "agent": step.agent,
+                "risks": ["接口变更影响现有调用方"],
+                "decisions": [
+                    {
+                        "summary": "采用接口版本化",
+                        "rationale": "降低兼容性风险",
+                        "impact": "接口层",
+                        "next_action": "同步前端联调",
+                    }
+                ],
+            }
+
+            result = engine.execute_workflow(workflow.id)
+            decision_log = (knowledge_root / "decision-log.md").read_text(encoding="utf-8")
+            risk_register = (knowledge_root / "risk-register.md").read_text(encoding="utf-8")
+
+        self.assertTrue(result["success"])
+        self.assertIn("采用接口版本化", decision_log)
+        self.assertIn("wf-knowledge-sync", decision_log)
+        self.assertIn("接口变更影响现有调用方", risk_register)
+        self.assertIn("workflow: wf-knowledge-sync", risk_register)
+
     def test_workflow_engine_passes_upstream_agent_and_role_into_review_route(self):
         router = router_module.TaskRouter()
         engine = workflow_module.WorkflowEngine(task_router=router, message_bus=None, runtime_store=None)

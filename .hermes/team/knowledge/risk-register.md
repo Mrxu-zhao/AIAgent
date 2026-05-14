@@ -11,3 +11,5 @@
 - 只登记值得跨任务复用的风险。
 - 风险需要有明确触发条件和缓解动作。
 - 问题解决后可补充“关闭条件”，但保留历史经验。
+| design-risk | workflow: wf-collab | 见工作流结果与 step_contexts | 在交付前复核对应步骤的风险缓解动作 |
+| review-risk | workflow: wf-collab | 见工作流结果与 step_contexts | 在交付前复核对应步骤的风险缓解动作 |

@@ -11,6 +11,7 @@ from tests.control_plane.test_support import ensure_control_plane_path
 ensure_control_plane_path()
 import cli as unified_cli_module  # noqa: E402
 import governance.audit as audit_module  # noqa: E402
+import runtime.rules as runtime_rules_module  # noqa: E402
 
 
 class UnifiedCLITests(unittest.TestCase):
@@ -48,7 +49,17 @@ class UnifiedCLITests(unittest.TestCase):
 
             def route_task(self, task, priority):
                 observed["priority"] = priority.name
-                return "architect", SimpleNamespace(id="task-1")
+                return "architect", SimpleNamespace(
+                    id="task-1",
+                    routing_reason={
+                        "knowledge_recommendation": {
+                            "load_order": ["team", "role", "instance"],
+                            "team": [".hermes/team/knowledge/status.md"],
+                            "role": [".hermes/agents/architect/knowledge/status.md"],
+                            "instance": [".hermes/team/agents/architect/knowledge/expertise.md"],
+                        }
+                    },
+                )
 
         fake_audit = SimpleNamespace(log=lambda action, payload: observed["audit"].append((action, payload)))
         fake_config = SimpleNamespace(
@@ -73,6 +84,14 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(observed["sent"]["task"], "设计接口")
         self.assertEqual(observed["priority"], "HIGH")
         self.assertEqual(observed["audit"][0][0], "dispatch")
+        self.assertEqual(
+            payload["knowledge_recommendation"]["load_order"],
+            ["team", "role", "instance"],
+        )
+        self.assertEqual(
+            payload["knowledge_bundle"],
+            runtime_rules_module.build_knowledge_bundle(payload["knowledge_recommendation"]),
+        )
 
     def test_monitor_prometheus_command_returns_exported_text(self):
         fake_config = SimpleNamespace(
@@ -193,6 +212,57 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(result["workflow_id"], "wf-1")
         self.assertIn("step_contexts", result)
         self.assertIn("handoffs", result)
+
+    def test_workflow_command_surfaces_knowledge_bundles(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+        fake_engine = SimpleNamespace(
+            create_workflow=lambda *args: SimpleNamespace(id="wf-knowledge"),
+            execute_workflow=lambda workflow_id: {
+                "success": True,
+                "workflow_id": workflow_id,
+                "step_contexts": {"step-1": {"summary": "done"}},
+                "knowledge_recommendations": {
+                    "step-1": {
+                        "load_order": ["team", "role", "instance"],
+                        "team": [".hermes/team/knowledge/status.md"],
+                        "role": [".hermes/agents/architect/knowledge/status.md"],
+                        "instance": [".hermes/team/agents/architect/knowledge/expertise.md"],
+                    }
+                },
+                "handoffs": [],
+            },
+        )
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(unified_cli_module, "TaskRouter"):
+                            with patch.object(unified_cli_module, "WorkflowEngine", return_value=fake_engine):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "create_standard_project_workflow",
+                                    return_value=[{"id": "step-1"}],
+                                ):
+                                    result = unified_cli_module.main(
+                                        ["workflow", "--name", "knowledge-demo"]
+                                    )
+
+        self.assertIn("knowledge_bundles", result)
+        self.assertEqual(
+            result["knowledge_bundles"]["step-1"],
+            runtime_rules_module.build_knowledge_bundle(
+                result["knowledge_recommendations"]["step-1"]
+            ),
+        )
 
     def test_query_handoff_returns_filtered_records(self):
         fake_config = SimpleNamespace(

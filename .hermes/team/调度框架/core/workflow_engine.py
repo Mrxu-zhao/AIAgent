@@ -20,6 +20,7 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
+from knowledge_feedback import sync_workflow_feedback
 from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority
 from observability.metrics import get_metrics_registry
 from protocols.handoff import HandoffPayload
@@ -101,6 +102,7 @@ class WorkflowEngine:
         control_plane_executor=None,
         control_plane_adapter=None,
         command_runner=None,
+        knowledge_root=None,
     ):
         self.task_router = task_router
         self.message_bus = message_bus
@@ -114,6 +116,7 @@ class WorkflowEngine:
         self.control_plane_executor = control_plane_executor
         self.control_plane_adapter = control_plane_adapter
         self.command_runner = command_runner
+        self.knowledge_root = Path(knowledge_root) if knowledge_root is not None else Path(__file__).resolve().parents[2] / "knowledge"
         self.workflows: Dict[str, Workflow] = {}
         self._executors: Dict[str, ThreadPoolExecutor] = {}
         self._running: Dict[str, bool] = {}
@@ -299,6 +302,7 @@ class WorkflowEngine:
             
             workflow.status = "completed" if not failed_steps else "failed"
             workflow.completed_at = time.time()
+            knowledge_feedback = self._sync_team_knowledge(workflow)
             if self.runtime_store:
                 self.runtime_store.record_workflow_completed(
                     workflow_id,
@@ -306,6 +310,7 @@ class WorkflowEngine:
                         "status": workflow.status,
                         "completed_steps": list(completed_steps),
                         "failed_steps": list(failed_steps),
+                        "knowledge_feedback": knowledge_feedback,
                     },
                 )
             
@@ -317,6 +322,7 @@ class WorkflowEngine:
                 "variables": workflow.variables,
                 "step_contexts": workflow.variables.get("step_contexts", {}),
                 "knowledge_recommendations": workflow.variables.get("knowledge_recommendations", {}),
+                "knowledge_feedback": knowledge_feedback,
                 "collaboration_context": workflow.variables.get("collaboration_context", {}),
                 "handoffs": list(workflow.handoffs),
                 "duration": workflow.completed_at - workflow.started_at
@@ -606,6 +612,10 @@ class WorkflowEngine:
             if candidate.agent == step_context["agent"]:
                 continue
             source_backend, selected_backend, backend_candidates, backend_reason = self._resolve_handoff_backend(step_context)
+            knowledge_recommendation = self._build_handoff_knowledge_recommendation(
+                step_context,
+                candidate,
+            )
             payload = HandoffPayload.create(
                 source_backend=source_backend,
                 target_backend=selected_backend,
@@ -624,10 +634,37 @@ class WorkflowEngine:
                 backend_candidates=backend_candidates,
                 backend_reason=backend_reason,
                 review_policy=workflow.variables.get("review_policy"),
+                knowledge_recommendation=knowledge_recommendation,
             )
             handoff_payload = payload.to_dict()
             workflow.handoffs.append(handoff_payload)
             self._publish_handoff_message(handoff_payload)
+
+    def _build_handoff_knowledge_recommendation(
+        self,
+        step_context: Dict[str, Any],
+        candidate: WorkflowStep,
+    ) -> Optional[Dict[str, Any]]:
+        if self.task_router is None or not candidate.agent:
+            return None
+        source_agent = step_context.get("agent")
+        upstream_role = None
+        if source_agent and source_agent in getattr(self.task_router, "agents", {}):
+            upstream_role = self.task_router.agents[source_agent].role
+        intent = self.task_router.analyze_task_intent(
+            candidate.task_template,
+            upstream_agent=source_agent,
+            upstream_role=upstream_role,
+        )
+        return self.task_router._build_knowledge_recommendation(intent, candidate.agent)
+
+    def _sync_team_knowledge(self, workflow: Workflow) -> Dict[str, Any]:
+        collaboration_context = workflow.variables.get("collaboration_context", {})
+        return sync_workflow_feedback(
+            self.knowledge_root,
+            workflow.id,
+            collaboration_context,
+        )
 
     def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, str, List[str], str]:
         """把步骤建议与真实 provider registry 合并成 handoff backend 元信息。"""

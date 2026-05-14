@@ -96,6 +96,29 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(data["backend_candidates"], ["hermes", "openclaw"])
         self.assertTrue(handoff_module.validate_handoff_payload(data))
 
+    def test_handoff_payload_supports_knowledge_recommendation(self):
+        payload = handoff_module.HandoffPayload.create(
+            source_backend="hermes",
+            target_backend="openclaw",
+            task_id="task-3",
+            summary="handoff",
+            context={},
+            knowledge_recommendation={
+                "load_order": ["team", "role", "instance"],
+                "team": [".hermes/team/knowledge/status.md"],
+                "role": [".hermes/agents/backend-dev/knowledge/status.md"],
+                "instance": [".hermes/team/agents/backend-1/knowledge/expertise.md"],
+            },
+        )
+
+        data = payload.to_dict()
+
+        self.assertEqual(
+            data["knowledge_recommendation"]["role"],
+            [".hermes/agents/backend-dev/knowledge/status.md"],
+        )
+        self.assertTrue(handoff_module.validate_handoff_payload(data))
+
 
 if __name__ == "__main__":
     unittest.main()

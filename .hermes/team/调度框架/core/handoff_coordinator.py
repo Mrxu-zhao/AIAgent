@@ -27,6 +27,7 @@ class HandoffRecord:
     source_backend: Optional[str] = None
     target_backend: Optional[str] = None
     selected_backend: Optional[str] = None
+    knowledge_recommendation: Optional[Dict[str, Any]] = None
     received_at: Optional[float] = None
     acked_at: Optional[float] = None
     materialized_task_id: Optional[str] = None
@@ -93,6 +94,7 @@ class HandoffCoordinator:
             source_backend=payload.get("source_backend"),
             target_backend=payload.get("target_backend"),
             selected_backend=payload.get("selected_backend"),
+            knowledge_recommendation=payload.get("knowledge_recommendation"),
             status="received",
             created_at=float(payload.get("created_at", time.time())),
             received_at=time.time(),

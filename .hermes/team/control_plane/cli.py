@@ -20,6 +20,7 @@ from observability.metrics import refresh_repository_metrics
 from observability.prometheus_exporter import export_metrics_text
 from runner import run_task_batch
 from runtime.context import build_tool_execution_context
+from runtime.rules import build_knowledge_bundle
 from task_router import TaskPriority, TaskRouter
 from tools.builtin import build_default_tool_registry
 from tools.executor import ToolExecutor
@@ -48,6 +49,23 @@ def _normalize_handoff_record(record):
         value = normalized.get(key)
         normalized[key] = list(value) if value is not None else []
     return normalized
+
+
+def _extract_knowledge_recommendation(task):
+    routing_reason = getattr(task, "routing_reason", None)
+    if not isinstance(routing_reason, dict):
+        return None
+    recommendation = routing_reason.get("knowledge_recommendation")
+    return recommendation if isinstance(recommendation, dict) else None
+
+
+def _build_knowledge_bundles(result):
+    bundles = {}
+    recommendations = result.get("knowledge_recommendations", {})
+    for step_id, recommendation in recommendations.items():
+        if isinstance(recommendation, dict):
+            bundles[step_id] = build_knowledge_bundle(recommendation)
+    return bundles
 
 
 def build_parser():
@@ -201,6 +219,10 @@ def main(argv=None):
         bus.send(bus.create_task_message(args.actor, agent_id, task.id, args.task))
         audit.log("dispatch", {"actor": args.actor, "task": args.task, "agent": agent_id})
         payload = {"agent": agent_id, "task_id": task.id}
+        recommendation = _extract_knowledge_recommendation(task)
+        if recommendation:
+            payload["knowledge_recommendation"] = recommendation
+            payload["knowledge_bundle"] = build_knowledge_bundle(recommendation)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return payload
 
@@ -214,6 +236,7 @@ def main(argv=None):
             {"project_name": args.name},
         )
         result = engine.execute_workflow(workflow.id)
+        result["knowledge_bundles"] = _build_knowledge_bundles(result)
         audit.log("workflow", {"workflow_id": workflow.id, "success": result.get("success", False)})
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result

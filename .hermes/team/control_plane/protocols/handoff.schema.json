@@ -21,6 +21,7 @@
     "selected_backend": {"type": ["string", "null"]},
     "backend_candidates": {"type": "array", "items": {"type": "string"}},
     "backend_reason": {"type": ["string", "null"]},
-    "review_policy": {"type": ["string", "null"]}
+    "review_policy": {"type": ["string", "null"]},
+    "knowledge_recommendation": {"type": ["object", "null"]}
   }
 }

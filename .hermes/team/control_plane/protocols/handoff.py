@@ -27,6 +27,7 @@ class HandoffPayload:
     backend_candidates: List[str] = field(default_factory=list)
     backend_reason: Optional[str] = None
     review_policy: Optional[str] = None
+    knowledge_recommendation: Optional[Dict[str, Any]] = None
 
     @classmethod
     def create(
@@ -48,6 +49,7 @@ class HandoffPayload:
         backend_candidates: Optional[List[str]] = None,
         backend_reason: Optional[str] = None,
         review_policy: Optional[str] = None,
+        knowledge_recommendation: Optional[Dict[str, Any]] = None,
     ):
         return cls(
             source_backend=source_backend,
@@ -68,6 +70,7 @@ class HandoffPayload:
             backend_candidates=list(backend_candidates or []),
             backend_reason=backend_reason,
             review_policy=review_policy,
+            knowledge_recommendation=dict(knowledge_recommendation or {}) or None,
         )
 
     def to_dict(self):
@@ -90,6 +93,7 @@ class HandoffPayload:
             "backend_candidates": list(self.backend_candidates),
             "backend_reason": self.backend_reason,
             "review_policy": self.review_policy,
+            "knowledge_recommendation": dict(self.knowledge_recommendation or {}) or None,
         }
 
 
@@ -117,4 +121,10 @@ def validate_handoff_payload(payload: Dict[str, Any]) -> bool:
     for field_name in ("artifacts", "open_questions", "risks", "backend_candidates"):
         if field_name in payload and not isinstance(payload[field_name], list):
             return False
+    if (
+        "knowledge_recommendation" in payload
+        and payload["knowledge_recommendation"] is not None
+        and not isinstance(payload["knowledge_recommendation"], dict)
+    ):
+        return False
     return True

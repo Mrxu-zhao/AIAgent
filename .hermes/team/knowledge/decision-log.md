@@ -10,3 +10,7 @@
 - 只记录影响跨角色协作或后续维护的重要决策。
 - 每条记录至少包含理由和影响范围。
 - 若发生逆转，需要在本文件追加新的决策，而不是覆盖旧记录。
+| 2026-05-14 | [wf-collab] [design] design-decision | rationale: n/a | impact: n/a | next: n/a | workflow result | workflow: wf-collab; step: design |
+| 2026-05-14 | [wf-collab] [review] review-decision | rationale: n/a | impact: n/a | next: n/a | workflow result | workflow: wf-collab; step: review |
+| 2026-05-14 | [wf-decision-summary] [design] design-decision | rationale: 因为需要统一执行口径 | impact: 影响后续实现与验收 | next: 同步到 handoff | workflow result | workflow: wf-decision-summary; step: design |
+| 2026-05-14 | [wf-decision-summary] [review] review-decision | rationale: 因为需要统一执行口径 | impact: 影响后续实现与验收 | next: 同步到 handoff | workflow result | workflow: wf-decision-summary; step: review |
