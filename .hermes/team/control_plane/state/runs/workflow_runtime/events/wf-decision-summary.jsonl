@@ -1,0 +1,4 @@
+{"workflow_id": "wf-decision-summary", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723365.4513102, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723365.45161, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "event": "running", "status": "running", "timestamp": 1778723365.451904, "payload": {"agent": "qa-functional", "task_template": "评审 {design_summary}"}}
+{"workflow_id": "wf-decision-summary", "step_id": "review", "event": "completed", "status": "completed", "timestamp": 1778723365.4521437, "payload": {"agent": "qa-functional", "error": null, "output": "review:评审 design:设计方案"}}

@@ -11,7 +11,8 @@ from config import load_control_plane_config
 class WorkflowRunStore:
     def __init__(self, base_dir: Optional[Path] = None):
         config = load_control_plane_config()
-        self.base_dir = Path(base_dir or config.directories["workflow_runtime_dir"])
+        root = Path(base_dir) if base_dir is not None else Path(config.directories["workflow_runtime_dir"])
+        self.base_dir = root
         self.snapshots_dir = self.base_dir / "snapshots"
         self.events_dir = self.base_dir / "events"
         self.snapshots_dir.mkdir(parents=True, exist_ok=True)

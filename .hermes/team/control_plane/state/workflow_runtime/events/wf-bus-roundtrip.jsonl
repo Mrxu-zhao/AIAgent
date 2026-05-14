@@ -42,3 +42,11 @@
 {"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667702.519717, "payload": {"agent": "architect", "error": null, "output": "ok"}}
 {"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.519944, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.5201623, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723200.9454937, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723200.9518106, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.952079, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.952296, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723230.4856966, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723230.4904451, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4907076, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-roundtrip", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.4909482, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

@@ -1,0 +1,2 @@
+{"workflow_id": "wf-simulated", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723365.4747262, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-simulated", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723365.4749951, "payload": {"agent": "backend-1", "error": null, "output": "模拟执行: 实现代码"}}

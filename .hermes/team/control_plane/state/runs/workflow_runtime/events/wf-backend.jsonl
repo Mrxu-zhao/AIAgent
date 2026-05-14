@@ -1,0 +1,4 @@
+{"workflow_id": "wf-backend", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723365.4700704, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723365.470448, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723365.4706905, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723365.4708939, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}

@@ -2,10 +2,23 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.control_plane.test_support import load_control_plane_module
+from tests.control_plane.test_support import ensure_control_plane_path, load_control_plane_module
+
+ensure_control_plane_path()
+import config as config_module  # noqa: E402
 
 
 class HandoffRunStoreTests(unittest.TestCase):
+    def setUp(self):
+        config_module.load_control_plane_config.cache_clear()
+
+    def test_handoff_run_store_defaults_to_runs_handoffs_directory(self):
+        runtime_module = load_control_plane_module("handoff_runtime")
+
+        store = runtime_module.HandoffRunStore()
+
+        self.assertIn("state/runs/handoffs", str(store.base_dir).replace("\\", "/"))
+
     def test_handoff_run_store_records_and_filters_records(self):
         runtime_module = load_control_plane_module("handoff_runtime")
 

@@ -1,0 +1,4 @@
+{"workflow_id": "wf-handoff", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723365.4559364, "payload": {"agent": "architect", "task_template": "产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723365.4563053, "payload": {"agent": "architect", "error": null, "output": "任务已分配给 architect: 产出接口 spec"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723365.456518, "payload": {"agent": "backend-1", "task_template": "根据 {design_summary} 完成代码"}}
+{"workflow_id": "wf-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723365.4567692, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码"}}

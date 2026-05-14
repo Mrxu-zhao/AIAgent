@@ -1,0 +1,12 @@
+{
+  "workflow_id": "wf-real-exec-success-shape",
+  "status": "completed",
+  "started_at": 1778723365.4881446,
+  "name": "real-exec-success-shape",
+  "description": "demo",
+  "completed_at": 1778723365.4891834,
+  "completed_steps": [
+    "implement"
+  ],
+  "failed_steps": []
+}

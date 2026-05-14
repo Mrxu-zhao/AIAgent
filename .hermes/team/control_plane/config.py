@@ -65,8 +65,11 @@ def _default_directories() -> Dict[str, str]:
         "state_dir": str(root / "state"),
         "events_dir": str(root / "events"),
         "artifacts_dir": str(root / "artifacts"),
+        "runtime_fixtures_dir": str(root / "state" / "fixtures"),
+        "runs_dir": str(root / "state" / "runs"),
         "message_bus_dir": str(root / "state" / "message_bus"),
-        "workflow_runtime_dir": str(root / "state" / "workflow_runtime"),
+        "workflow_runtime_dir": str(root / "state" / "runs" / "workflow_runtime"),
+        "handoff_runtime_dir": str(root / "state" / "runs" / "handoffs"),
         "audit_log": str(root / "artifacts" / "audit-log.jsonl"),
     }
 

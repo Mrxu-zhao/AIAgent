@@ -9,6 +9,18 @@
     "task_id": {"type": "string"},
     "summary": {"type": "string"},
     "context": {"type": "object"},
-    "created_at": {"type": "number"}
+    "created_at": {"type": "number"},
+    "source_agent": {"type": ["string", "null"]},
+    "target_agent": {"type": ["string", "null"]},
+    "source_step": {"type": ["string", "null"]},
+    "target_step": {"type": ["string", "null"]},
+    "reason": {"type": ["string", "null"]},
+    "artifacts": {"type": "array", "items": {"type": "string"}},
+    "open_questions": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "selected_backend": {"type": ["string", "null"]},
+    "backend_candidates": {"type": "array", "items": {"type": "string"}},
+    "backend_reason": {"type": ["string", "null"]},
+    "review_policy": {"type": ["string", "null"]}
   }
 }

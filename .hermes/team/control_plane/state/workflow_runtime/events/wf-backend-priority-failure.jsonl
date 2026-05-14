@@ -106,3 +106,11 @@
 {"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "failed", "status": "failed", "timestamp": 1778667702.4861708, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
 {"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.4864414, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "failed", "status": "failed", "timestamp": 1778667702.4866774, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.916077, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "failed", "status": "failed", "timestamp": 1778723200.9163184, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.9165266, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "failed", "status": "failed", "timestamp": 1778723200.9167519, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4558625, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "failed", "status": "failed", "timestamp": 1778723230.4561434, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4563575, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend-priority-failure", "step_id": "implement", "event": "failed", "status": "failed", "timestamp": 1778723230.4566104, "payload": {"agent": "backend-1", "error": "provider failed", "output": null}}

@@ -82,3 +82,11 @@
 {"workflow_id": "wf-standard-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667702.5230188, "payload": {"agent": "architect", "error": null, "output": "ok"}}
 {"workflow_id": "wf-standard-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.5233457, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-standard-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.523632, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723200.9544725, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723200.9547381, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.955, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.955217, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723230.49327, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723230.4935908, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4938345, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-standard-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.4940472, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

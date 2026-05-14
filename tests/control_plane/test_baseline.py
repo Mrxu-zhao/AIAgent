@@ -1,4 +1,4 @@
-﻿import json
+import json
 import tempfile
 import time
 import unittest
@@ -191,6 +191,17 @@ class BaselineTests(unittest.TestCase):
 
             self.assertIn("threading.Lock()", monitor_source)
             self.assertNotIn("task.assigned_agent = step.agent", workflow_source)
+
+    def test_export_reconstructed_before_framework_falls_back_to_runtime_repo_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exported = baseline_module.export_reconstructed_before_framework(
+                repo_root=Path(r"z:\missing\AIAgent"),
+                temp_dir=Path(tmp),
+            )
+
+            self.assertTrue((exported / "core" / "task_router.py").exists())
+            self.assertTrue((exported / "core" / "monitor.py").exists())
+            self.assertTrue((exported / "core" / "workflow_engine.py").exists())
 
     def test_capture_reconstructed_before_baseline_marks_timeout_prone_scenarios(self):
         baseline = baseline_module.capture_reconstructed_before_baseline(

@@ -10,8 +10,8 @@ from config import load_control_plane_config
 class HandoffRunStore:
     def __init__(self, base_dir: Optional[Path] = None):
         config = load_control_plane_config()
-        state_dir = Path(config.directories["state_dir"])
-        self.base_dir = Path(base_dir or (state_dir / "handoffs"))
+        root = Path(base_dir) if base_dir is not None else Path(config.directories["handoff_runtime_dir"])
+        self.base_dir = root
         self.records_dir = self.base_dir / "records"
         self.records_dir.mkdir(parents=True, exist_ok=True)
 

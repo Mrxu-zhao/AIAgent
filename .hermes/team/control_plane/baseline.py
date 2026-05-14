@@ -280,8 +280,36 @@ def persist_benchmark_run(output_path, payload):
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _resolve_repo_root(repo_root, required_relative_path):
+    candidate_root = Path(repo_root)
+    required_relative_path = Path(required_relative_path)
+    if (candidate_root / required_relative_path).exists():
+        return candidate_root
+
+    runtime_root = Path(__file__).resolve().parents[3]
+    if (runtime_root / required_relative_path).exists():
+        return runtime_root
+
+    return candidate_root
+
+
+def _revert_workflow_step_agent_override_fix(content):
+    start_marker = "            if step.agent and step.agent in self.task_router.agents and agent_id != step.agent:\n"
+    end_marker = "            if step.agent:\n"
+    before, matched, remainder = content.partition(start_marker)
+    if not matched:
+        return content
+    removed_block, matched_end, after = remainder.partition(end_marker)
+    if not matched_end:
+        return content
+    return before + end_marker + after
+
+
 def export_git_revision_framework(repo_root, revision="HEAD", runner=None, temp_dir=None):
-    repo_root = Path(repo_root)
+    repo_root = _resolve_repo_root(
+        repo_root,
+        Path(".hermes") / "team" / "调度框架" / "core" / "task_router.py",
+    )
     framework_name = "\u8c03\u5ea6\u6846\u67b6"
     framework_root = Path(temp_dir) if temp_dir is not None else Path(TemporaryDirectory().name)
     core_dir = framework_root / "core"
@@ -323,7 +351,10 @@ def capture_git_revision_baseline(repo_root, revision="HEAD", iterations=3, runn
 
 
 def export_reconstructed_before_framework(repo_root, temp_dir=None):
-    repo_root = Path(repo_root)
+    repo_root = _resolve_repo_root(
+        repo_root,
+        Path(".hermes") / "team" / "调度框架" / "core" / "task_router.py",
+    )
     framework_name = "\u8c03\u5ea6\u6846\u67b6"
     source_root = repo_root / ".hermes" / "team" / framework_name
     framework_root = Path(temp_dir) if temp_dir is not None else Path(TemporaryDirectory().name)
@@ -340,16 +371,7 @@ def export_reconstructed_before_framework(repo_root, temp_dir=None):
         if target_name == "monitor.py":
             content = content.replace("threading.RLock()", "threading.Lock()", 1)
         elif target_name == "workflow_engine.py":
-            old_block = (
-                "            if step.agent and step.agent in self.task_router.agents and agent_id != step.agent:\n"
-                "                self.task_router.agents[agent_id].current_tasks = max(\n"
-                "                    0, self.task_router.agents[agent_id].current_tasks - 1\n"
-                "                )\n"
-                "                self.task_router.agents[step.agent].current_tasks += 1\n"
-                "                task.assigned_agent = step.agent\n"
-                "                agent_id = step.agent\n"
-            )
-            content = content.replace(old_block, "", 1)
+            content = _revert_workflow_step_agent_override_fix(content)
         (core_dir / target_name).write_text(content, encoding="utf-8")
     return framework_root
 

@@ -126,3 +126,11 @@
 {"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667702.488158, "payload": {"agent": "architect", "error": null, "output": "ok"}}
 {"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.4883335, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.4885833, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723200.9178185, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723200.9180698, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.918316, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.9185987, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723230.4579027, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723230.458223, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4584465, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.4587226, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

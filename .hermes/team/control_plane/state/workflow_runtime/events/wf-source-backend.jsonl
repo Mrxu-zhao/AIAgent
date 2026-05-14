@@ -138,3 +138,11 @@
 {"workflow_id": "wf-source-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667702.5100605, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
 {"workflow_id": "wf-source-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.5102935, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-source-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.510503, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723200.939088, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723200.9393544, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.9395487, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.9397655, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723230.480718, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723230.4810314, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4812503, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-source-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.4815283, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}

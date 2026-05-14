@@ -38,3 +38,7 @@
 {"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667575.7733328, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口并补测试"}}
 {"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.4971514, "payload": {"agent": "backend-1", "task_template": "实现接口并补测试"}}
 {"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.497428, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口并补测试"}}
+{"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.926382, "payload": {"agent": "backend-1", "task_template": "实现接口并补测试"}}
+{"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.9266737, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口并补测试"}}
+{"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4685895, "payload": {"agent": "backend-1", "task_template": "实现接口并补测试"}}
+{"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.4689946, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口并补测试"}}

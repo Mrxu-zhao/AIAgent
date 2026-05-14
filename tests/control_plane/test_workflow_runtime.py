@@ -6,6 +6,7 @@ from unittest.mock import patch
 from tests.control_plane.test_support import ensure_control_plane_path, load_framework_module
 
 ensure_control_plane_path()
+import config as config_module  # noqa: E402
 import protocols.handoff as handoff_module  # noqa: E402
 import workflow_runtime as workflow_runtime_module  # noqa: E402
 
@@ -15,6 +16,17 @@ router_module = load_framework_module("task_router")
 
 
 class WorkflowRuntimeTests(unittest.TestCase):
+    def setUp(self):
+        config_module.load_control_plane_config.cache_clear()
+
+    def test_default_runtime_directories_use_runs_subtree(self):
+        config = config_module.load_control_plane_config()
+
+        self.assertIn(
+            "state/runs/workflow_runtime",
+            config.directories["workflow_runtime_dir"].replace("\\", "/"),
+        )
+
     def test_workflow_run_store_persists_snapshot_and_step_events(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = workflow_runtime_module.WorkflowRunStore(Path(tmp))

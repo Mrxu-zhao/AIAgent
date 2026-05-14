@@ -1,5 +1,12 @@
 # 仓库级控制平面
 
+## 文档入口
+- 总览：`../../../docs/architecture/control-plane-overview.md`
+- handoff 契约：`../../../docs/contracts/handoff-contract.md`
+- provider 契约：`../../../docs/contracts/provider-contracts.md`
+- 运行时治理：`../../../docs/runtime/runtime-governance.md`
+- handoff 与 continuation：`../../../docs/runtime/handoff-and-continuation.md`
+
 ## 目录
 - `models.py`：任务卡、事件、状态与锁域模型
 - `tasks.py`：第一批标准任务注册表

@@ -175,3 +175,11 @@
 {"workflow_id": "wf-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778667702.5078633, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
 {"workflow_id": "wf-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.5081594, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.508399, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723200.937131, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723200.9374666, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.9376945, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.9378912, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}
+{"workflow_id": "wf-backend", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723230.4783962, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-backend", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723230.4787936, "payload": {"agent": "architect", "error": null, "output": "design:设计方案"}}
+{"workflow_id": "wf-backend", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.4791179, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-backend", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.4793608, "payload": {"agent": "backend-1", "error": null, "output": "implement:实现代码"}}

@@ -1,0 +1,2 @@
+{"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723365.4579637, "payload": {"agent": "backend-1", "task_template": "实现接口并补测试"}}
+{"workflow_id": "wf-knowledge-pack", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723365.458379, "payload": {"agent": "backend-1", "error": null, "output": "任务已分配给 backend-1: 实现接口并补测试"}}

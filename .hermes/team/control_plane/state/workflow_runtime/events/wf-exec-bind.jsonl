@@ -54,3 +54,7 @@
 {"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667575.8113697, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
 {"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778667702.5364072, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
 {"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778667702.5366747, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723200.967377, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723200.9676266, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
+{"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723230.5060086, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-exec-bind", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723230.506276, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}

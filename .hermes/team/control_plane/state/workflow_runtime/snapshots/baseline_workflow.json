@@ -1,15 +1,15 @@
 {
   "workflow_id": "baseline_workflow",
   "status": "completed",
-  "started_at": 1778640991.278831,
+  "started_at": 1778723209.815654,
   "name": "Baseline Workflow",
   "description": "benchmark",
-  "completed_at": 1778640991.2823858,
+  "completed_at": 1778723209.8197987,
   "completed_steps": [
-    "architecture",
+    "database",
     "requirements",
     "backend",
-    "database"
+    "architecture"
   ],
   "failed_steps": []
 }

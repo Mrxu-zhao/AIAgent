@@ -1,0 +1,4 @@
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "running", "status": "running", "timestamp": 1778723365.4471834, "payload": {"agent": "architect", "task_template": "设计方案"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "design", "event": "completed", "status": "completed", "timestamp": 1778723365.4475095, "payload": {"agent": "architect", "error": null, "output": "ok"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "running", "status": "running", "timestamp": 1778723365.4477048, "payload": {"agent": "backend-1", "task_template": "实现代码"}}
+{"workflow_id": "wf-bus-handoff", "step_id": "implement", "event": "completed", "status": "completed", "timestamp": 1778723365.4479034, "payload": {"agent": "backend-1", "error": null, "output": "ok"}}
