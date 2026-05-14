@@ -53,6 +53,17 @@ class DocumentationContractsTests(unittest.TestCase):
         self.assertIn("query handoff", handoff_runtime)
         self.assertIn("query audit", handoff_runtime)
 
+    def test_repository_agents_guardrail_doc_exists_with_required_anchors(self):
+        agents_doc = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+        self.assertIn("README.md", agents_doc)
+        self.assertIn("CODE_WIKI.md", agents_doc)
+        self.assertIn(".hermes/team/control_plane/", agents_doc)
+        self.assertIn(".hermes/team/调度框架/", agents_doc)
+        self.assertIn("已读文件", agents_doc)
+        self.assertIn("确认事实", agents_doc)
+        self.assertIn("验证", agents_doc)
+
 
 if __name__ == "__main__":
     unittest.main()
