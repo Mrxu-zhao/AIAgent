@@ -1026,6 +1026,442 @@ class UnifiedCLITests(unittest.TestCase):
                             with self.assertRaises(PermissionError):
                                 unified_cli_module.main(["query", "handoff", "--prune"])
 
+    def test_extract_knowledge_recommendation_returns_none_for_non_mapping_reason(self):
+        task = SimpleNamespace(routing_reason="not-a-dict")
+
+        self.assertIsNone(unified_cli_module._extract_knowledge_recommendation(task))
+
+    def test_build_knowledge_bundles_skips_non_mapping_recommendations(self):
+        result = {
+            "knowledge_recommendations": {
+                "step-1": {
+                    "load_order": ["team", "role", "instance"],
+                    "team": [".hermes/team/knowledge/status.md"],
+                    "role": [".hermes/agents/architect/knowledge/status.md"],
+                    "instance": [".hermes/team/agents/architect/knowledge/expertise.md"],
+                },
+                "step-2": "skip-me",
+            }
+        }
+
+        bundles = unified_cli_module._build_knowledge_bundles(result)
+
+        self.assertEqual(list(bundles.keys()), ["step-1"])
+
+    def test_workflow_knowledge_payload_keeps_recommendations_and_bundles(self):
+        payload = {
+            "snapshot": {
+                "workflow_id": "wf-1",
+                "status": "completed",
+                "knowledge_feedback": {"appended_decisions": ["d1"], "appended_risks": []},
+                "knowledge_recommendations": {"step-1": {"team": ["a.md"]}},
+                "knowledge_bundles": {"step-1": {"paths": ["a.md"]}},
+            },
+            "events": [{"workflow_id": "wf-1", "event": "completed"}],
+        }
+
+        result = unified_cli_module._workflow_knowledge_payload(payload)
+
+        self.assertEqual(result["snapshot"]["knowledge_recommendations"]["step-1"]["team"], ["a.md"])
+        self.assertEqual(result["snapshot"]["knowledge_bundles"]["step-1"]["paths"], ["a.md"])
+
+    def test_load_workflow_context_reads_json_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context_path = Path(tmp) / "context.json"
+            context_path.write_text('{"project_name": "demo"}', encoding="utf-8")
+
+            result = unified_cli_module._load_workflow_context(str(context_path))
+
+        self.assertEqual(result, {"project_name": "demo"})
+
+    def test_run_tool_command_resume_requires_session_id(self):
+        with self.assertRaisesRegex(ValueError, "--resume requires --session-id"):
+            unified_cli_module.run_tool_command(tool_name="read_knowledge", task="demo", resume=True)
+
+    def test_query_workflow_manage_rejects_multiple_actions(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.workflow", "query.workflow.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="workflow",
+                    id="wf-1",
+                    workflow_id=None,
+                    message_id=None,
+                    target_agent=None,
+                    status=None,
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=True,
+                    archive=True,
+                    delete=False,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(unified_cli_module, "ApprovalGate"):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(
+                                ValueError, "workflow manage supports one action at a time"
+                            ):
+                                unified_cli_module.main(["query", "workflow", "--prune", "--archive"])
+
+    def test_query_workflow_manage_requires_id_for_archive(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.workflow", "query.workflow.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="workflow",
+                    id=None,
+                    workflow_id=None,
+                    message_id=None,
+                    target_agent=None,
+                    status=None,
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=False,
+                    archive=True,
+                    delete=False,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(unified_cli_module, "ApprovalGate"):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(ValueError, "workflow manage requires --id"):
+                                unified_cli_module.main(["query", "workflow", "--archive"])
+
+    def test_query_workflow_prune_requires_approval(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.workflow", "query.workflow.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="workflow",
+                    id=None,
+                    workflow_id=None,
+                    message_id=None,
+                    target_agent=None,
+                    status="completed",
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=True,
+                    archive=False,
+                    delete=False,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(
+                        unified_cli_module,
+                        "ApprovalGate",
+                        return_value=SimpleNamespace(
+                            requires_approval=lambda action: action == "workflow.prune"
+                        ),
+                    ):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(
+                                PermissionError, "workflow prune requires approval"
+                            ):
+                                unified_cli_module.main(["query", "workflow", "--prune"])
+
+    def test_query_handoff_manage_rejects_multiple_actions(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.handoff", "query.handoff.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="handoff",
+                    id=None,
+                    workflow_id="wf-1",
+                    message_id=None,
+                    target_agent=None,
+                    status="failed",
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=True,
+                    archive=True,
+                    delete=False,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(unified_cli_module, "ApprovalGate"):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(
+                                ValueError, "handoff manage supports one action at a time"
+                            ):
+                                unified_cli_module.main(["query", "handoff", "--prune", "--archive"])
+
+    def test_query_handoff_manage_requires_at_least_one_filter(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.handoff", "query.handoff.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="handoff",
+                    id=None,
+                    workflow_id=None,
+                    message_id=None,
+                    target_agent=None,
+                    status=None,
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=False,
+                    archive=False,
+                    delete=True,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(unified_cli_module, "ApprovalGate"):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(
+                                ValueError, "handoff manage requires at least one filter"
+                            ):
+                                unified_cli_module.main(["query", "handoff", "--delete"])
+
+    def test_query_handoff_archive_requires_approval(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.handoff", "query.handoff.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="handoff",
+                    id=None,
+                    workflow_id="wf-1",
+                    message_id=None,
+                    target_agent=None,
+                    status="materialized",
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=False,
+                    archive=True,
+                    delete=False,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(
+                        unified_cli_module,
+                        "ApprovalGate",
+                        return_value=SimpleNamespace(
+                            requires_approval=lambda action: action == "handoff.archive"
+                        ),
+                    ):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(
+                                PermissionError, "handoff archive requires approval"
+                            ):
+                                unified_cli_module.main(["query", "handoff", "--archive"])
+
+    def test_query_handoff_delete_requires_approval(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.handoff", "query.handoff.manage"}
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="handoff",
+                    id=None,
+                    workflow_id="wf-1",
+                    message_id=None,
+                    target_agent=None,
+                    status="materialized",
+                    action=None,
+                    agent=None,
+                    role=None,
+                    task_type=None,
+                    risk_tag=None,
+                    review_status=None,
+                    search=None,
+                    actor="operator",
+                    prune=False,
+                    archive=False,
+                    delete=True,
+                    knowledge_only=False,
+                    summary=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(
+                        unified_cli_module,
+                        "ApprovalGate",
+                        return_value=SimpleNamespace(
+                            requires_approval=lambda action: action == "handoff.delete"
+                        ),
+                    ):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaisesRegex(
+                                PermissionError, "handoff delete requires approval"
+                            ):
+                                unified_cli_module.main(["query", "handoff", "--delete"])
+
     def test_query_knowledge_action_applies_governance_directly(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
