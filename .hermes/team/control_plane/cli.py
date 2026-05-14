@@ -30,6 +30,26 @@ from workflow_engine import WorkflowEngine, create_standard_project_workflow
 from workflow_runtime import WorkflowRunStore
 
 
+def _normalize_handoff_record(record):
+    normalized = dict(record)
+    normalized.setdefault("continuation_status", None)
+    normalized.setdefault("continued_at", None)
+    if normalized.get("continuation_workflow_id") is None and (
+        normalized.get("continuation_status") is not None or normalized.get("continued_at") is not None
+    ):
+        normalized["continuation_workflow_id"] = normalized.get("workflow_id")
+    else:
+        normalized.setdefault("continuation_workflow_id", None)
+    for key in (
+        "continuation_ready_steps",
+        "continuation_completed_steps",
+        "continuation_failed_steps",
+    ):
+        value = normalized.get(key)
+        normalized[key] = list(value) if value is not None else []
+    return normalized
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Control plane unified CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -51,6 +71,9 @@ def build_parser():
     query.add_argument("--status")
     query.add_argument("--action")
     query.add_argument("--actor", default="viewer")
+    query.add_argument("--prune", action="store_true")
+    query.add_argument("--archive", action="store_true")
+    query.add_argument("--delete", action="store_true")
 
     monitor = subparsers.add_parser("monitor", help="查看监控数据")
     monitor.add_argument("--dashboard", action="store_true")
@@ -163,7 +186,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     config = load_control_plane_config()
     policy = build_default_rbac_policy()
-    ApprovalGate(config.sensitive_actions)
+    approval_gate = ApprovalGate(config.sensitive_actions)
     audit = AuditLogger(Path(config.directories["audit_log"]))
 
     if args.command == "dispatch":
@@ -196,6 +219,7 @@ def main(argv=None):
         return result
 
     if args.command == "query":
+        manage_requested = any(getattr(args, name, False) for name in ("prune", "archive", "delete"))
         action = {
             "workflow": "query.workflow",
             "handoff": "query.handoff",
@@ -203,6 +227,10 @@ def main(argv=None):
         }[args.resource]
         if not policy.is_allowed(args.actor, action):
             raise PermissionError("actor is not allowed to query")
+        if manage_requested:
+            manage_action = f"query.{args.resource}.manage"
+            if not policy.is_allowed(args.actor, manage_action):
+                raise PermissionError("actor is not allowed to manage runtime records")
 
         query_filters = {
             "id": args.id,
@@ -214,26 +242,152 @@ def main(argv=None):
         }
 
         if args.resource == "workflow":
+            store = WorkflowRunStore(Path(config.directories["workflow_runtime_dir"]))
+            if manage_requested:
+                if sum(bool(getattr(args, name, False)) for name in ("prune", "archive", "delete")) > 1:
+                    raise ValueError("workflow manage supports one action at a time")
+                if args.prune:
+                    if approval_gate.requires_approval("workflow.prune"):
+                        raise PermissionError("workflow prune requires approval")
+                    payload = store.prune_workflows(status=args.status)
+                    audit.log(
+                        "workflow.prune",
+                        {
+                            "actor": args.actor,
+                            "status": args.status,
+                            **payload,
+                        },
+                    )
+                    print(json.dumps(payload, ensure_ascii=False, indent=2))
+                    return payload
+                if not args.id:
+                    raise ValueError("workflow manage requires --id")
+                if args.archive:
+                    if approval_gate.requires_approval("workflow.archive"):
+                        raise PermissionError("workflow archive requires approval")
+                    payload = store.archive_workflow(args.id)
+                    audit.log(
+                        "workflow.archive",
+                        {
+                            "actor": args.actor,
+                            "workflow_id": args.id,
+                            **payload,
+                        },
+                    )
+                    print(json.dumps(payload, ensure_ascii=False, indent=2))
+                    return payload
+                if approval_gate.requires_approval("workflow.delete"):
+                    raise PermissionError("workflow delete requires approval")
+                payload = store.delete_workflow(args.id)
+                audit.log(
+                    "workflow.delete",
+                    {
+                        "actor": args.actor,
+                        "workflow_id": args.id,
+                        **payload,
+                    },
+                )
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+                return payload
             if not args.id:
                 raise ValueError("workflow query requires --id")
-            store = WorkflowRunStore(Path(config.directories["workflow_runtime_dir"]))
             payload = {
                 "snapshot": store.read_snapshot(args.id),
                 "events": store.list_step_events(args.id),
             }
             result_count = 1 if payload["snapshot"] is not None else 0
         elif args.resource == "handoff":
-            store = HandoffRunStore(Path(config.directories["state_dir"]) / "handoffs")
-            records = store.list_records(
-                workflow_id=args.workflow_id,
-                target_agent=args.target_agent,
-                status=args.status,
-            )
-            if args.message_id:
-                records = [record for record in records if record.get("message_id") == args.message_id]
+            handoff_dir = config.directories.get("handoff_runtime_dir")
+            if handoff_dir is None:
+                handoff_dir = str(Path(config.directories["state_dir"]) / "handoffs")
+            store = HandoffRunStore(Path(handoff_dir))
+            if manage_requested:
+                if sum(bool(getattr(args, name, False)) for name in ("prune", "archive", "delete")) > 1:
+                    raise ValueError("handoff manage supports one action at a time")
+                filters = {
+                    "workflow_id": args.workflow_id,
+                    "message_id": args.message_id,
+                    "target_agent": args.target_agent,
+                    "status": args.status,
+                }
+                if not any(filters.values()):
+                    raise ValueError("handoff manage requires at least one filter")
+                if args.prune:
+                    if approval_gate.requires_approval("handoff.prune"):
+                        raise PermissionError("handoff prune requires approval")
+                    deleted = store.prune_records(
+                        workflow_id=args.workflow_id,
+                        message_id=args.message_id,
+                        target_agent=args.target_agent,
+                        status=args.status,
+                    )
+                    payload = {"deleted_count": deleted}
+                    audit.log(
+                        "handoff.prune",
+                        {
+                            "actor": args.actor,
+                            **filters,
+                            **payload,
+                        },
+                    )
+                    print(json.dumps(payload, ensure_ascii=False, indent=2))
+                    return payload
+                if args.archive:
+                    if approval_gate.requires_approval("handoff.archive"):
+                        raise PermissionError("handoff archive requires approval")
+                    payload = store.archive_records(
+                        workflow_id=args.workflow_id,
+                        message_id=args.message_id,
+                        target_agent=args.target_agent,
+                        status=args.status,
+                    )
+                    audit.log(
+                        "handoff.archive",
+                        {
+                            "actor": args.actor,
+                            **filters,
+                            **payload,
+                        },
+                    )
+                    print(json.dumps(payload, ensure_ascii=False, indent=2))
+                    return payload
+                if approval_gate.requires_approval("handoff.delete"):
+                    raise PermissionError("handoff delete requires approval")
+                deleted = store.delete_records(
+                    workflow_id=args.workflow_id,
+                    message_id=args.message_id,
+                    target_agent=args.target_agent,
+                    status=args.status,
+                )
+                payload = {"deleted_count": deleted}
+                audit.log(
+                    "handoff.delete",
+                    {
+                        "actor": args.actor,
+                        **filters,
+                        **payload,
+                    },
+                )
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+                return payload
+            try:
+                records = store.list_records(
+                    workflow_id=args.workflow_id,
+                    target_agent=args.target_agent,
+                    status=args.status,
+                    message_id=args.message_id,
+                )
+            except TypeError:
+                records = store.list_records(
+                    workflow_id=args.workflow_id,
+                    target_agent=args.target_agent,
+                    status=args.status,
+                )
+                if args.message_id:
+                    records = [record for record in records if record.get("message_id") == args.message_id]
             if args.status:
                 records = [record for record in records if record.get("status") == args.status]
-            payload = {"records": records}
+            payload = {"records": [_normalize_handoff_record(record) for record in records]}
             result_count = len(records)
         else:
             records = audit.read_all()

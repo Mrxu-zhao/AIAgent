@@ -319,9 +319,68 @@ class UnifiedCLITests(unittest.TestCase):
                     "workflow_id": "wf-1",
                     "target_agent": "backend-1",
                     "status": "materialized",
+                    "continuation_status": None,
+                    "continued_at": None,
+                    "continuation_workflow_id": None,
+                    "continuation_ready_steps": [],
+                    "continuation_completed_steps": [],
+                    "continuation_failed_steps": [],
                 }
             ],
         )
+
+    def test_query_handoff_exposes_continuation_metadata_keys(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: action == "query.handoff" and actor == "viewer"
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        class FakeHandoffStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def list_records(self, workflow_id=None, target_agent=None, status=None):
+                del workflow_id, target_agent, status
+                return [
+                    {
+                        "message_id": "msg-1",
+                        "workflow_id": "wf-1",
+                        "target_agent": "backend-1",
+                        "status": "dispatched",
+                        "continuation_status": "continued",
+                        "continued_at": 456.0,
+                    }
+                ]
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "HandoffRunStore",
+                            FakeHandoffStore,
+                            create=True,
+                        ):
+                            result = unified_cli_module.main(
+                                ["query", "handoff", "--message-id", "msg-1", "--actor", "viewer"]
+                            )
+
+        self.assertEqual(len(result["records"]), 1)
+        self.assertEqual(result["records"][0]["continuation_status"], "continued")
+        self.assertEqual(result["records"][0]["continuation_workflow_id"], "wf-1")
+        self.assertEqual(result["records"][0]["continued_at"], 456.0)
+        self.assertEqual(result["records"][0]["continuation_ready_steps"], [])
+        self.assertEqual(result["records"][0]["continuation_completed_steps"], [])
+        self.assertEqual(result["records"][0]["continuation_failed_steps"], [])
 
     def test_query_handoff_rejects_unauthorized_actor(self):
         fake_config = SimpleNamespace(
@@ -501,6 +560,218 @@ class UnifiedCLITests(unittest.TestCase):
                 },
             )
             self.assertEqual(query_events[0]["result_count"], 1)
+
+    def test_query_handoff_prune_removes_filtered_runtime_records_and_audits(self):
+        observed = {"audit": []}
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.handoff", "query.handoff.manage"}
+        )
+        fake_audit = SimpleNamespace(log=lambda action, payload: observed["audit"].append((action, payload)))
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="handoff",
+                    id=None,
+                    workflow_id="wf-1",
+                    message_id=None,
+                    target_agent=None,
+                    status="failed",
+                    action=None,
+                    actor="operator",
+                    prune=True,
+                    archive=False,
+                    delete=False,
+                )
+
+            def print_help(self):
+                return None
+
+        class FakeHandoffStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def list_records(self, workflow_id=None, target_agent=None, status=None):
+                return [
+                    {
+                        "message_id": "msg-1",
+                        "workflow_id": workflow_id,
+                        "target_agent": target_agent,
+                        "status": status,
+                    }
+                ]
+
+            def prune_records(self, workflow_id=None, message_id=None, target_agent=None, status=None):
+                self.last_prune = {
+                    "workflow_id": workflow_id,
+                    "message_id": message_id,
+                    "target_agent": target_agent,
+                    "status": status,
+                }
+                return 2
+
+            def delete_records(self, workflow_id=None, target_agent=None, status=None):
+                self.last_delete = {
+                    "workflow_id": workflow_id,
+                    "target_agent": target_agent,
+                    "status": status,
+                }
+                return 2
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(
+                        unified_cli_module,
+                        "ApprovalGate",
+                        return_value=SimpleNamespace(requires_approval=lambda *_: False),
+                    ):
+                        with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                            with patch.object(
+                                unified_cli_module,
+                                "HandoffRunStore",
+                                FakeHandoffStore,
+                                create=True,
+                            ):
+                                result = unified_cli_module.main(["query", "handoff", "--prune"])
+
+        self.assertEqual(result.get("deleted_count"), 2)
+        self.assertEqual(observed["audit"][0][0], "handoff.prune")
+        self.assertEqual(observed["audit"][0][1]["status"], "failed")
+
+    def test_query_workflow_archive_uses_manage_permission_and_returns_archive_path(self):
+        observed = {"audit": []}
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "operator"
+            and action in {"query.workflow", "query.workflow.manage"}
+        )
+        fake_audit = SimpleNamespace(log=lambda action, payload: observed["audit"].append((action, payload)))
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="workflow",
+                    id="wf-1",
+                    workflow_id=None,
+                    message_id=None,
+                    target_agent=None,
+                    status=None,
+                    action=None,
+                    actor="operator",
+                    prune=False,
+                    archive=True,
+                    delete=False,
+                )
+
+            def print_help(self):
+                return None
+
+        class FakeWorkflowStore:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def read_snapshot(self, workflow_id):
+                return {"workflow_id": workflow_id, "status": "running"}
+
+            def list_step_events(self, workflow_id):
+                return [{"workflow_id": workflow_id, "event": "running"}]
+
+            def archive_workflow(self, workflow_id):
+                self.last_workflow_id = workflow_id
+                return {
+                    "workflow_id": workflow_id,
+                    "archive_path": "archives/wf-1.zip",
+                    "archived_files": 2,
+                }
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(
+                        unified_cli_module,
+                        "ApprovalGate",
+                        return_value=SimpleNamespace(requires_approval=lambda *_: False),
+                    ):
+                        with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                            with patch.object(
+                                unified_cli_module,
+                                "WorkflowRunStore",
+                                FakeWorkflowStore,
+                                create=True,
+                            ):
+                                result = unified_cli_module.main(["query", "workflow", "--archive"])
+
+        self.assertEqual(result.get("archive_path"), "archives/wf-1.zip")
+        self.assertEqual(result.get("archived_files"), 2)
+        self.assertEqual(observed["audit"][0][0], "workflow.archive")
+        self.assertEqual(observed["audit"][0][1]["workflow_id"], "wf-1")
+
+    def test_query_handoff_prune_requires_operator_or_admin(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": "state",
+                "handoff_runtime_dir": "handoff-runtime",
+                "workflow_runtime_dir": "workflow-runtime",
+            },
+        )
+        fake_policy = SimpleNamespace(
+            is_allowed=lambda actor, action: actor == "viewer" and action == "query.handoff"
+        )
+
+        class FakeParser:
+            def parse_args(self, _argv):
+                return SimpleNamespace(
+                    command="query",
+                    resource="handoff",
+                    id=None,
+                    workflow_id=None,
+                    message_id=None,
+                    target_agent=None,
+                    status="failed",
+                    action=None,
+                    actor="viewer",
+                    prune=True,
+                    archive=False,
+                    delete=False,
+                )
+
+            def print_help(self):
+                return None
+
+        with patch.object(unified_cli_module, "build_parser", return_value=FakeParser()):
+            with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+                with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                    with patch.object(
+                        unified_cli_module,
+                        "ApprovalGate",
+                        return_value=SimpleNamespace(requires_approval=lambda *_: False),
+                    ):
+                        with patch.object(unified_cli_module, "AuditLogger"):
+                            with self.assertRaises(PermissionError):
+                                unified_cli_module.main(["query", "handoff", "--prune"])
 
     def test_main_without_command_prints_help(self):
         stream = io.StringIO()

@@ -176,6 +176,173 @@ class HandoffCoordinatorTests(unittest.TestCase):
         self.assertEqual(persisted["materialized_task_id"], result["materialized_task_id"])
         self.assertTrue(any(event["event"] == "handoff_materialized" for event in events))
 
+    def test_handoff_coordinator_dispatches_materialized_task_once(self):
+        coordinator_module = load_framework_module("handoff_coordinator")
+        workflow_runtime_module = load_control_plane_module("workflow_runtime")
+        store_module = load_control_plane_module("store")
+        dispatched = []
+
+        class FakeDispatcher:
+            def execute_task(self, card, adapter, command_runner):
+                dispatched.append(
+                    {
+                        "task_id": card.task_id,
+                        "owner_agent": card.owner_agent,
+                        "executor_backend": card.executor_backend,
+                    }
+                )
+                return {
+                    "success": True,
+                    "command": ["openclaw", "dispatch"],
+                    "stdout": "ok",
+                    "stderr": "",
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            store = store_module.TaskStore(base / "state", base / "events")
+            bus = FakeBus(valid_handoff_message())
+            coordinator = coordinator_module.HandoffCoordinator(
+                bus,
+                task_store=store,
+                dispatcher=FakeDispatcher(),
+                adapter=object(),
+                command_runner=lambda command: None,
+            )
+
+            first = coordinator.consume_for("backend-1")
+            bus.messages = [valid_handoff_message()]
+            second = coordinator.consume_for("backend-1")
+
+        self.assertEqual(first["status"], "dispatched")
+        self.assertIsNotNone(first["dispatched_at"])
+        self.assertEqual(second["status"], "dispatched")
+        self.assertEqual(first["materialized_task_id"], second["materialized_task_id"])
+        self.assertEqual(first["dispatched_at"], second["dispatched_at"])
+        self.assertEqual(
+            dispatched,
+            [
+                {
+                    "task_id": "handoff-wf-1-design-implement",
+                    "owner_agent": "backend-1",
+                    "executor_backend": "openclaw",
+                }
+            ],
+        )
+
+    def test_handoff_dispatch_can_trigger_workflow_resume(self):
+        coordinator_module = load_framework_module("handoff_coordinator")
+        workflow_runtime_module = load_control_plane_module("workflow_runtime")
+        store_module = load_control_plane_module("store")
+
+        class FakeDispatcher:
+            def execute_task(self, card, adapter, command_runner):
+                return {
+                    "success": True,
+                    "command": ["openclaw", "dispatch"],
+                    "stdout": "ok",
+                    "stderr": "",
+                }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            store = store_module.TaskStore(base / "state", base / "events")
+            workflow_store = workflow_runtime_module.WorkflowRunStore(base / "workflows")
+            workflow_store.record_workflow_started("wf-1", {"name": "demo"})
+            workflow_store.record_step_event("wf-1", "design", "completed", {"summary": "done"})
+            bus = FakeBus(valid_handoff_message())
+            coordinator = coordinator_module.HandoffCoordinator(
+                bus,
+                task_store=store,
+                runtime_store=workflow_store,
+                dispatcher=FakeDispatcher(),
+                adapter=object(),
+                command_runner=lambda command: None,
+            )
+
+            result = coordinator.consume_for("backend-1")
+
+        self.assertEqual(result["continuation_workflow_id"], "wf-1")
+        self.assertEqual(result["continuation_status"], "continued")
+        self.assertIsNotNone(result["continued_at"])
+        self.assertEqual(result["continuation_ready_steps"], ["implement"])
+        self.assertEqual(result["continuation_completed_steps"], ["design"])
+        self.assertEqual(result["continuation_failed_steps"], [])
+
+    def test_continuation_failure_falls_back_to_dispatched_state(self):
+        coordinator_module = load_framework_module("handoff_coordinator")
+        store_module = load_control_plane_module("store")
+
+        class FakeDispatcher:
+            def execute_task(self, card, adapter, command_runner):
+                return {
+                    "success": True,
+                    "command": ["openclaw", "dispatch"],
+                    "stdout": "ok",
+                    "stderr": "",
+                }
+
+        class BrokenRuntimeStore:
+            def __init__(self):
+                self.workflow_events = []
+
+            def read_snapshot(self, workflow_id):
+                raise RuntimeError(f"resume failed for {workflow_id}")
+
+            def list_step_events(self, workflow_id):
+                del workflow_id
+                return []
+
+            def record_step_event(self, workflow_id, step_id, status, payload):
+                del workflow_id, step_id, status, payload
+
+            def record_workflow_event(self, workflow_id, status, payload):
+                self.workflow_events.append(
+                    {
+                        "workflow_id": workflow_id,
+                        "status": status,
+                        "payload": payload,
+                    }
+                )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            store = store_module.TaskStore(base / "state", base / "events")
+            runtime_store = BrokenRuntimeStore()
+            coordinator = coordinator_module.HandoffCoordinator(
+                FakeBus(valid_handoff_message()),
+                task_store=store,
+                runtime_store=runtime_store,
+                dispatcher=FakeDispatcher(),
+                adapter=object(),
+                command_runner=lambda command: None,
+            )
+
+            result = coordinator.consume_for("backend-1")
+
+        self.assertEqual(result["status"], "dispatched")
+        self.assertEqual(result["continuation_workflow_id"], "wf-1")
+        self.assertEqual(result["continuation_status"], "failed")
+        self.assertEqual(result["continuation_ready_steps"], [])
+        self.assertEqual(result["continuation_completed_steps"], [])
+        self.assertEqual(result["continuation_failed_steps"], [])
+        self.assertIsNotNone(result["dispatched_at"])
+        self.assertIn("resume failed for wf-1", result["error"])
+        self.assertEqual(
+            runtime_store.workflow_events,
+            [
+                {
+                    "workflow_id": "wf-1",
+                    "status": "workflow_resume_failed",
+                    "payload": {
+                        "message_id": "msg-1",
+                        "target_step": "implement",
+                        "error": "resume failed for wf-1",
+                    },
+                }
+            ],
+        )
+
     def test_handoff_coordinator_consumes_and_acks_valid_handoff(self):
         received = []
         framework_file = FRAMEWORK_DIR / "handoff_coordinator.py"

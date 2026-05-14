@@ -1,10 +1,10 @@
 {
   "workflow_id": "wf-exec-bind",
   "status": "completed",
-  "started_at": 1778723365.4993088,
+  "started_at": 1778725210.5818973,
   "name": "exec-bind",
   "description": "demo",
-  "completed_at": 1778723365.500373,
+  "completed_at": 1778725210.5827177,
   "completed_steps": [
     "implement"
   ],

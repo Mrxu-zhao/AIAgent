@@ -25,6 +25,14 @@ class GovernanceTests(unittest.TestCase):
         self.assertTrue(policy.is_allowed("viewer", "query.audit.read"))
         self.assertFalse(policy.is_allowed("guest", "query.workflow"))
 
+    def test_rbac_reserves_runtime_management_actions_for_operator_and_admin(self):
+        policy = rbac_module.build_default_rbac_policy()
+
+        self.assertTrue(policy.is_allowed("admin", "query.handoff.manage"))
+        self.assertTrue(policy.is_allowed("operator", "query.workflow.manage"))
+        self.assertFalse(policy.is_allowed("viewer", "query.handoff.manage"))
+        self.assertFalse(policy.is_allowed("guest", "query.workflow.manage"))
+
     def test_approval_gate_requires_sensitive_commands(self):
         gate = approval_module.ApprovalGate(sensitive_actions={"provider.execute_sensitive"})
 

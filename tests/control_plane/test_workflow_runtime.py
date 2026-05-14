@@ -39,6 +39,24 @@ class WorkflowRuntimeTests(unittest.TestCase):
             self.assertEqual(snapshot["status"], "running")
             self.assertEqual(events[0]["step_id"], "step-1")
 
+    def test_workflow_run_store_returns_latest_step_statuses_for_resume(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = workflow_runtime_module.WorkflowRunStore(Path(tmp))
+            store.record_workflow_started("wf-1", {"name": "demo"})
+            store.record_step_event("wf-1", "design", "running", {})
+            store.record_step_event("wf-1", "design", "completed", {"summary": "done"})
+            store.record_step_event("wf-1", "implement", "pending", {})
+
+            statuses = store.get_step_statuses("wf-1")
+
+            self.assertEqual(
+                statuses,
+                {
+                    "design": "completed",
+                    "implement": "pending",
+                },
+            )
+
     def test_workflow_engine_writes_runtime_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
             runtime = workflow_runtime_module.WorkflowRunStore(Path(tmp))
