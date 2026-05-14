@@ -79,6 +79,9 @@ class BaselineTests(unittest.TestCase):
         self.assertIn("workflow", baseline["scenarios"])
         self.assertEqual(baseline["load_profile"]["cpu_burn_iterations"], 25000)
         self.assertIn("cpu_effective_ms", baseline["scenarios"]["dashboard"])
+        self.assertIn("knowledge_preload_ms", baseline["scenarios"]["dashboard"])
+        self.assertIn("knowledge_query_ms", baseline["scenarios"]["dashboard"])
+        self.assertIn("dashboard_analytics_ms", baseline["scenarios"]["dashboard"])
 
     def test_capture_framework_baseline_exposes_workflow_correctness_signal(self):
         baseline = baseline_module.capture_framework_baseline(
@@ -191,6 +194,19 @@ class BaselineTests(unittest.TestCase):
 
             self.assertIn("threading.Lock()", monitor_source)
             self.assertNotIn("task.assigned_agent = step.agent", workflow_source)
+
+    def test_export_reconstructed_before_framework_stabilizes_task_router_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exported = baseline_module.export_reconstructed_before_framework(
+                repo_root=Path(r"d:\KIMIK2.5\AIAgent"),
+                temp_dir=Path(tmp),
+            )
+
+            task_router_source = (exported / "core" / "task_router.py").read_text(encoding="utf-8")
+
+            self.assertNotIn("Path(__file__).resolve().parents[4] / \".hermes\"", task_router_source)
+            self.assertNotIn("return Path(__file__).resolve().parents[4] / path", task_router_source)
+            self.assertIn(".hermes", task_router_source)
 
     def test_export_reconstructed_before_framework_falls_back_to_runtime_repo_root(self):
         with tempfile.TemporaryDirectory() as tmp:

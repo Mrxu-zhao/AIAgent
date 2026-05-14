@@ -14,7 +14,7 @@
 - 附件与风险字段：`artifacts`、`open_questions`、`risks`
 - backend 选择字段：`selected_backend`、`backend_candidates`、`backend_reason`
 - 治理字段：`review_policy`
-- 知识路由字段：`knowledge_recommendation`
+- 知识路由字段：`knowledge_recommendation`、`knowledge_summary`、`next_read`
 
 ## bus envelope
 
@@ -42,3 +42,4 @@
 - 最小记录字段包括：`message_id`、`workflow_id`、`status`、`materialized_task_id`、`dispatched_at`
 - continuation 记录字段包括：`continuation_workflow_id`、`continuation_status`、`continued_at`
 - continuation 明细字段包括：`continuation_ready_steps`、`continuation_completed_steps`、`continuation_failed_steps`
+- 知识消费记录字段包括：`knowledge_consumed`、`knowledge_consumed_at`、`knowledge_failure_reason`、`inherited_knowledge_chain`

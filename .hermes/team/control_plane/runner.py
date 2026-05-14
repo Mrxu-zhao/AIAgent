@@ -49,9 +49,18 @@ def run_task_batch(
         command_runner,
         max_workers=max_workers,
     )
+    knowledge_payloads = {
+        card.task_id: {
+            "summary": getattr(card, "knowledge_summary", None),
+            "next_read": list((getattr(card, "knowledge_bundle", None) or {}).get("next_read", [])),
+            "raw_paths": list((getattr(card, "knowledge_bundle", None) or {}).get("paths", [])),
+        }
+        for card in cards
+    }
     return {
         "task_ids": [card.task_id for card in cards],
         "summary": summary,
+        "knowledge": knowledge_payloads,
         "state_dir": str(state_dir),
         "events_dir": str(events_dir),
         "store": store,

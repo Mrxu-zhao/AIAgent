@@ -28,6 +28,12 @@ class HandoffRecord:
     target_backend: Optional[str] = None
     selected_backend: Optional[str] = None
     knowledge_recommendation: Optional[Dict[str, Any]] = None
+    knowledge_summary: Optional[str] = None
+    next_read: List[str] = field(default_factory=list)
+    knowledge_consumed: bool = False
+    knowledge_consumed_at: Optional[float] = None
+    knowledge_failure_reason: Optional[str] = None
+    inherited_knowledge_chain: List[str] = field(default_factory=list)
     received_at: Optional[float] = None
     acked_at: Optional[float] = None
     materialized_task_id: Optional[str] = None
@@ -95,6 +101,9 @@ class HandoffCoordinator:
             target_backend=payload.get("target_backend"),
             selected_backend=payload.get("selected_backend"),
             knowledge_recommendation=payload.get("knowledge_recommendation"),
+            knowledge_summary=payload.get("knowledge_summary"),
+            next_read=list(payload.get("next_read", [])),
+            inherited_knowledge_chain=list(payload.get("next_read", [])),
             status="received",
             created_at=float(payload.get("created_at", time.time())),
             received_at=time.time(),
@@ -105,6 +114,9 @@ class HandoffCoordinator:
                 self.bus.ack(agent_id, record.message_id)
             record.status = "acked"
             record.acked_at = time.time()
+            if record.knowledge_summary or record.next_read:
+                record.knowledge_consumed = True
+                record.knowledge_consumed_at = time.time()
             if self.task_store is not None:
                 self._materialize_task(record, payload)
                 self._persist_materialized_record(record)
@@ -247,6 +259,8 @@ class HandoffCoordinator:
         target_agent = payload.get("target_agent") or "unknown"
         summary = payload.get("summary") or "consume handoff context"
         target_backend = payload.get("selected_backend") or payload.get("target_backend")
+        knowledge_recommendation = payload.get("knowledge_recommendation")
+        next_read = list(payload.get("next_read", []))
         task_id = f"handoff-{workflow_id}-{source_step}-{target_step}"
         return TaskCard(
             task_id=task_id,
@@ -265,6 +279,9 @@ class HandoffCoordinator:
             rollback_policy=RollbackPolicy(mode="manual"),
             acceptance_criteria=[summary],
             executor_backend=target_backend,
+            knowledge_recommendation=knowledge_recommendation,
+            knowledge_bundle={"next_read": next_read, "paths": next_read},
+            knowledge_summary=payload.get("knowledge_summary"),
         )
 
     def _task_exists(self, task_id: str) -> bool:

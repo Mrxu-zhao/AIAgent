@@ -14,6 +14,15 @@ from governance.approval import ApprovalGate
 from governance.audit import AuditLogger
 from governance.rbac import build_default_rbac_policy
 from handoff_runtime import HandoffRunStore
+from knowledge.analytics import (
+    build_consumption_by_agent,
+    build_high_risk_coverage,
+    build_knowledge_heat_ranking,
+    build_pending_governance_counts,
+    build_unused_recommendations,
+)
+from knowledge.governance import apply_governance_action
+from knowledge.query import query_knowledge_records
 from message_bus import get_bus
 from monitor import get_monitor
 from observability.metrics import refresh_repository_metrics
@@ -114,6 +123,10 @@ def _handoff_knowledge_summary(records):
     }
 
 
+def _knowledge_root() -> Path:
+    return Path(__file__).resolve().parents[1] / "knowledge"
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description="Control plane unified CLI")
     subparsers = parser.add_subparsers(dest="command")
@@ -134,6 +147,12 @@ def build_parser():
     query.add_argument("--target-agent")
     query.add_argument("--status")
     query.add_argument("--action")
+    query.add_argument("--agent")
+    query.add_argument("--role")
+    query.add_argument("--task-type")
+    query.add_argument("--risk-tag")
+    query.add_argument("--review-status")
+    query.add_argument("--search")
     query.add_argument("--actor", default="viewer")
     query.add_argument("--prune", action="store_true")
     query.add_argument("--archive", action="store_true")
@@ -304,12 +323,20 @@ def main(argv=None):
                 raise PermissionError("actor is not allowed to manage runtime records")
 
         query_filters = {
-            "id": args.id,
-            "workflow_id": args.workflow_id,
-            "message_id": args.message_id,
-            "target_agent": args.target_agent,
-            "status": args.status,
-            "action": args.action,
+            "id": getattr(args, "id", None),
+            "workflow_id": getattr(args, "workflow_id", None),
+            "message_id": getattr(args, "message_id", None),
+            "target_agent": getattr(args, "target_agent", None),
+            "status": getattr(args, "status", None),
+            "action": getattr(args, "action", None),
+        }
+        extended_query_filters = {
+            "agent": getattr(args, "agent", None),
+            "role": getattr(args, "role", None),
+            "task_type": getattr(args, "task_type", None),
+            "risk_tag": getattr(args, "risk_tag", None),
+            "review_status": getattr(args, "review_status", None),
+            "search": getattr(args, "search", None),
         }
 
         if args.resource == "workflow":
@@ -317,31 +344,31 @@ def main(argv=None):
             if manage_requested:
                 if sum(bool(getattr(args, name, False)) for name in ("prune", "archive", "delete")) > 1:
                     raise ValueError("workflow manage supports one action at a time")
-                if args.prune:
+                if getattr(args, "prune", False):
                     if approval_gate.requires_approval("workflow.prune"):
                         raise PermissionError("workflow prune requires approval")
-                    payload = store.prune_workflows(status=args.status)
+                    payload = store.prune_workflows(status=getattr(args, "status", None))
                     audit.log(
                         "workflow.prune",
                         {
                             "actor": args.actor,
-                            "status": args.status,
+                            "status": getattr(args, "status", None),
                             **payload,
                         },
                     )
                     print(json.dumps(payload, ensure_ascii=False, indent=2))
                     return payload
-                if not args.id:
+                if not getattr(args, "id", None):
                     raise ValueError("workflow manage requires --id")
-                if args.archive:
+                if getattr(args, "archive", False):
                     if approval_gate.requires_approval("workflow.archive"):
                         raise PermissionError("workflow archive requires approval")
-                    payload = store.archive_workflow(args.id)
+                    payload = store.archive_workflow(getattr(args, "id", None))
                     audit.log(
                         "workflow.archive",
                         {
                             "actor": args.actor,
-                            "workflow_id": args.id,
+                            "workflow_id": getattr(args, "id", None),
                             **payload,
                         },
                     )
@@ -349,22 +376,22 @@ def main(argv=None):
                     return payload
                 if approval_gate.requires_approval("workflow.delete"):
                     raise PermissionError("workflow delete requires approval")
-                payload = store.delete_workflow(args.id)
+                payload = store.delete_workflow(getattr(args, "id", None))
                 audit.log(
                     "workflow.delete",
                     {
                         "actor": args.actor,
-                        "workflow_id": args.id,
+                        "workflow_id": getattr(args, "id", None),
                         **payload,
                     },
                 )
                 print(json.dumps(payload, ensure_ascii=False, indent=2))
                 return payload
-            if not args.id:
+            if not getattr(args, "id", None):
                 raise ValueError("workflow query requires --id")
             payload = {
-                "snapshot": store.read_snapshot(args.id),
-                "events": store.list_step_events(args.id),
+                "snapshot": store.read_snapshot(getattr(args, "id", None)),
+                "events": store.list_step_events(getattr(args, "id", None)),
             }
             if args.knowledge_only:
                 payload = _workflow_knowledge_payload(payload)
@@ -380,21 +407,21 @@ def main(argv=None):
                 if sum(bool(getattr(args, name, False)) for name in ("prune", "archive", "delete")) > 1:
                     raise ValueError("handoff manage supports one action at a time")
                 filters = {
-                    "workflow_id": args.workflow_id,
-                    "message_id": args.message_id,
-                    "target_agent": args.target_agent,
-                    "status": args.status,
+                    "workflow_id": getattr(args, "workflow_id", None),
+                    "message_id": getattr(args, "message_id", None),
+                    "target_agent": getattr(args, "target_agent", None),
+                    "status": getattr(args, "status", None),
                 }
                 if not any(filters.values()):
                     raise ValueError("handoff manage requires at least one filter")
-                if args.prune:
+                if getattr(args, "prune", False):
                     if approval_gate.requires_approval("handoff.prune"):
                         raise PermissionError("handoff prune requires approval")
                     deleted = store.prune_records(
-                        workflow_id=args.workflow_id,
-                        message_id=args.message_id,
-                        target_agent=args.target_agent,
-                        status=args.status,
+                        workflow_id=getattr(args, "workflow_id", None),
+                        message_id=getattr(args, "message_id", None),
+                        target_agent=getattr(args, "target_agent", None),
+                        status=getattr(args, "status", None),
                     )
                     payload = {"deleted_count": deleted}
                     audit.log(
@@ -407,14 +434,14 @@ def main(argv=None):
                     )
                     print(json.dumps(payload, ensure_ascii=False, indent=2))
                     return payload
-                if args.archive:
+                if getattr(args, "archive", False):
                     if approval_gate.requires_approval("handoff.archive"):
                         raise PermissionError("handoff archive requires approval")
                     payload = store.archive_records(
-                        workflow_id=args.workflow_id,
-                        message_id=args.message_id,
-                        target_agent=args.target_agent,
-                        status=args.status,
+                        workflow_id=getattr(args, "workflow_id", None),
+                        message_id=getattr(args, "message_id", None),
+                        target_agent=getattr(args, "target_agent", None),
+                        status=getattr(args, "status", None),
                     )
                     audit.log(
                         "handoff.archive",
@@ -429,10 +456,10 @@ def main(argv=None):
                 if approval_gate.requires_approval("handoff.delete"):
                     raise PermissionError("handoff delete requires approval")
                 deleted = store.delete_records(
-                    workflow_id=args.workflow_id,
-                    message_id=args.message_id,
-                    target_agent=args.target_agent,
-                    status=args.status,
+                    workflow_id=getattr(args, "workflow_id", None),
+                    message_id=getattr(args, "message_id", None),
+                    target_agent=getattr(args, "target_agent", None),
+                    status=getattr(args, "status", None),
                 )
                 payload = {"deleted_count": deleted}
                 audit.log(
@@ -447,21 +474,23 @@ def main(argv=None):
                 return payload
             try:
                 records = store.list_records(
-                    workflow_id=args.workflow_id,
-                    target_agent=args.target_agent,
-                    status=args.status,
-                    message_id=args.message_id,
+                    workflow_id=getattr(args, "workflow_id", None),
+                    target_agent=getattr(args, "target_agent", None),
+                    status=getattr(args, "status", None),
+                    message_id=getattr(args, "message_id", None),
                 )
             except TypeError:
                 records = store.list_records(
-                    workflow_id=args.workflow_id,
-                    target_agent=args.target_agent,
-                    status=args.status,
+                    workflow_id=getattr(args, "workflow_id", None),
+                    target_agent=getattr(args, "target_agent", None),
+                    status=getattr(args, "status", None),
                 )
-                if args.message_id:
-                    records = [record for record in records if record.get("message_id") == args.message_id]
-            if args.status:
-                records = [record for record in records if record.get("status") == args.status]
+                if getattr(args, "message_id", None):
+                    records = [
+                        record for record in records if record.get("message_id") == getattr(args, "message_id", None)
+                    ]
+            if getattr(args, "status", None):
+                records = [record for record in records if record.get("status") == getattr(args, "status", None)]
             normalized_records = [_normalize_handoff_record(record) for record in records]
             if args.knowledge_only:
                 normalized_records = _handoff_knowledge_only(normalized_records)
@@ -470,7 +499,45 @@ def main(argv=None):
                 payload["summary"] = _handoff_knowledge_summary(normalized_records if args.knowledge_only else [_normalize_handoff_record(record) for record in records])
             result_count = len(records)
         else:
+            if args.action in {"accept", "reject", "archive"} and args.id:
+                payload = apply_governance_action(
+                    knowledge_root=_knowledge_root(),
+                    action=args.action,
+                    actor=args.actor,
+                    entry_id=args.id,
+                )
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+                return payload
             records = audit.read_all()
+            if any(value is not None for value in extended_query_filters.values()):
+                payload = query_knowledge_records(
+                    root=_knowledge_root(),
+                    query_text=extended_query_filters["search"],
+                    filters={
+                        "agent": extended_query_filters["agent"],
+                        "role": extended_query_filters["role"],
+                        "task_type": extended_query_filters["task_type"],
+                        "risk_tag": extended_query_filters["risk_tag"],
+                        "review_status": extended_query_filters["review_status"],
+                        "workflow_id": args.workflow_id,
+                    },
+                )
+                result_count = len(payload["records"])
+                audit_filters = dict(query_filters)
+                audit_filters.update(
+                    {key: value for key, value in extended_query_filters.items() if value is not None}
+                )
+                audit.log(
+                    "query",
+                    {
+                        "actor": args.actor,
+                        "resource": "knowledge",
+                        "filters": audit_filters,
+                        "result_count": result_count,
+                    },
+                )
+                print(json.dumps(payload, ensure_ascii=False, indent=2))
+                return payload
             if args.action:
                 records = [record for record in records if record.get("action") == args.action]
             payload = {"records": records}
@@ -496,6 +563,17 @@ def main(argv=None):
             print(text, end="")
             return text
         payload = monitor.get_dashboard_data() if args.dashboard or not args.prometheus else {}
+        task_router = getattr(monitor, "task_router", None)
+        workflow_runtime_dir = getattr(monitor, "workflow_runtime_dir", None)
+        payload.update(
+            {
+                "knowledge_heat_ranking": build_knowledge_heat_ranking(task_router),
+                "knowledge_consumption_by_agent": build_consumption_by_agent(task_router),
+                "unused_recommendations": build_unused_recommendations(task_router),
+                "high_risk_workflow_coverage": build_high_risk_coverage(workflow_runtime_dir),
+                "pending_governance_counts": build_pending_governance_counts(_knowledge_root()),
+            }
+        )
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return payload
 

@@ -28,6 +28,8 @@ class HandoffPayload:
     backend_reason: Optional[str] = None
     review_policy: Optional[str] = None
     knowledge_recommendation: Optional[Dict[str, Any]] = None
+    knowledge_summary: Optional[str] = None
+    next_read: List[str] = field(default_factory=list)
 
     @classmethod
     def create(
@@ -50,6 +52,8 @@ class HandoffPayload:
         backend_reason: Optional[str] = None,
         review_policy: Optional[str] = None,
         knowledge_recommendation: Optional[Dict[str, Any]] = None,
+        knowledge_summary: Optional[str] = None,
+        next_read: Optional[List[str]] = None,
     ):
         return cls(
             source_backend=source_backend,
@@ -71,6 +75,8 @@ class HandoffPayload:
             backend_reason=backend_reason,
             review_policy=review_policy,
             knowledge_recommendation=dict(knowledge_recommendation or {}) or None,
+            knowledge_summary=knowledge_summary,
+            next_read=list(next_read or []),
         )
 
     def to_dict(self):
@@ -94,6 +100,8 @@ class HandoffPayload:
             "backend_reason": self.backend_reason,
             "review_policy": self.review_policy,
             "knowledge_recommendation": dict(self.knowledge_recommendation or {}) or None,
+            "knowledge_summary": self.knowledge_summary,
+            "next_read": list(self.next_read),
         }
 
 
@@ -114,11 +122,12 @@ def validate_handoff_payload(payload: Dict[str, Any]) -> bool:
         "selected_backend",
         "backend_reason",
         "review_policy",
+        "knowledge_summary",
     )
     for field_name in optional_strings:
         if field_name in payload and payload[field_name] is not None and not isinstance(payload[field_name], str):
             return False
-    for field_name in ("artifacts", "open_questions", "risks", "backend_candidates"):
+    for field_name in ("artifacts", "open_questions", "risks", "backend_candidates", "next_read"):
         if field_name in payload and not isinstance(payload[field_name], list):
             return False
     if (

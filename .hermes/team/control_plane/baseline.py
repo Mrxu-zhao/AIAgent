@@ -238,6 +238,9 @@ def capture_framework_baseline(
     )
     dashboard_metrics["goal_type"] = "performance"
     dashboard_metrics["counts_toward_overall"] = True
+    dashboard_metrics["knowledge_preload_ms"] = dict(dashboard_metrics["latency_ms"])
+    dashboard_metrics["knowledge_query_ms"] = dict(dashboard_metrics["cpu_effective_ms"])
+    dashboard_metrics["dashboard_analytics_ms"] = dict(dashboard_metrics["cpu_ms"])
 
     workflow_metrics = benchmark_callable(
         run_workflow,
@@ -305,6 +308,20 @@ def _revert_workflow_step_agent_override_fix(content):
     return before + end_marker + after
 
 
+def _stabilize_reconstructed_task_router_paths(content, repo_root):
+    repository_root = Path(repo_root).resolve()
+    knowledge_root = repository_root / ".hermes"
+
+    replacements = {
+        'Path(__file__).resolve().parents[4] / ".hermes"': f'Path({str(knowledge_root)!r})',
+        "Path(__file__).resolve().parents[4] / path": f'Path({str(repository_root)!r}) / path',
+        "repository_root=Path(__file__).resolve().parents[4],": f"repository_root=Path({str(repository_root)!r}),",
+    }
+    for source, target in replacements.items():
+        content = content.replace(source, target)
+    return content
+
+
 def export_git_revision_framework(repo_root, revision="HEAD", runner=None, temp_dir=None):
     repo_root = _resolve_repo_root(
         repo_root,
@@ -368,7 +385,9 @@ def export_reconstructed_before_framework(repo_root, temp_dir=None):
     }
     for target_name, source_path in files.items():
         content = source_path.read_text(encoding="utf-8")
-        if target_name == "monitor.py":
+        if target_name == "task_router.py":
+            content = _stabilize_reconstructed_task_router_paths(content, repo_root)
+        elif target_name == "monitor.py":
             content = content.replace("threading.RLock()", "threading.Lock()", 1)
         elif target_name == "workflow_engine.py":
             content = _revert_workflow_step_agent_override_fix(content)

@@ -23,6 +23,7 @@
 - 归档：把需保留的运行产物迁移到归档区
 - workflow store 当前支持：`delete_workflow()`、`prune_workflows()`、`archive_workflow()`
 - handoff store 当前支持：`delete_records()`、`prune_records()`、`archive_records()`
+- knowledge 治理当前支持：按 `entry_id` 执行 `accept/reject/archive`，并将动作写入审计轨迹
 
 ## 权限边界
 
@@ -36,6 +37,7 @@
 - workflow 查询入口：`query workflow`
 - handoff 查询入口：`query handoff`
 - audit 查询入口：`query audit`
+- knowledge 查询入口：`query audit --search/--agent/--role/--task-type/--risk-tag/--review-status`
 - 审计日志真源：`.hermes/team/control_plane/governance/audit.py`
 - workflow 治理入口：`query workflow --archive|--delete|--prune`
 - handoff 治理入口：`query handoff --archive|--delete|--prune`

@@ -17,6 +17,7 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
+from knowledge.recommendation import build_recommendation, build_router_knowledge_profile
 
 
 class TaskPriority(Enum):
@@ -277,51 +278,13 @@ class TaskRouter:
     def _build_knowledge_recommendation(self, intent: TaskIntent, agent_id: str) -> Dict[str, object]:
         """为执行层和协作层提供稳定的知识加载建议。"""
         role_key = self._resolve_role_knowledge_key(agent_id)
-        team_paths = [
-            ".hermes/team/knowledge/status.md",
-            ".hermes/team/knowledge/project-overview.md",
-            ".hermes/team/knowledge/workflow-playbook.md",
-        ]
-        if intent.task_type == TaskType.REQUIREMENTS or "spec" in intent.deliverables:
-            team_paths.append(".hermes/team/knowledge/domain-glossary.md")
-        if intent.collaboration_mode != "single":
-            team_paths.append(".hermes/team/knowledge/handoff-templates.md")
-        if intent.risk_flags:
-            team_paths.append(".hermes/team/knowledge/risk-register.md")
-
-        role_paths = [
-            f".hermes/agents/{role_key}/knowledge/status.md",
-            f".hermes/agents/{role_key}/knowledge/overview.md",
-            f".hermes/agents/{role_key}/knowledge/playbooks/common-tasks.md",
-            f".hermes/agents/{role_key}/knowledge/checklists/delivery-checklist.md",
-        ]
-        if intent.collaboration_mode in {"review", "handoff"}:
-            role_paths.append(f".hermes/agents/{role_key}/knowledge/checklists/design-checklist.md")
-
-        instance_paths = [
-            f".hermes/team/agents/{agent_id}/knowledge/expertise.md",
-            f".hermes/team/agents/{agent_id}/knowledge/owned-modules.md",
-            f".hermes/team/agents/{agent_id}/knowledge/delivery-style.md",
-            f".hermes/team/agents/{agent_id}/knowledge/recent-lessons.md",
-        ]
-        if intent.collaboration_mode != "single":
-            instance_paths.append(f".hermes/team/agents/{agent_id}/knowledge/collaboration-preferences.md")
-
-        ordered_team, team_scores = self._rank_knowledge_paths(team_paths, intent)
-        ordered_role, role_scores = self._rank_knowledge_paths(role_paths, intent)
-        ordered_instance, instance_scores = self._rank_knowledge_paths(instance_paths, intent)
-
-        return {
-            "load_order": ["team", "role", "instance"],
-            "team": ordered_team,
-            "role": ordered_role,
-            "instance": ordered_instance,
-            "path_scores": {
-                "team": team_scores,
-                "role": role_scores,
-                "instance": instance_scores,
-            },
-        }
+        profile = build_router_knowledge_profile(intent, agent_id=agent_id, role_key=role_key)
+        return build_recommendation(
+            profile=profile,
+            role_key=role_key,
+            agent_id=agent_id,
+            repository_root=Path(__file__).resolve().parents[4],
+        )
 
     def select_best_agent(self, intent: TaskIntent, priority: TaskPriority) -> Tuple[str, Dict[str, object]]:
         """根据任务画像选择最合适的 Agent，并返回可解释原因。"""

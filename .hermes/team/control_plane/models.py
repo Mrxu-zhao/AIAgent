@@ -73,6 +73,9 @@ class TaskCard:
     rollback_policy: RollbackPolicy
     acceptance_criteria: List[str]
     executor_backend: Optional[str] = None
+    knowledge_recommendation: Optional[Dict[str, object]] = None
+    knowledge_bundle: Optional[Dict[str, object]] = None
+    knowledge_summary: Optional[str] = None
     status: TaskStatus = TaskStatus.PLANNED
     evidence: List[str] = field(default_factory=list)
 

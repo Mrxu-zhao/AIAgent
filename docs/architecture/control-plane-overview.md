@@ -7,6 +7,7 @@
 - provider 注册与装配入口：`.hermes/team/control_plane/providers/registry.py`
 - workflow 运行时入口：`.hermes/team/control_plane/workflow_runtime.py`
 - handoff 运行时入口：`.hermes/team/control_plane/handoff_runtime.py`
+- 统一知识域入口：`.hermes/team/control_plane/knowledge/`
 
 ## phase1-7 能力总览
 
@@ -26,6 +27,7 @@
 - 支持 handoff `received -> acked -> materialized -> dispatched` 主链，以及 `continued/noop` continuation 元数据的最小闭环。
 - 支持最小 tool runtime：`tool-run`、`tool-session`、session store 与 transcript store。
 - 支持基础治理闭环，包括 RBAC、audit 与审批钩子预留。
+- 支持统一知识闭环：推荐、摘要消费、治理查询、analytics 与执行层知识注入。
 
 ## 未支持边界
 
@@ -43,3 +45,4 @@
 - provider 契约说明：`docs/contracts/provider-contracts.md`
 - 运行时治理说明：`docs/runtime/runtime-governance.md`
 - handoff 与 continuation 状态说明：`docs/runtime/handoff-and-continuation.md`
+- 知识查询入口：`query audit --search/--agent/--role/--review-status`

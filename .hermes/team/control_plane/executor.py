@@ -98,7 +98,14 @@ class ControlPlaneExecutor:
                     "stderr": str(exc),
                     "error_code": "VERSION_CONFLICT",
                 }
-            return {"success": True, "command": command, "stdout": result.stdout, "stderr": result.stderr}
+            return {
+                "success": True,
+                "command": command,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "knowledge_summary": getattr(card, "knowledge_summary", None),
+                "knowledge_next_read": list((getattr(card, "knowledge_bundle", None) or {}).get("next_read", [])),
+            }
 
         try:
             self.store.append_event(
@@ -134,7 +141,14 @@ class ControlPlaneExecutor:
                 "stderr": str(exc),
                 "error_code": "VERSION_CONFLICT",
             }
-        return {"success": False, "command": command, "stdout": result.stdout, "stderr": result.stderr}
+        return {
+            "success": False,
+            "command": command,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "knowledge_summary": getattr(card, "knowledge_summary", None),
+            "knowledge_next_read": list((getattr(card, "knowledge_bundle", None) or {}).get("next_read", [])),
+        }
 
     def compute_blocked_tasks(self, failed_task_id, graph):
         return sorted(task_id for task_id, deps in graph.items() if failed_task_id in deps)

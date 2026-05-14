@@ -6,6 +6,8 @@ from typing import Dict
 
 from adapters import get_executor_adapter
 from handoff_runtime import HandoffRunStore
+from knowledge.consumer import expand_excerpt_content
+from knowledge.query import query_knowledge_records
 from persistent_bus import PersistentMessageBus
 from runtime.rules import repository_root
 from tools.registry import ToolRegistry
@@ -104,13 +106,12 @@ def read_knowledge_handler(context: ToolExecutionContext, _payload: Dict[str, ob
     records = []
     preloaded_items = list(context.knowledge_bundle.get("items", []))
     if preloaded_items:
+        expand = bool(_payload.get("expand"))
         for item in preloaded_items:
-            records.append(
-                {
-                    "path": item["path"],
-                    "content": item["content"],
-                }
-            )
+            record = dict(item)
+            if expand:
+                record = expand_excerpt_content(record)
+            records.append(record)
         return ToolResult.ok_result(
             content=f"knowledge:{len(records)}",
             structured_data={"items": records},
@@ -133,6 +134,26 @@ def read_knowledge_handler(context: ToolExecutionContext, _payload: Dict[str, ob
         content=f"knowledge:{len(records)}",
         structured_data={"items": records},
         artifacts=[item["path"] for item in records],
+    )
+
+
+def query_knowledge_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
+    root = repository_root() / ".hermes" / "team" / "knowledge"
+    result = query_knowledge_records(
+        root=root,
+        query_text=payload.get("search"),
+        filters={
+            "agent": payload.get("agent"),
+            "role": payload.get("role"),
+            "task_type": payload.get("task_type"),
+            "risk_tag": payload.get("risk_tag"),
+            "review_status": payload.get("review_status"),
+            "workflow_id": payload.get("workflow_id"),
+        },
+    )
+    return ToolResult.ok_result(
+        content=f"knowledge-query:{len(result['records'])}",
+        structured_data=result,
     )
 
 
@@ -225,6 +246,15 @@ def build_default_tool_registry() -> ToolRegistry:
                 is_concurrency_safe=True,
                 handler=read_file_handler,
                 action="tool.read.file",
+            ),
+            ToolSpec(
+                name="query_knowledge",
+                description="query governed knowledge records",
+                input_schema={},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=query_knowledge_handler,
+                action="tool.read.knowledge",
             ),
         ]
     )

@@ -3,6 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
+from knowledge.catalog import build_bundle_from_recommendation
+from knowledge.consumer import build_excerpt_bundle
+
 
 def repository_root() -> Path:
     return Path(__file__).resolve().parents[4]
@@ -16,34 +19,19 @@ def resolve_knowledge_path(path_text: str) -> Path:
 
 
 def build_knowledge_bundle(recommendation: Dict[str, object]) -> Dict[str, List[str]]:
-    relative_paths: List[str] = []
-    resolved_paths: List[str] = []
-    for group in ("team", "role", "instance"):
-        for item in recommendation.get(group, []):
-            resolved = resolve_knowledge_path(str(item))
-            if resolved.exists():
-                relative_paths.append(str(item))
-                resolved_paths.append(str(resolved))
-    return {"paths": relative_paths, "resolved_paths": resolved_paths}
+    bundle = build_bundle_from_recommendation(recommendation)
+    return dict(bundle)
 
 
 def preload_knowledge_bundle(bundle: Dict[str, object]) -> Dict[str, object]:
-    items = []
-    for relative_path, resolved_path in zip(
-        list(bundle.get("paths", [])),
-        list(bundle.get("resolved_paths", [])),
-    ):
-        path = Path(str(resolved_path))
-        if not path.exists():
-            continue
-        items.append(
-            {
-                "path": str(relative_path),
-                "resolved_path": str(path),
-                "content": path.read_text(encoding="utf-8"),
-            }
-        )
+    excerpt_bundle = build_excerpt_bundle(
+        paths=list(bundle.get("paths", [])),
+        resolved_paths=list(bundle.get("resolved_paths", [])),
+        profile=dict(bundle.get("profile") or {}),
+    )
     loaded = dict(bundle)
-    loaded["items"] = items
+    loaded["items"] = excerpt_bundle["items"]
     loaded["preloaded"] = True
+    loaded["knowledge_summary"] = excerpt_bundle["summary"]
+    loaded["next_read"] = excerpt_bundle["next_read"]
     return loaded

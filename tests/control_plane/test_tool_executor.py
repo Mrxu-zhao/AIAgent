@@ -183,7 +183,7 @@ class ToolExecutorTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertEqual(len(observed["items"]), 1)
         self.assertEqual(observed["items"][0]["path"], ".hermes/team/knowledge/status.md")
-        self.assertIn("redis cache", observed["items"][0]["content"])
+        self.assertIn("redis cache", observed["items"][0]["summary"])
 
 
 if __name__ == "__main__":

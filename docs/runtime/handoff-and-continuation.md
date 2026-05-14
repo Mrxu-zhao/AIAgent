@@ -6,6 +6,7 @@
 - handoff 被消费后，记录会进入 `materialized` 状态，并物化为 `TaskCard`。
 - `TaskCard` 物化后会自动进入调度与执行链路，当前最小主状态链路为 `received -> acked -> materialized -> dispatched`。
 - handoff 若带有 `workflow_id/target_step`，消费端会继续尝试最小 continuation，并补 `continued` 或 `noop` 的 continuation 结果。
+- handoff 现会同时携带 `knowledge_recommendation`、`knowledge_summary` 与 `next_read`，用于目标 agent 的知识消费确认。
 
 ## workflow continuation 语义
 
@@ -26,6 +27,7 @@
 - handoff 侧重点字段：`message_id`、`workflow_id`、`target_agent`、`status`
 - continuation 侧重点字段：`target_step`、`continuation_status`、`continuation_ready_steps`、`continuation_completed_steps`、`continuation_failed_steps`
 - provider 侧重点字段：`selected_backend`、`target_backend`、`backend_reason`
+- 知识侧重点字段：`knowledge_recommendation`、`knowledge_summary`、`next_read`
 
 ## 运行时事件
 

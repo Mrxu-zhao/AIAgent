@@ -6,6 +6,7 @@ from tests.control_plane.test_support import load_control_plane_module
 
 models = load_control_plane_module("models")
 validation_module = load_control_plane_module("validation")
+builtin_module = load_control_plane_module("tools/builtin")
 
 
 def make_card(task_id, dependencies=None):
@@ -78,6 +79,10 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(payload["version_conflict"]["summary"]["conflicted_tasks"], ["VAL-CONFLICT-001"])
         self.assertTrue(payload["dependency_blocking"]["checks"]["blocked_dependency_recorded"])
         self.assertTrue(payload["version_conflict"]["checks"]["conflict_recorded"])
+
+    def test_read_file_rejects_path_escape(self):
+        with self.assertRaises(ValueError):
+            builtin_module.read_file_handler(None, {"path": "../outside.txt"})
 
 
 if __name__ == "__main__":

@@ -20,6 +20,8 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
+from knowledge.consumer import build_knowledge_summary, build_next_read
+from knowledge.governance import append_governance_entry
 from knowledge_feedback import sync_workflow_feedback
 from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority
 from observability.metrics import get_metrics_registry
@@ -509,7 +511,14 @@ class WorkflowEngine:
         task_content: str,
         agent_id: str,
         executor_backend: Optional[str],
+        knowledge_recommendation: Optional[Dict[str, Any]] = None,
     ) -> TaskCard:
+        knowledge_bundle = (
+            build_knowledge_bundle(knowledge_recommendation)
+            if isinstance(knowledge_recommendation, dict)
+            else None
+        )
+        knowledge_items = list((knowledge_bundle or {}).get("items", []))
         return TaskCard(
             task_id=f"wf-{workflow.id}-{step.id}",
             title=f"Workflow step {step.id}",
@@ -527,6 +536,9 @@ class WorkflowEngine:
             rollback_policy=RollbackPolicy(mode="manual"),
             acceptance_criteria=[f"step {step.id} executed"],
             executor_backend=executor_backend,
+            knowledge_recommendation=knowledge_recommendation,
+            knowledge_bundle=knowledge_bundle,
+            knowledge_summary=build_knowledge_summary(knowledge_items) if knowledge_items else None,
         )
 
     def _execute_via_control_plane(
@@ -543,7 +555,17 @@ class WorkflowEngine:
             else None
         )
         executor_backend = self._resolve_step_backend(workflow, step, task_result) or self.config.default_executor
-        card = self._build_task_card_for_step(workflow, step, task_content, agent_id, executor_backend)
+        knowledge_recommendation = None
+        if isinstance(task_result, dict):
+            knowledge_recommendation = task_result.get("knowledge_recommendation")
+        card = self._build_task_card_for_step(
+            workflow,
+            step,
+            task_content,
+            agent_id,
+            executor_backend,
+            knowledge_recommendation,
+        )
         if hasattr(self.control_plane_store, "register_task"):
             try:
                 self.control_plane_store.read_snapshot(card.task_id)
@@ -645,6 +667,16 @@ class WorkflowEngine:
                 backend_reason=backend_reason,
                 review_policy=workflow.variables.get("review_policy"),
                 knowledge_recommendation=knowledge_recommendation,
+                knowledge_summary=build_knowledge_summary(
+                    list(build_knowledge_bundle(knowledge_recommendation).get("items", []))
+                )
+                if isinstance(knowledge_recommendation, dict)
+                else None,
+                next_read=build_next_read(
+                    list(build_knowledge_bundle(knowledge_recommendation).get("items", []))
+                )
+                if isinstance(knowledge_recommendation, dict)
+                else [],
             )
             handoff_payload = payload.to_dict()
             workflow.handoffs.append(handoff_payload)
@@ -670,11 +702,35 @@ class WorkflowEngine:
 
     def _sync_team_knowledge(self, workflow: Workflow) -> Dict[str, Any]:
         collaboration_context = workflow.variables.get("collaboration_context", {})
-        return sync_workflow_feedback(
+        feedback = sync_workflow_feedback(
             self.knowledge_root,
             workflow.id,
             collaboration_context,
         )
+        for decision in list(collaboration_context.get("decisions", [])):
+            summary = str(decision.get("decision_summary") if isinstance(decision, dict) else decision).strip()
+            if summary:
+                append_governance_entry(
+                    root=self.knowledge_root,
+                    entry_type="decision",
+                    content=summary,
+                    owner="architect",
+                    source_workflow_id=workflow.id,
+                    source_step_id=decision.get("step_id") if isinstance(decision, dict) else None,
+                    source_agent=decision.get("step_id") if isinstance(decision, dict) else None,
+                )
+        for risk in list(collaboration_context.get("risks", [])):
+            risk_text = str(risk).strip()
+            if risk_text:
+                append_governance_entry(
+                    root=self.knowledge_root,
+                    entry_type="risk",
+                    content=risk_text,
+                    owner="qa-functional",
+                    source_workflow_id=workflow.id,
+                    source_agent="workflow",
+                )
+        return feedback
 
     def _resolve_handoff_backend(self, step_context: Dict[str, Any]) -> tuple[str, str, List[str], str]:
         """把步骤建议与真实 provider registry 合并成 handoff backend 元信息。"""

@@ -20,6 +20,13 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
+from knowledge.analytics import (
+    build_consumption_by_agent,
+    build_high_risk_coverage,
+    build_knowledge_heat_ranking,
+    build_pending_governance_counts,
+    build_unused_recommendations,
+)
 from observability.metrics import get_metrics_registry
 from observability.prometheus_exporter import export_metrics_text
 
@@ -304,6 +311,11 @@ class Monitor:
                 "agent_loads": agent_loads,
                 "recommended_knowledge": self._collect_recommended_knowledge(),
                 "recent_knowledge_feedback": self._collect_recent_knowledge_feedback(),
+                "knowledge_heat_ranking": build_knowledge_heat_ranking(self.task_router),
+                "knowledge_consumption_by_agent": build_consumption_by_agent(self.task_router),
+                "unused_recommendations": build_unused_recommendations(self.task_router),
+                "high_risk_workflow_coverage": build_high_risk_coverage(self.workflow_runtime_dir),
+                "pending_governance_counts": build_pending_governance_counts(Path(__file__).resolve().parents[2] / "knowledge"),
                 "recent_alerts": self.get_alerts(resolved=False)[:5],
                 "recent_logs": self.get_logs(limit=10)
             }
