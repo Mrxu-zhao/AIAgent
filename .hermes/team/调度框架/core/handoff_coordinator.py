@@ -1,6 +1,6 @@
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -8,8 +8,8 @@ CONTROL_PLANE_DIR = Path(__file__).resolve().parents[2] / "control_plane"
 if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
-from protocols.handoff import validate_handoff_payload
 from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority
+from protocols.handoff import validate_handoff_payload
 
 
 @dataclass
