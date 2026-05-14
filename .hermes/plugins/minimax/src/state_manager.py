@@ -26,7 +26,6 @@ import json
 import logging
 import threading
 import time
-import uuid
 from typing import Any, Dict, List, Optional
 
 from .config import get_sandbox_key

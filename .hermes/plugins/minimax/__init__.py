@@ -24,7 +24,7 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,8 @@ _state_manager = None
 
 def _write_pid_to_state() -> None:
     """Write hermes PID to maxhermes.json so bootstrap can send SIGTERM for session reset."""
-    import os as _os, json as _json
+    import json as _json
+    import os as _os
     from pathlib import Path as _Path
     hermes_home = _os.environ.get("HERMES_HOME", "/root/.hermes")
     state_file = _Path(hermes_home) / "maxhermes.json"
@@ -102,11 +103,11 @@ def register(ctx) -> None:
         logger.debug("%s could not patch Claude Code prefix: %s", LOG_PREFIX, _e)
 
     # -- Initialize sub-modules -----------------------------------------------
+    from .src.config import is_additional_hook_enabled
     from .src.event_forwarder import EventForwarder
+    from .src.logger import wrap_hook
     from .src.state_manager import StateManager
     from .src.stream_interceptor import install_stream_interceptor
-    from .src.config import is_additional_hook_enabled
-    from .src.logger import wrap_hook
 
     _forwarder = EventForwarder()
     _state_manager = StateManager(_forwarder)
@@ -211,8 +212,8 @@ def _canonical_args_str(args: Any) -> str:
 # ---------------------------------------------------------------------------
 
 def _make_pre_tool_call_handler(forwarder, state_manager):
-    from .src.types import HermesEvent
     from .src.config import get_sandbox_key
+    from .src.types import HermesEvent
 
     def handler(
         tool_name: str = "",
@@ -281,9 +282,9 @@ def _make_pre_tool_call_handler(forwarder, state_manager):
 # ---------------------------------------------------------------------------
 
 def _make_post_tool_call_handler(forwarder, state_manager):
-    from .src.types import HermesEvent
     from .src.config import get_sandbox_key
     from .src.event_forwarder import generate_msg_id
+    from .src.types import HermesEvent
 
     def handler(
         tool_name: str = "",
@@ -351,8 +352,8 @@ def _make_post_tool_call_handler(forwarder, state_manager):
 # ---------------------------------------------------------------------------
 
 def _make_pre_llm_call_handler(forwarder, state_manager):
-    from .src.types import HermesEvent
     from .src.config import get_sandbox_key
+    from .src.types import HermesEvent
 
     def handler(
         session_id: str = "",
@@ -438,8 +439,8 @@ def _make_pre_llm_call_handler(forwarder, state_manager):
 # ---------------------------------------------------------------------------
 
 def _make_post_llm_call_handler(forwarder, state_manager):
-    from .src.types import HermesEvent
     from .src.config import get_sandbox_key
+    from .src.types import HermesEvent
 
     def handler(
         session_id: str = "",
@@ -501,8 +502,8 @@ def _make_post_llm_call_handler(forwarder, state_manager):
 # ---------------------------------------------------------------------------
 
 def _make_pre_api_request_handler(forwarder, state_manager):
-    from .src.types import HermesEvent
     from .src.config import get_sandbox_key
+    from .src.types import HermesEvent
 
     def handler(
         task_id: str = "",
@@ -570,8 +571,8 @@ def _make_pre_api_request_handler(forwarder, state_manager):
 # ---------------------------------------------------------------------------
 
 def _make_post_api_request_handler(forwarder, state_manager):
-    from .src.types import HermesEvent
     from .src.config import get_sandbox_key
+    from .src.types import HermesEvent
 
     def handler(
         task_id: str = "",

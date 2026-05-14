@@ -9,9 +9,8 @@ FRAMEWORK_CORE_DIR = Path(__file__).resolve().parents[2] / "调度框架" / "cor
 if str(FRAMEWORK_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(FRAMEWORK_CORE_DIR))
 
-from task_router import TaskPriority, TaskRouter  # noqa: E402
-
 from runtime.rules import build_knowledge_bundle
+from task_router import TaskPriority, TaskRouter  # noqa: E402
 from tools.spec import ToolExecutionContext
 
 

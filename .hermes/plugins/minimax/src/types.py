@@ -8,8 +8,7 @@ used across the plugin modules.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional
-
+from typing import Any, Dict, Literal, Optional
 
 # ---------------------------------------------------------------------------
 # Event types forwarded to claw-server

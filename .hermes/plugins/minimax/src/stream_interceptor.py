@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 import sys
 import threading
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .event_forwarder import EventForwarder

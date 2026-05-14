@@ -16,12 +16,12 @@ import logging
 import time
 import uuid
 from typing import Any, Dict, Optional
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 
-from .config import get_sandbox_key, get_claw_server_url
+from .config import get_claw_server_url, get_sandbox_key
+from .logger import log_fwd_resp, log_fwd_send
 from .types import ForwardResult, HermesEvent
-from .logger import log_fwd_send, log_fwd_resp
 
 logger = logging.getLogger(__name__)
 

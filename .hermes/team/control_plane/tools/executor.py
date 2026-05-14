@@ -11,7 +11,6 @@ from governance.tool_permissions import check_tool_approval, check_tool_permissi
 from tools.spec import ToolExecutionContext, ToolResult, ToolSpec
 from tools.transcript import ToolTranscriptStore
 
-
 ToolRequest = Tuple[ToolSpec, Dict[str, object]]
 
 

@@ -18,8 +18,8 @@ from message_bus import get_bus
 from monitor import get_monitor
 from observability.metrics import refresh_repository_metrics
 from observability.prometheus_exporter import export_metrics_text
-from runtime.context import build_tool_execution_context
 from runner import run_task_batch
+from runtime.context import build_tool_execution_context
 from task_router import TaskPriority, TaskRouter
 from tools.builtin import build_default_tool_registry
 from tools.executor import ToolExecutor
