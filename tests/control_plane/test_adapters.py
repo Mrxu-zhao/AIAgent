@@ -1,4 +1,4 @@
-﻿﻿import unittest
+import unittest
 from unittest.mock import patch
 
 from tests.control_plane.test_support import load_control_plane_module

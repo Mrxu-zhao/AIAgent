@@ -178,7 +178,6 @@ class HandoffCoordinatorTests(unittest.TestCase):
 
     def test_handoff_coordinator_dispatches_materialized_task_once(self):
         coordinator_module = load_framework_module("handoff_coordinator")
-        workflow_runtime_module = load_control_plane_module("workflow_runtime")
         store_module = load_control_plane_module("store")
         dispatched = []
 

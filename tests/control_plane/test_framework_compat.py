@@ -1,4 +1,7 @@
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from tests.control_plane.test_support import load_framework_module
 
@@ -9,19 +12,38 @@ task_router_module = load_framework_module("task_router")
 
 class FrameworkCompatTests(unittest.TestCase):
     def test_message_bus_stats_exposes_registered_agents_and_history_counts(self):
-        bus = message_bus_module.MessageBus()
-        bus.register_agent("architect")
-        bus.register_agent("backend-1")
-        bus.send(
-            message_bus_module.Message.create(
-                message_bus_module.MessageType.BROADCAST,
-                "architect",
-                None,
-                {"message": "hello"},
-            )
-        )
+        with tempfile.TemporaryDirectory() as tmp:
+            config = message_bus_module.load_control_plane_config()
+            override = {
+                **config.directories,
+                "message_bus_dir": str(Path(tmp) / "message_bus"),
+            }
 
-        stats = bus.stats()
+            with patch.object(
+                message_bus_module,
+                "load_control_plane_config",
+                return_value=type(
+                    "Config",
+                    (),
+                    {
+                        **config.to_dict(),
+                        "directories": override,
+                    },
+                )(),
+            ):
+                bus = message_bus_module.MessageBus()
+                bus.register_agent("architect")
+                bus.register_agent("backend-1")
+                bus.send(
+                    message_bus_module.Message.create(
+                        message_bus_module.MessageType.BROADCAST,
+                        "architect",
+                        None,
+                        {"message": "hello"},
+                    )
+                )
+
+                stats = bus.stats()
 
         self.assertEqual(stats["registered_agents"], 2)
         self.assertEqual(stats["history_size"], 1)

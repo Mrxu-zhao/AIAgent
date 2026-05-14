@@ -1,7 +1,7 @@
+import tempfile
 import threading
 import time
 import unittest
-import tempfile
 from pathlib import Path
 
 from tests.control_plane.test_support import ensure_control_plane_path

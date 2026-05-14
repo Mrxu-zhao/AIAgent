@@ -1,6 +1,6 @@
-import threading
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -69,4 +69,3 @@ class MonitorRegressionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
