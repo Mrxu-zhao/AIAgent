@@ -9,6 +9,7 @@
     "frontend-1",
     "frontend-2",
     "frontend-3",
+    "project-manager",
     "qa-functional",
     "qa-performance",
     "requirements-analyst",
@@ -183,7 +184,8 @@
         "timestamp": 1778730753.9012487,
         "reply_to": null
       }
-    ]
+    ],
+    "project-manager": []
   },
   "unacked": {
     "requirements-analyst": [],
@@ -198,6 +200,7 @@
     "ucd": [],
     "qa-functional": [],
     "qa-performance": [],
-    "devops": []
+    "devops": [],
+    "project-manager": []
   }
 }
