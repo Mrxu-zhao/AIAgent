@@ -36,6 +36,7 @@ from tools.executor import ToolExecutor
 from tools.session_store import SessionStore
 from tools.transcript import ToolTranscriptStore
 from validation import run_real_load_validation
+from workflows.executor import execute_role_workflow
 from workflow_engine import (
     WorkflowEngine,
     default_workflow_definition_path,
@@ -137,6 +138,10 @@ def _load_workflow_context(context_file: Optional[str]) -> Dict[str, Any]:
     return json.loads(Path(context_file).read_text(encoding="utf-8"))
 
 
+def _load_role_workflow_context(context_file: Optional[str]) -> Dict[str, Any]:
+    return _load_workflow_context(context_file)
+
+
 def _execute_workflow_definition(
     workflow_path: Path,
     display_name: Optional[str] = None,
@@ -177,6 +182,13 @@ def build_parser():
     workflow.add_argument("--name", default="项目开发")
     workflow.add_argument("--workflow-file")
     workflow.add_argument("--context-file")
+
+    role_workflow = subparsers.add_parser("role-workflow", help="执行角色个人工作流")
+    role_workflow.add_argument("--workflow-id", required=True)
+    role_workflow.add_argument("--feature")
+    role_workflow.add_argument("--stack")
+    role_workflow.add_argument("--context-file")
+    role_workflow.add_argument("--actor", default="admin")
 
     query = subparsers.add_parser("query", help="查询 workflow / handoff / knowledge / audit")
     query.add_argument("resource", choices=["workflow", "handoff", "knowledge", "audit"])
@@ -350,6 +362,26 @@ def main(argv=None):
                 "workflow_id": result.get("workflow_id"),
                 "workflow_file": str(workflow_path),
                 "success": result.get("success", False),
+            },
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return result
+
+    if args.command == "role-workflow":
+        context = _load_role_workflow_context(getattr(args, "context_file", None))
+        if args.feature:
+            context.setdefault("feature", args.feature)
+            context.setdefault("Feature", args.feature.replace("-", " ").title().replace(" ", ""))
+        if args.stack:
+            context.setdefault("stack", args.stack)
+        context.setdefault("actor", args.actor)
+        result = execute_role_workflow(args.workflow_id, context_values=context)
+        audit.log(
+            "role-workflow",
+            {
+                "workflow_id": result.get("workflow_id"),
+                "role": result.get("role"),
+                "success": result.get("ok", False),
             },
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))

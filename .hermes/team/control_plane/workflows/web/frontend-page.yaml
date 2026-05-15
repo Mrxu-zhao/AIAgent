@@ -1,0 +1,71 @@
+workflow_id: web-frontend-page
+name: Web前端页面开发工作流
+description: Web业务场景下的前端页面开发流程
+role: frontend-dev
+scene: web
+stack_selection:
+  prompt: "请选择前端技术栈"
+  options: ["vue3", "react"]
+  default: "vue3"
+steps:
+  - step_id: read_design
+    name: 读取设计规范
+    tool: read_knowledge
+    input:
+      paths: ["design/{feature}.md"]
+
+  - step_id: read_api_contract
+    name: 读取接口契约
+    tool: read_knowledge
+    input:
+      paths: ["api/{feature}.md"]
+
+  - step_id: generate_component
+    name: 生成组件
+    tool: generate_vue_component
+    input:
+      component_name: "{Feature}"
+      props: ["data", "loading"]
+      emits: ["update", "select"]
+
+  - step_id: write_component
+    name: 写入组件
+    tool: write_file
+    input:
+      path: "src/components/{Feature}.vue"
+      content: "${generate_component.output}"
+
+  - step_id: generate_api_client
+    name: 生成API客户端
+    tool: generate_api_client
+    input:
+      api_name: "{Feature}"
+      endpoint: "/api/{feature}"
+      methods: ["GET", "POST", "PUT", "DELETE"]
+
+  - step_id: write_api_client
+    name: 写入API客户端
+    tool: write_file
+    input:
+      path: "src/api/{feature}.ts"
+      content: "${generate_api_client.output}"
+
+  - step_id: run_linter
+    name: 执行代码检查
+    tool: run_linter
+    input:
+      file_path: "src/components/{Feature}.vue"
+      timeout: 60
+
+  - step_id: self_check
+    name: 自检
+    tool: read_knowledge
+    input:
+      paths: ["delivery/quality_gates/self-checklist.md"]
+
+  - step_id: handoff
+    name: 交接给后端联调
+    tool: dispatch_task
+    input:
+      agent_id: "backend-dev"
+      task: "{feature}前端页面已完成，请提供对应API"

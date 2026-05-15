@@ -1,0 +1,9 @@
+commands:
+  test: "mvn test"
+  lint: "mvn spotless:check"
+  build: "mvn package -DskipTests"
+  run: "mvn spring-boot:run"
+templates:
+  controller: "templates/controller.java"
+  service: "templates/service.java"
+  mapper: "templates/mapper.java"

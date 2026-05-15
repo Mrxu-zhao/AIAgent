@@ -1,0 +1,6 @@
+commands:
+  test: "redis-cli"
+  lint: "redis-lint"
+  build: "redis-cli"
+templates:
+  schema: "templates/schema.redis"

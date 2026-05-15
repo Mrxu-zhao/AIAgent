@@ -1,0 +1,22 @@
+# Redis schema for ${feature}
+
+# 字符串缓存 - 配置信息
+SET ${feature}:config "{}"
+EXPIRE ${feature}:config 3600
+
+# Hash缓存 - 单个对象
+HSET ${feature}:item:${id} field1 value1 field2 value2
+EXPIRE ${feature}:item:${id} 3600
+
+# 列表缓存 - 列表数据
+LPUSH ${feature}:list item1 item2
+EXPIRE ${feature}:list 3600
+LRANGE ${feature}:list 0 19
+
+# 集合缓存 - 去重集合
+SADD ${feature}:set member1 member2
+EXPIRE ${feature}:set 3600
+
+# 有序集合 - 排行榜
+ZADD ${feature}:rank 100 user1 90 user2
+ZREVRANGE ${feature}:rank 0 9 WITHSCORES

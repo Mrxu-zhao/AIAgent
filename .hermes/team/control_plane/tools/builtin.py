@@ -10,7 +10,36 @@ from knowledge.consumer import expand_excerpt_content
 from knowledge.query import query_knowledge_records
 from persistent_bus import PersistentMessageBus
 from runtime.rules import repository_root
+from tools.common_tools import (
+    generate_code_handler,
+    run_command_handler,
+    search_code_handler,
+    write_file_handler,
+)
 from tools.registry import ToolRegistry
+from tools.role_tools.architect_tools import (
+    generate_architecture_doc_handler,
+    review_api_design_handler,
+)
+from tools.role_tools.backend_tools import (
+    generate_controller_handler,
+    generate_mapper_handler,
+    generate_service_handler,
+    run_unit_tests_handler,
+)
+from tools.role_tools.dba_tools import analyze_slow_query_handler, generate_ddl_handler
+from tools.role_tools.devops_tools import (
+    generate_dockerfile_handler,
+    generate_k8s_manifests_handler,
+)
+from tools.role_tools.frontend_tools import (
+    generate_api_client_handler,
+    generate_vue_component_handler,
+    run_linter_handler,
+)
+from tools.role_tools.qa_tools import generate_test_cases_handler, run_api_tests_handler
+from tools.role_tools.requirements_tools import generate_prd_handler
+from tools.role_tools.ucd_tools import generate_design_spec_handler
 from tools.spec import ToolExecutionContext, ToolResult, ToolSpec
 from workflow_runtime import WorkflowRunStore
 
@@ -262,6 +291,195 @@ def build_default_tool_registry() -> ToolRegistry:
                 is_concurrency_safe=True,
                 handler=query_knowledge_handler,
                 action="tool.read.knowledge",
+            ),
+            ToolSpec(
+                name="write_file",
+                description="write or update a file within the repository",
+                input_schema={"path": "str", "content": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=write_file_handler,
+                action="tool.write.file",
+            ),
+            ToolSpec(
+                name="search_code",
+                description="search code in the repository",
+                input_schema={"pattern": "str", "glob": "str"},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=search_code_handler,
+                action="tool.read.search",
+            ),
+            ToolSpec(
+                name="run_command",
+                description="run a whitelisted shell command",
+                input_schema={"command": "str", "timeout": "int"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=run_command_handler,
+                action="tool.execute.command",
+            ),
+            ToolSpec(
+                name="generate_code",
+                description="generate code from a template",
+                input_schema={"template": "str", "variables": "dict"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_code_handler,
+                action="tool.generate.code",
+            ),
+            ToolSpec(
+                name="generate_controller",
+                description="generate Spring Boot Controller code",
+                input_schema={"class_name": "str", "package": "str", "endpoint": "str", "entity_name": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_controller_handler,
+                action="tool.generate.controller",
+            ),
+            ToolSpec(
+                name="generate_service",
+                description="generate Spring Boot Service code",
+                input_schema={"class_name": "str", "package": "str", "entity_name": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_service_handler,
+                action="tool.generate.service",
+            ),
+            ToolSpec(
+                name="generate_mapper",
+                description="generate MyBatis Mapper code",
+                input_schema={"class_name": "str", "package": "str", "entity_name": "str", "table_name": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_mapper_handler,
+                action="tool.generate.mapper",
+            ),
+            ToolSpec(
+                name="run_unit_tests",
+                description="run JUnit tests via Maven",
+                input_schema={"test_path": "str", "timeout": "int"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=run_unit_tests_handler,
+                action="tool.execute.tests",
+            ),
+            ToolSpec(
+                name="generate_vue_component",
+                description="generate Vue3 component code",
+                input_schema={"component_name": "str", "props": "list", "emits": "list"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_vue_component_handler,
+                action="tool.generate.vue",
+            ),
+            ToolSpec(
+                name="generate_api_client",
+                description="generate frontend API client code",
+                input_schema={"api_name": "str", "endpoint": "str", "methods": "list"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_api_client_handler,
+                action="tool.generate.apiclient",
+            ),
+            ToolSpec(
+                name="run_linter",
+                description="run ESLint on frontend code",
+                input_schema={"file_path": "str", "timeout": "int"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=run_linter_handler,
+                action="tool.execute.linter",
+            ),
+            ToolSpec(
+                name="generate_architecture_doc",
+                description="generate architecture design document",
+                input_schema={"system_name": "str", "requirements": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_architecture_doc_handler,
+                action="tool.generate.archdoc",
+            ),
+            ToolSpec(
+                name="review_api_design",
+                description="review API design and provide feedback",
+                input_schema={"api_spec": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=review_api_design_handler,
+                action="tool.review.api",
+            ),
+            ToolSpec(
+                name="generate_ddl",
+                description="generate MySQL DDL statement",
+                input_schema={"table_name": "str", "columns": "list", "table_comment": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_ddl_handler,
+                action="tool.generate.ddl",
+            ),
+            ToolSpec(
+                name="analyze_slow_query",
+                description="analyze slow SQL query",
+                input_schema={"sql": "str", "explain": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=analyze_slow_query_handler,
+                action="tool.analyze.sql",
+            ),
+            ToolSpec(
+                name="generate_test_cases",
+                description="generate test case document",
+                input_schema={"requirement": "str", "feature": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_test_cases_handler,
+                action="tool.generate.testcases",
+            ),
+            ToolSpec(
+                name="run_api_tests",
+                description="run API tests via Newman",
+                input_schema={"collection": "str", "timeout": "int"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=run_api_tests_handler,
+                action="tool.execute.apitests",
+            ),
+            ToolSpec(
+                name="generate_dockerfile",
+                description="generate Dockerfile for application",
+                input_schema={"app_type": "str", "app_name": "str", "port": "int"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_dockerfile_handler,
+                action="tool.generate.dockerfile",
+            ),
+            ToolSpec(
+                name="generate_k8s_manifests",
+                description="generate Kubernetes manifests",
+                input_schema={"service_name": "str", "image": "str", "port": "int", "replicas": "int"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_k8s_manifests_handler,
+                action="tool.generate.k8s",
+            ),
+            ToolSpec(
+                name="generate_design_spec",
+                description="generate UI/UX design specification",
+                input_schema={"feature": "str", "platform": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_design_spec_handler,
+                action="tool.generate.designspec",
+            ),
+            ToolSpec(
+                name="generate_prd",
+                description="generate Product Requirements Document",
+                input_schema={"feature": "str", "background": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=generate_prd_handler,
+                action="tool.generate.prd",
             ),
         ]
     )

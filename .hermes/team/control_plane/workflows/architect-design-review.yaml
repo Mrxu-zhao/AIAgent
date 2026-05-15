@@ -1,0 +1,51 @@
+workflow_id: architect-design-review
+name: 架构设计评审工作流
+description: 从需求到架构设计文档的完整流程
+role: architect
+steps:
+  - step_id: read_requirements
+    name: 读取需求文档
+    tool: read_knowledge
+    input:
+      paths: ["requirements/{feature}.md"]
+
+  - step_id: search_existing_architecture
+    name: 搜索现有架构文档
+    tool: search_code
+    input:
+      pattern: "{Feature}"
+      glob: "*.md"
+
+  - step_id: generate_architecture_doc
+    name: 生成架构设计文档
+    tool: generate_architecture_doc
+    input:
+      system_name: "{Feature}系统"
+      requirements: "支持{feature}业务场景"
+
+  - step_id: write_architecture_doc
+    name: 写入架构文档
+    tool: write_file
+    input:
+      path: "docs/architecture/{feature}-design.md"
+      content: "${generate_architecture_doc.output}"
+
+  - step_id: review_api_design
+    name: 评审API设计
+    tool: review_api_design
+    input:
+      api_spec: "{api_spec}"
+
+  - step_id: handoff_backend
+    name: 交接给后端开发
+    tool: dispatch_task
+    input:
+      agent_id: "backend-dev"
+      task: "{feature}架构设计已完成，请按文档实现"
+
+  - step_id: handoff_frontend
+    name: 交接给前端开发
+    tool: dispatch_task
+    input:
+      agent_id: "frontend-dev"
+      task: "{feature}架构设计已完成，请按文档实现"

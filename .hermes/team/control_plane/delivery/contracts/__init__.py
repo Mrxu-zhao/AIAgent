@@ -1,0 +1,1 @@
+"""Role delivery contracts."""

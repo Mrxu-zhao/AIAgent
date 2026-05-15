@@ -1,0 +1,46 @@
+role: qa-functional
+name: 功能测试
+delivery_contract:
+  inputs:
+    - name: PRD
+      type: document
+      required: true
+    - name: 接口文档
+      type: document
+      required: true
+    - name: 设计规范
+      type: document
+      required: true
+  outputs:
+    - name: 测试用例
+      type: document
+      template: "templates/test-cases.md"
+    - name: 回归计划
+      type: document
+      template: "templates/regression-plan.md"
+    - name: 缺陷报告
+      type: document
+      template: "templates/bug-report.md"
+    - name: 测试总结
+      type: document
+      template: "templates/test-summary.md"
+  definition_of_done:
+    - 用例覆盖验收标准
+    - 缺陷可复现
+    - 回归范围明确
+    - 测试总结有数据支撑
+  quality_gates:
+    - gate: 用例评审
+      tool: case_review
+      required: true
+    - gate: 覆盖度检查
+      tool: coverage_check
+      required: true
+    - gate: 缺陷规范
+      tool: bug_format_check
+      required: true
+  handoff:
+    - target: backend-dev
+      deliverables: [缺陷报告]
+    - target: frontend-dev
+      deliverables: [缺陷报告]

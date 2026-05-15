@@ -1,0 +1,47 @@
+role: ucd
+name: UCD设计师
+delivery_contract:
+  inputs:
+    - name: PRD
+      type: document
+      required: true
+    - name: 用户画像
+      type: document
+      required: true
+    - name: 竞品分析
+      type: document
+      required: false
+  outputs:
+    - name: 交互说明
+      type: document
+      template: "templates/interaction-spec.md"
+    - name: 设计规范
+      type: document
+      template: "templates/design-spec.md"
+    - name: 设计交接单
+      type: document
+      template: "templates/design-handoff.md"
+    - name: 可用性测试计划
+      type: document
+      template: "templates/usability-test-plan.md"
+  definition_of_done:
+    - 关键流程覆盖
+    - 边界态齐全
+    - 交接信息可直接开发
+    - 设计规范可复用
+    - 可用性测试可执行
+  quality_gates:
+    - gate: 设计评审
+      tool: design_review
+      required: true
+    - gate: 交接信息完整
+      tool: handoff_check
+      required: true
+    - gate: 可用性计划
+      tool: usability_plan_check
+      required: true
+  handoff:
+    - target: frontend-dev
+      deliverables: [交互说明, 设计规范, 设计交接单]
+    - target: qa-functional
+      deliverables: [可用性测试计划]

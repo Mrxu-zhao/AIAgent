@@ -1,0 +1,45 @@
+workflow_id: requirements-analysis
+name: 需求分析工作流
+description: 从原始需求到PRD文档的完整需求分析流程
+role: requirements-analyst
+steps:
+  - step_id: read_interview_notes
+    name: 读取访谈记录
+    tool: read_knowledge
+    input:
+      paths: ["interviews/{feature}.md"]
+
+  - step_id: search_existing_prd
+    name: 搜索现有PRD
+    tool: search_code
+    input:
+      pattern: "{Feature}"
+      glob: "*prd*.md"
+
+  - step_id: generate_prd
+    name: 生成PRD文档
+    tool: generate_prd
+    input:
+      feature: "{Feature}"
+      background: "{background}"
+
+  - step_id: write_prd
+    name: 写入PRD文档
+    tool: write_file
+    input:
+      path: "requirements/{feature}_prd.md"
+      content: "${generate_prd.output}"
+
+  - step_id: handoff_architect
+    name: 交接给架构师
+    tool: dispatch_task
+    input:
+      agent_id: "architect"
+      task: "{feature}PRD已完成，请进行架构设计"
+
+  - step_id: handoff_ucd
+    name: 交接给UCD
+    tool: dispatch_task
+    input:
+      agent_id: "ucd"
+      task: "{feature}PRD已完成，请进行交互设计"

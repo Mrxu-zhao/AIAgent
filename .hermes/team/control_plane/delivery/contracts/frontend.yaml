@@ -1,0 +1,50 @@
+role: frontend-dev
+name: 前端开发
+delivery_contract:
+  inputs:
+    - name: 设计规范
+      type: document
+      required: true
+    - name: 接口契约
+      type: document
+      required: true
+    - name: 组件规范
+      type: document
+      required: true
+  outputs:
+    - name: 组件/页面实现
+      type: code
+      template: "stacks/{stack}/templates/"
+    - name: 组件规范
+      type: document
+      template: "templates/component-spec.md"
+    - name: 联调说明
+      type: document
+      template: "templates/integration-guide.md"
+    - name: lint结果
+      type: report
+      template: "templates/lint-report.md"
+    - name: test结果
+      type: report
+      template: "templates/test-report.md"
+  definition_of_done:
+    - 组件API规范化
+    - 性能checklist过关
+    - 交互符合UCD设计
+    - lint无错误
+    - 测试通过
+  quality_gates:
+    - gate: lint检查
+      tool: linter
+      required: true
+    - gate: 测试通过
+      tool: test_runner
+      required: true
+    - gate: 性能检查
+      tool: performance_check
+      required: true
+  handoff:
+    - target: qa-functional
+      deliverables: [组件/页面实现, 组件规范, 联调说明]
+    - target: backend-dev
+      deliverables: [联调说明]

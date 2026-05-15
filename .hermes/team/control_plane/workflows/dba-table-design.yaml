@@ -1,0 +1,39 @@
+workflow_id: dba-table-design
+name: 数据库表设计工作流
+description: 从需求到DDL生成的完整数据库设计流程
+role: dba
+steps:
+  - step_id: read_requirement
+    name: 读取需求文档
+    tool: read_knowledge
+    input:
+      paths: ["requirements/{feature}.md"]
+
+  - step_id: search_existing_tables
+    name: 搜索现有表结构
+    tool: search_code
+    input:
+      pattern: "t_{feature}"
+      glob: "*.sql"
+
+  - step_id: generate_ddl
+    name: 生成建表SQL
+    tool: generate_ddl
+    input:
+      table_name: "t_{feature}"
+      columns: "${columns}"
+      table_comment: "{feature}表"
+
+  - step_id: write_ddl
+    name: 写入DDL文件
+    tool: write_file
+    input:
+      path: "sql/{feature}_ddl.sql"
+      content: "${generate_ddl.output}"
+
+  - step_id: handoff
+    name: 交接给后端开发
+    tool: dispatch_task
+    input:
+      agent_id: "backend-dev"
+      task: "{feature}表结构已设计完成，DDL文件已生成"

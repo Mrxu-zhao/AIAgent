@@ -1,0 +1,7 @@
+commands:
+  test: "ohpm test"
+  lint: "arkts-lint"
+  build: "hvigor build"
+  dev: "hvigor assembleHap"
+templates:
+  ability: "templates/ability.ets"

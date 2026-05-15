@@ -1,0 +1,44 @@
+role: devops
+name: 运维工程师
+delivery_contract:
+  inputs:
+    - name: 部署需求
+      type: document
+      required: true
+    - name: 监控需求
+      type: document
+      required: true
+    - name: 应急预案
+      type: document
+      required: false
+  outputs:
+    - name: 部署配置
+      type: config
+      template: "templates/deployment-config.md"
+    - name: 监控配置
+      type: config
+      template: "templates/monitoring-config.md"
+    - name: 应急预案
+      type: document
+      template: "templates/emergency-plan.md"
+    - name: 上线检查清单
+      type: checklist
+      template: "templates/release-checklist.md"
+  definition_of_done:
+    - 可回滚
+    - 监控/告警齐全
+    - 应急演练脚本可执行
+    - 上线检查清单完整
+  quality_gates:
+    - gate: 部署脚本验证
+      tool: deploy_script_check
+      required: true
+    - gate: 监控验证
+      tool: monitoring_check
+      required: true
+    - gate: 应急演练
+      tool: emergency_drill
+      required: true
+  handoff:
+    - target: project-manager
+      deliverables: [部署配置, 监控配置, 上线检查清单]

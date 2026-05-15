@@ -1,0 +1,52 @@
+role: architect
+name: 架构师
+delivery_contract:
+  inputs:
+    - name: PRD
+      type: document
+      required: true
+    - name: 非功能需求
+      type: document
+      required: true
+    - name: 现有架构
+      type: document
+      required: false
+  outputs:
+    - name: 架构设计文档
+      type: document
+      template: "templates/architecture-design.md"
+    - name: ADR
+      type: document
+      template: "templates/adr-template.md"
+    - name: 接口契约
+      type: document
+      template: "templates/api-contract.md"
+    - name: 模块边界
+      type: document
+      template: "templates/module-boundary.md"
+    - name: 性能指标
+      type: document
+      template: "templates/performance-metrics.md"
+  definition_of_done:
+    - 关键决策可追溯（ADR）
+    - 接口契约可被后端/前端/QA直接消费
+    - 非功能指标可量化
+    - 模块边界清晰
+    - 技术选型有依据
+  quality_gates:
+    - gate: 技术评审
+      tool: tech_review
+      required: true
+    - gate: ADR归档
+      tool: adr_archive
+      required: true
+    - gate: 接口契约发布
+      tool: api_publish
+      required: true
+  handoff:
+    - target: backend-dev
+      deliverables: [架构设计文档, 接口契约]
+    - target: frontend-dev
+      deliverables: [架构设计文档, 接口契约]
+    - target: dba
+      deliverables: [架构设计文档, 数据模型需求]

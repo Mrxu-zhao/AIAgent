@@ -1,0 +1,51 @@
+role: backend-dev
+name: 后端开发
+delivery_contract:
+  inputs:
+    - name: 接口契约
+      type: document
+      required: true
+    - name: 数据模型
+      type: document
+      required: true
+    - name: 架构设计
+      type: document
+      required: true
+  outputs:
+    - name: 接口实现
+      type: code
+      template: "stacks/{stack}/templates/"
+    - name: 单测
+      type: code
+      template: "stacks/{stack}/test-templates/"
+    - name: 接口文档
+      type: document
+      template: "templates/api-doc.md"
+    - name: 变更说明
+      type: document
+      template: "templates/change-log.md"
+    - name: 灰度策略
+      type: document
+      template: "templates/gray-release.md"
+  definition_of_done:
+    - 单测覆盖率>80%
+    - 代码评审清单过关
+    - 接口文档完整
+    - 变更说明已填写
+    - 灰度策略可执行
+  quality_gates:
+    - gate: 单测覆盖
+      tool: coverage_check
+      required: true
+      threshold: 80
+    - gate: 代码评审
+      tool: code_review
+      required: true
+    - gate: 接口文档
+      tool: api_doc_check
+      required: true
+  handoff:
+    - target: qa-functional
+      deliverables: [接口实现, 单测, 接口文档]
+    - target: devops
+      deliverables: [接口实现, 变更说明, 灰度策略]

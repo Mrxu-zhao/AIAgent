@@ -1,0 +1,7 @@
+commands:
+  test: "jest"
+  lint: "eslint"
+  build: "npm run build"
+  dev: "npm run dev"
+templates:
+  page: "templates/page.js"

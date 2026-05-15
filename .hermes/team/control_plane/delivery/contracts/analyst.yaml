@@ -1,0 +1,50 @@
+role: analyst
+name: 需求分析师
+delivery_contract:
+  inputs:
+    - name: 访谈记录
+      type: document
+      required: true
+    - name: 业务目标
+      type: document
+      required: true
+    - name: 约束条件
+      type: document
+      required: false
+  outputs:
+    - name: PRD
+      type: document
+      template: "templates/prd-template.md"
+    - name: 用户故事
+      type: document
+      template: "templates/user-stories.md"
+    - name: 验收标准
+      type: checklist
+      template: "templates/acceptance-criteria.md"
+    - name: 范围边界
+      type: document
+      template: "templates/scope-boundary.md"
+    - name: 风险清单
+      type: checklist
+      template: "templates/risk-checklist.md"
+  definition_of_done:
+    - 每条需求都有明确的验收标准
+    - 范围/非范围已明确界定
+    - 风险与依赖已识别并记录
+    - 用户故事符合 INVEST 原则
+    - 验收标准可测试化
+  quality_gates:
+    - gate: 需求评审
+      tool: review_meeting
+      required: true
+    - gate: 验收标准检查
+      tool: acceptance_check
+      required: true
+    - gate: 范围确认
+      tool: scope_confirm
+      required: true
+  handoff:
+    - target: architect
+      deliverables: [PRD, 用户故事, 验收标准]
+    - target: ucd
+      deliverables: [PRD, 用户画像]

@@ -1,0 +1,48 @@
+role: dba
+name: 数据库管理员
+delivery_contract:
+  inputs:
+    - name: 数据模型需求
+      type: document
+      required: true
+    - name: 性能要求
+      type: document
+      required: true
+    - name: 容量规划
+      type: document
+      required: false
+  outputs:
+    - name: 数据模型
+      type: document
+      template: "templates/data-model.md"
+    - name: DDL
+      type: code
+      template: "templates/ddl.sql"
+    - name: 索引方案
+      type: document
+      template: "templates/index-plan.md"
+    - name: SQL Review结论
+      type: document
+      template: "templates/sql-review.md"
+    - name: 容量评估
+      type: document
+      template: "templates/capacity-assessment.md"
+  definition_of_done:
+    - 表设计评审通过
+    - 关键查询有explain分析
+    - 索引建议可落地
+    - DDL可执行
+    - 容量评估有数据支撑
+  quality_gates:
+    - gate: 表设计评审
+      tool: table_review
+      required: true
+    - gate: Explain分析
+      tool: explain_check
+      required: true
+    - gate: 索引评审
+      tool: index_review
+      required: true
+  handoff:
+    - target: backend-dev
+      deliverables: [数据模型, DDL, 索引方案]

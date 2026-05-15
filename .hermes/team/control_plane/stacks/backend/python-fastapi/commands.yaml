@@ -1,0 +1,8 @@
+commands:
+  test: "pytest"
+  lint: "ruff check ."
+  build: "docker build"
+  run: "uvicorn main:app --reload"
+templates:
+  router: "templates/router.py"
+  service: "templates/service.py"

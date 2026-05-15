@@ -1,0 +1,37 @@
+workflow_id: qa-test-case-design
+name: 测试用例设计工作流
+description: 从需求到测试用例文档的完整流程
+role: qa-functional
+steps:
+  - step_id: read_requirement
+    name: 读取需求文档
+    tool: read_knowledge
+    input:
+      paths: ["requirements/{feature}.md"]
+
+  - step_id: read_api_spec
+    name: 读取接口规范
+    tool: read_knowledge
+    input:
+      paths: ["api/{feature}.md"]
+
+  - step_id: generate_test_cases
+    name: 生成测试用例
+    tool: generate_test_cases
+    input:
+      requirement: "{feature}功能需求"
+      feature: "{Feature}"
+
+  - step_id: write_test_cases
+    name: 写入测试用例文档
+    tool: write_file
+    input:
+      path: "tests/{feature}_test_cases.md"
+      content: "${generate_test_cases.output}"
+
+  - step_id: handoff
+    name: 交接给开发团队
+    tool: dispatch_task
+    input:
+      agent_id: "backend-dev"
+      task: "{feature}测试用例已设计完成，请按用例实现功能"

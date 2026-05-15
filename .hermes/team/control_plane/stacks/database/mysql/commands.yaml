@@ -1,0 +1,6 @@
+commands:
+  test: "mysql -e"
+  lint: "sqlfluff lint"
+  build: "flyway migrate"
+templates:
+  ddl: "templates/ddl.sql"

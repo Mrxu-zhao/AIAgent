@@ -1,0 +1,7 @@
+commands:
+  test: "vitest"
+  lint: "eslint"
+  build: "vite build"
+  dev: "vite"
+templates:
+  component: "templates/component.vue"

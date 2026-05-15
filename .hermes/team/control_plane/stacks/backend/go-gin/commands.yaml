@@ -1,0 +1,8 @@
+commands:
+  test: "go test ./..."
+  lint: "golangci-lint run"
+  build: "go build"
+  run: "go run main.go"
+templates:
+  handler: "templates/handler.go"
+  service: "templates/service.go"

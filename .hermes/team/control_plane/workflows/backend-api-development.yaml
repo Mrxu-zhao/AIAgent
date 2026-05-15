@@ -1,0 +1,78 @@
+workflow_id: backend-api-development
+name: 后端API开发工作流
+description: 从接口设计到测试通过的完整后端API开发流程
+role: backend-dev
+steps:
+  - step_id: read_requirement
+    name: 读取需求
+    tool: read_knowledge
+    input:
+      paths: ["requirements/{feature}.md"]
+
+  - step_id: search_existing
+    name: 搜索现有代码
+    tool: search_code
+    input:
+      pattern: "{Feature}"
+      glob: "*.java"
+
+  - step_id: generate_controller
+    name: 生成Controller
+    tool: generate_controller
+    input:
+      class_name: "{Feature}Controller"
+      package: "com.example.controller"
+      endpoint: "/api/{feature}"
+      entity_name: "{Feature}"
+
+  - step_id: write_controller
+    name: 写入Controller文件
+    tool: write_file
+    input:
+      path: "src/main/java/com/example/controller/{Feature}Controller.java"
+      content: "${generate_controller.output}"
+
+  - step_id: generate_service
+    name: 生成Service
+    tool: generate_service
+    input:
+      class_name: "{Feature}Service"
+      package: "com.example.service"
+      entity_name: "{Feature}"
+
+  - step_id: write_service
+    name: 写入Service文件
+    tool: write_file
+    input:
+      path: "src/main/java/com/example/service/{Feature}Service.java"
+      content: "${generate_service.output}"
+
+  - step_id: generate_mapper
+    name: 生成Mapper
+    tool: generate_mapper
+    input:
+      class_name: "{Feature}Mapper"
+      package: "com.example.mapper"
+      entity_name: "{Feature}"
+      table_name: "t_{feature}"
+
+  - step_id: write_mapper
+    name: 写入Mapper文件
+    tool: write_file
+    input:
+      path: "src/main/java/com/example/mapper/{Feature}Mapper.java"
+      content: "${generate_mapper.output}"
+
+  - step_id: run_tests
+    name: 执行单元测试
+    tool: run_unit_tests
+    input:
+      test_path: "{Feature}ServiceTest"
+      timeout: 120
+
+  - step_id: handoff
+    name: 交接给功能测试
+    tool: dispatch_task
+    input:
+      agent_id: "qa-functional"
+      task: "请测试{feature}接口，Controller已生成"

@@ -4,6 +4,13 @@ from typing import Dict, Iterable
 
 from tools.spec import ToolSpec
 
+from tools.common_tools import (
+    generate_code_handler,
+    run_command_handler,
+    search_code_handler,
+    write_file_handler,
+)
+
 
 class ToolRegistry:
     def __init__(self, tools: Iterable[ToolSpec] | None = None):

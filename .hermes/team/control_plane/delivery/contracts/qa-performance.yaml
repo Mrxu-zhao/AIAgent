@@ -1,0 +1,46 @@
+role: qa-performance
+name: 性能测试
+delivery_contract:
+  inputs:
+    - name: 性能需求
+      type: document
+      required: true
+    - name: 架构设计
+      type: document
+      required: true
+    - name: 容量规划
+      type: document
+      required: true
+  outputs:
+    - name: 压测方案
+      type: document
+      template: "templates/perf-test-plan.md"
+    - name: 压测报告
+      type: document
+      template: "templates/perf-test-report.md"
+    - name: 瓶颈分析
+      type: document
+      template: "templates/bottleneck-analysis.md"
+    - name: 优化建议
+      type: document
+      template: "templates/optimization-suggestions.md"
+  definition_of_done:
+    - 性能指标可量化
+    - 瓶颈定位准确
+    - 优化建议可落地
+    - 压测报告有数据支撑
+  quality_gates:
+    - gate: 压测方案评审
+      tool: perf_plan_review
+      required: true
+    - gate: 指标达标
+      tool: metrics_check
+      required: true
+    - gate: 瓶颈确认
+      tool: bottleneck_confirm
+      required: true
+  handoff:
+    - target: architect
+      deliverables: [压测报告, 瓶颈分析, 优化建议]
+    - target: backend-dev
+      deliverables: [瓶颈分析, 优化建议]
