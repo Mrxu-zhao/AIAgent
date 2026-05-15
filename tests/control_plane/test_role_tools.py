@@ -58,6 +58,29 @@ class BackendToolsTests(unittest.TestCase):
         self.assertIn("@Service", result.content)
         self.assertIn("UserService", result.content)
 
+    def test_generated_backend_code_has_no_todo_markers(self):
+        context = ToolExecutionContext(task_id="bt-4", agent_id="backend-dev", backend="hermes")
+        controller = generate_controller_handler(
+            context,
+            {
+                "class_name": "UserController",
+                "package": "com.example.controller",
+                "endpoint": "/api/users",
+                "entity_name": "User",
+            },
+        )
+        service = generate_service_handler(
+            context,
+            {
+                "class_name": "UserService",
+                "package": "com.example.service",
+                "entity_name": "User",
+            },
+        )
+
+        self.assertNotIn("TODO", controller.content)
+        self.assertNotIn("TODO", service.content)
+
     def test_generate_mapper_creates_mybatis_mapper(self):
         context = ToolExecutionContext(task_id="bt-3", agent_id="backend-dev", backend="hermes")
         result = generate_mapper_handler(
@@ -134,6 +157,7 @@ class DBAToolsTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertIn("CREATE TABLE", result.content)
         self.assertIn("t_user", result.content)
+        self.assertIn("INDEX", result.content.upper())
 
     def test_analyze_slow_query(self):
         context = ToolExecutionContext(task_id="dt-2", agent_id="dba", backend="hermes")

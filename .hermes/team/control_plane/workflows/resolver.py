@@ -56,7 +56,10 @@ class WorkflowValueResolver:
 
     def _resolve_step_expression(self, expression: str) -> Any:
         parts = expression.split(".")
-        current: Any = self.context.get("step_outputs", {})
+        if parts and parts[0] in self.context and parts[0] != "step_outputs":
+            current: Any = self.context
+        else:
+            current = self.context.get("step_outputs", {})
         for part in parts:
             if not isinstance(current, dict):
                 return ""

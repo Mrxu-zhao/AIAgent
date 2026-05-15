@@ -43,6 +43,7 @@ from workflow_engine import (
 )
 from workflow_runtime import WorkflowRunStore
 from workflows.executor import execute_role_workflow
+from workflows.team_runner import TeamWorkflowRunner
 
 
 def _normalize_handoff_record(record):
@@ -189,6 +190,11 @@ def build_parser():
     role_workflow.add_argument("--stack")
     role_workflow.add_argument("--context-file")
     role_workflow.add_argument("--actor", default="admin")
+
+    team_workflow = subparsers.add_parser("team-workflow", help="执行团队全流程工作流")
+    team_workflow.add_argument("--feature", required=True)
+    team_workflow.add_argument("--context-file")
+    team_workflow.add_argument("--actor", default="admin")
 
     query = subparsers.add_parser("query", help="查询 workflow / handoff / knowledge / audit")
     query.add_argument("resource", choices=["workflow", "handoff", "knowledge", "audit"])
@@ -382,6 +388,23 @@ def main(argv=None):
                 "workflow_id": result.get("workflow_id"),
                 "role": result.get("role"),
                 "success": result.get("ok", False),
+            },
+        )
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return result
+
+    if args.command == "team-workflow":
+        context = _load_role_workflow_context(getattr(args, "context_file", None))
+        context.setdefault("feature", args.feature)
+        context.setdefault("Feature", args.feature.replace("-", " ").title().replace(" ", ""))
+        context.setdefault("actor", args.actor)
+        result = TeamWorkflowRunner().run(args.feature, context_values=context)
+        audit.log(
+            "team-workflow",
+            {
+                "feature": args.feature,
+                "total_stages": result.get("summary", {}).get("total_stages", 0),
+                "quality_fail_stage_count": result.get("summary", {}).get("quality_fail_stage_count", 0),
             },
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))

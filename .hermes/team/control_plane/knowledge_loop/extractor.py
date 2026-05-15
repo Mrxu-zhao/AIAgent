@@ -85,6 +85,19 @@ class ExperienceExtractor:
                         context={"gate_result": result},
                     )
                 )
+        if not records and quality_report.get("overall_status") == "pass":
+            records.append(
+                ExperienceRecord(
+                    record_id="",
+                    role=role,
+                    category="pattern",
+                    title="Quality gates passed",
+                    description="All required quality gates passed with no blocking findings",
+                    source_workflow=workflow_id,
+                    tags=["quality-gate", "pass", "summary"],
+                    context={"quality_report": quality_report.get("summary", {})},
+                )
+            )
         return records
 
     def extract_from_code(

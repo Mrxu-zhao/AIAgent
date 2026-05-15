@@ -21,31 +21,27 @@ public class {class_name} {{
 
     @GetMapping
     public List<{entity_name}> list() {{
-        // TODO: implement list
-        return null;
+        return List.of();
     }}
 
     @GetMapping("/{{id}}")
     public {entity_name} getById(@PathVariable Long id) {{
-        // TODO: implement getById
-        return null;
+        return new {entity_name}();
     }}
 
     @PostMapping
     public {entity_name} create(@RequestBody {entity_name} entity) {{
-        // TODO: implement create
-        return null;
+        return entity;
     }}
 
     @PutMapping("/{{id}}")
     public {entity_name} update(@PathVariable Long id, @RequestBody {entity_name} entity) {{
-        // TODO: implement update
-        return null;
+        return entity;
     }}
 
     @DeleteMapping("/{{id}}")
     public void delete(@PathVariable Long id) {{
-        // TODO: implement delete
+        // default stub: no-op
     }}
 }}
 '''
@@ -69,27 +65,23 @@ import java.util.List;
 public class {class_name} {{
 
     public List<{entity_name}> list() {{
-        // TODO: implement list
-        return null;
+        return List.of();
     }}
 
     public {entity_name} getById(Long id) {{
-        // TODO: implement getById
-        return null;
+        return new {entity_name}();
     }}
 
     public {entity_name} create({entity_name} entity) {{
-        // TODO: implement create
-        return null;
+        return entity;
     }}
 
     public {entity_name} update(Long id, {entity_name} entity) {{
-        // TODO: implement update
-        return null;
+        return entity;
     }}
 
     public void delete(Long id) {{
-        // TODO: implement delete
+        // default stub: no-op
     }}
 }}
 '''

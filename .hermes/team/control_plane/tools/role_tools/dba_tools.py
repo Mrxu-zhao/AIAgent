@@ -8,16 +8,24 @@ from tools.spec import ToolExecutionContext, ToolResult
 def generate_ddl_handler(context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
     table_name = str(payload.get("table_name", "example"))
     columns = payload.get("columns", [])
+    business_indexes = []
+    for column in columns[:2]:
+        column_name = str(column.get("name", "")).strip()
+        if not column_name:
+            continue
+        business_indexes.append(f"    INDEX `idx_{table_name}_{column_name}` (`{column_name}`),")
     column_defs = "\n".join([
         f'    `{c["name"]}` {c["type"]} {"NOT NULL" if c.get("required") else "NULL"} COMMENT \'{c.get("comment", "")}\',' 
         for c in columns
     ])
+    index_defs = "\n".join(business_indexes)
     ddl = f'''CREATE TABLE `{table_name}` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
 {column_defs}
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标记',
+{index_defs}
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='{payload.get("table_comment", "")}';
 '''

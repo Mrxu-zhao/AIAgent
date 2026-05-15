@@ -64,6 +64,32 @@ class WorkflowValueResolverTests(unittest.TestCase):
 
 
 class RoleWorkflowExecutorTests(unittest.TestCase):
+    def test_build_deliverables_maps_architect_contract_fields(self):
+        executor = build_role_workflow_executor()
+        deliverables = executor._build_deliverables(
+            [
+                {
+                    "step_id": "write_architecture_doc",
+                    "tool": "write_file",
+                    "content": "# SupplierOnboarding 架构设计文档\n\n## 1. 概述\n",
+                    "artifacts": ["docs/architecture/supplier-onboarding-design.md"],
+                    "ok": True,
+                },
+                {
+                    "step_id": "review_api_design",
+                    "tool": "review_api_design",
+                    "content": "Endpoint: /api/supplier/register\nMethod: POST\nRequest: body\nResponse: success",
+                    "artifacts": [],
+                    "ok": True,
+                },
+            ]
+        )
+
+        self.assertIn("design_doc", deliverables)
+        self.assertIn("adr_doc", deliverables)
+        self.assertIn("api_doc", deliverables)
+        self.assertIn("架构设计文档", deliverables["design_doc"])
+
     def test_execute_requirements_role_workflow_generates_deliverables(self):
         loader = WorkflowLoader()
         definition = loader.load("requirements-analysis")
@@ -124,6 +150,34 @@ class RoleWorkflowExecutorTests(unittest.TestCase):
 
             self.assertEqual(result["stack"]["stack_id"], "go-gin")
             self.assertEqual(result["stack"]["category"], "backend")
+
+    def test_execute_devops_workflow_resolves_port_from_context(self):
+        loader = WorkflowLoader()
+        definition = loader.load("devops-deployment")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            knowledge_root = tmp_path / "agents"
+            (knowledge_root / "devops" / "knowledge" / "pitfalls").mkdir(parents=True)
+
+            executor = build_role_workflow_executor(
+                cwd=tmp_path,
+                knowledge_root=knowledge_root,
+            )
+            result = executor.execute_from_definition(
+                definition,
+                {
+                    "feature": "supplier-onboarding",
+                    "Feature": "SupplierOnboarding",
+                    "app_type": "spring-boot",
+                    "port": 8080,
+                },
+            )
+
+            docker_step = [step for step in result["steps"] if step["step_id"] == "generate_dockerfile"][0]
+            k8s_step = [step for step in result["steps"] if step["step_id"] == "generate_k8s_manifests"][0]
+            self.assertTrue(docker_step["ok"])
+            self.assertTrue(k8s_step["ok"])
 
 
 class RoleWorkflowCliTests(unittest.TestCase):
