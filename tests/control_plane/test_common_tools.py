@@ -5,7 +5,12 @@ from pathlib import Path
 from tests.control_plane.test_support import ensure_control_plane_path
 
 ensure_control_plane_path()
-from tools.common_tools import write_file_handler, search_code_handler, run_command_handler, generate_code_handler
+from tools.common_tools import (
+    generate_code_handler,
+    run_command_handler,
+    search_code_handler,
+    write_file_handler,
+)
 from tools.spec import ToolExecutionContext
 
 

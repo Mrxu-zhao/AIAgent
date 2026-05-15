@@ -1,8 +1,6 @@
 """Update team knowledge base with extracted experience records."""
 from __future__ import annotations
 
-import json
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 

@@ -285,7 +285,6 @@ class QualityGateChecker:
                 message="Code review passed",
                 details={"issues": []},
             )
-        severity = "fail" if required else "warn"
         return GateResult(
             gate_name=gate_name,
             status=GateStatus.FAIL if required else GateStatus.WARN,

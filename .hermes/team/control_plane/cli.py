@@ -36,13 +36,13 @@ from tools.executor import ToolExecutor
 from tools.session_store import SessionStore
 from tools.transcript import ToolTranscriptStore
 from validation import run_real_load_validation
-from workflows.executor import execute_role_workflow
 from workflow_engine import (
     WorkflowEngine,
     default_workflow_definition_path,
     load_workflow_definition,
 )
 from workflow_runtime import WorkflowRunStore
+from workflows.executor import execute_role_workflow
 
 
 def _normalize_handoff_record(record):

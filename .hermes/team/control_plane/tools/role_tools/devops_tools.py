@@ -7,9 +7,8 @@ from tools.spec import ToolExecutionContext, ToolResult
 
 def generate_dockerfile_handler(context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
     app_type = str(payload.get("app_type", "spring-boot"))
-    app_name = str(payload.get("app_name", "app"))
     port = int(payload.get("port", 8080))
-    
+
     if app_type == "spring-boot":
         dockerfile = f'''FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
@@ -45,7 +44,7 @@ COPY . .
 EXPOSE {port}
 CMD ["python", "app.py"]
 '''
-    
+
     return ToolResult.ok_result(
         content=dockerfile,
         structured_data={"app_type": app_type, "port": port},
@@ -58,7 +57,7 @@ def generate_k8s_manifests_handler(context: ToolExecutionContext, payload: Dict[
     image = str(payload.get("image", f"{service_name}:latest"))
     port = int(payload.get("port", 8080))
     replicas = int(payload.get("replicas", 3))
-    
+
     manifest = f'''apiVersion: apps/v1
 kind: Deployment
 metadata:
