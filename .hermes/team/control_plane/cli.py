@@ -18,6 +18,7 @@ from handoff_runtime import HandoffRunStore
 from knowledge.analytics import (
     build_consumption_by_agent,
     build_high_risk_coverage,
+    build_knowledge_effectiveness_report,
     build_knowledge_heat_ranking,
     build_pending_governance_counts,
     build_unused_recommendations,
@@ -86,10 +87,12 @@ def _build_knowledge_bundles(result):
 def _workflow_knowledge_payload(payload):
     snapshot = dict(payload.get("snapshot") or {})
     knowledge_feedback = snapshot.get("knowledge_feedback") or {}
+    knowledge_usage = snapshot.get("knowledge_usage") or {}
     filtered_snapshot = {
         "workflow_id": snapshot.get("workflow_id"),
         "status": snapshot.get("status"),
         "knowledge_feedback": knowledge_feedback,
+        "knowledge_usage": knowledge_usage,
     }
     if snapshot.get("knowledge_recommendations") is not None:
         filtered_snapshot["knowledge_recommendations"] = snapshot.get("knowledge_recommendations")
@@ -101,11 +104,18 @@ def _workflow_knowledge_payload(payload):
 def _workflow_knowledge_summary(payload):
     snapshot = payload.get("snapshot") or {}
     feedback = snapshot.get("knowledge_feedback") or {}
+    usage = (snapshot.get("knowledge_usage") or {}).get("summary") or {}
     return {
         "knowledge_feedback": {
             "decision_count": len(feedback.get("appended_decisions", [])),
             "risk_count": len(feedback.get("appended_risks", [])),
-        }
+        },
+        "knowledge_usage": {
+            "recommended_count": len(usage.get("recommended_paths", [])),
+            "consumed_count": len(usage.get("consumed_paths", [])),
+            "unused_count": len(usage.get("unused_paths", [])),
+            "feedback_score": float(usage.get("feedback_score", 0.0) or 0.0),
+        },
     }
 
 
@@ -661,6 +671,7 @@ def main(argv=None):
                 "knowledge_consumption_by_agent": build_consumption_by_agent(task_router),
                 "unused_recommendations": build_unused_recommendations(task_router),
                 "high_risk_workflow_coverage": build_high_risk_coverage(workflow_runtime_dir),
+                "knowledge_effectiveness_report": build_knowledge_effectiveness_report(workflow_runtime_dir),
                 "pending_governance_counts": build_pending_governance_counts(_knowledge_root()),
             }
         )

@@ -202,6 +202,11 @@ class WorkflowRuntimeTests(unittest.TestCase):
 
             self.assertTrue(result["success"])
             self.assertEqual(snapshot["status"], "completed")
+            self.assertIn("knowledge_usage", snapshot)
+            self.assertGreaterEqual(
+                snapshot["knowledge_usage"]["summary"]["feedback_score"],
+                0.0,
+            )
 
     def test_workflow_engine_returns_step_contexts_and_handoffs(self):
         router = router_module.TaskRouter()

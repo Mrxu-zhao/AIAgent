@@ -23,7 +23,7 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
 from config import load_control_plane_config
 from knowledge.consumer import build_knowledge_summary, build_next_read
 from knowledge.governance import append_governance_entry
-from knowledge_feedback import sync_workflow_feedback
+from knowledge_feedback import record_knowledge_usage, sync_workflow_feedback
 from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority
 from observability.metrics import get_metrics_registry
 from protocols.handoff import HandoffPayload
@@ -354,6 +354,12 @@ class WorkflowEngine:
                 for step_id, recommendation in knowledge_recommendations.items()
                 if isinstance(recommendation, dict)
             }
+            knowledge_usage = record_knowledge_usage(
+                workflow.id,
+                knowledge_recommendations,
+                knowledge_bundles,
+                workflow.variables.get("step_contexts", {}),
+            )
             if self.runtime_store:
                 self.runtime_store.record_workflow_completed(
                     workflow_id,
@@ -365,6 +371,7 @@ class WorkflowEngine:
                         "knowledge_recommendations": knowledge_recommendations,
                         "knowledge_bundles": knowledge_bundles,
                         "knowledge_feedback": knowledge_feedback,
+                        "knowledge_usage": knowledge_usage,
                     },
                 )
             blocked_error = None
@@ -387,6 +394,7 @@ class WorkflowEngine:
                 "knowledge_recommendations": knowledge_recommendations,
                 "knowledge_bundles": knowledge_bundles,
                 "knowledge_feedback": knowledge_feedback,
+                "knowledge_usage": knowledge_usage,
                 "collaboration_context": workflow.variables.get("collaboration_context", {}),
                 "handoffs": list(workflow.handoffs),
                 "duration": workflow.completed_at - workflow.started_at

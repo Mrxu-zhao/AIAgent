@@ -49,6 +49,20 @@ class KnowledgeUsage:
     risk_helpful_count: int = 0
     feedback_score: float = 0.0
 
+    def calculate_feedback_score(self) -> float:
+        recommended_total = max(1, len({path for path in self.recommended_paths if path}))
+        consumed_ratio = len({path for path in self.consumed_paths if path}) / recommended_total
+        expanded_ratio = len({path for path in self.expanded_paths if path}) / recommended_total
+        unused_ratio = len({path for path in self.unused_paths if path}) / recommended_total
+        helpful_total = self.decision_helpful_count + self.risk_helpful_count
+        helpful_ratio = min(helpful_total / 3.0, 1.0)
+        score = (0.45 * consumed_ratio) + (0.15 * expanded_ratio) + (0.35 * helpful_ratio) - (0.10 * unused_ratio)
+        return round(max(0.0, min(score, 1.0)), 4)
+
+    def finalize_feedback_score(self) -> float:
+        self.feedback_score = self.calculate_feedback_score()
+        return self.feedback_score
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 

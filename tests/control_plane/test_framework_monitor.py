@@ -43,6 +43,14 @@ class MonitorRegressionTests(unittest.TestCase):
                             "appended_decisions": ["d1"],
                             "appended_risks": ["r1"],
                         },
+                        "knowledge_usage": {
+                            "summary": {
+                                "consumed_paths": [".hermes/team/knowledge/status.md"],
+                                "unused_paths": [],
+                                "feedback_score": 0.6,
+                            },
+                            "steps": [{"step_id": "implement"}],
+                        },
                     },
                     ensure_ascii=False,
                 ),
@@ -65,6 +73,8 @@ class MonitorRegressionTests(unittest.TestCase):
         self.assertTrue(dashboard["recommended_knowledge"])
         self.assertIn("recent_knowledge_feedback", dashboard)
         self.assertEqual(dashboard["recent_knowledge_feedback"][0]["workflow_id"], "wf-1")
+        self.assertIn("knowledge_effectiveness_report", dashboard)
+        self.assertEqual(dashboard["knowledge_effectiveness_report"]["average_feedback_score"], 0.6)
 
 
 if __name__ == "__main__":

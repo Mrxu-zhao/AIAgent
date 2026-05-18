@@ -664,6 +664,14 @@ class UnifiedCLITests(unittest.TestCase):
                         "appended_decisions": ["d1"],
                         "appended_risks": ["r1"],
                     },
+                    "knowledge_usage": {
+                        "summary": {
+                            "recommended_paths": ["a.md", "b.md"],
+                            "consumed_paths": ["a.md"],
+                            "unused_paths": ["b.md"],
+                            "feedback_score": 0.75,
+                        }
+                    },
                 }
 
             def list_step_events(self, workflow_id):
@@ -694,6 +702,10 @@ class UnifiedCLITests(unittest.TestCase):
 
         self.assertEqual(result["summary"]["knowledge_feedback"]["decision_count"], 1)
         self.assertEqual(result["summary"]["knowledge_feedback"]["risk_count"], 1)
+        self.assertEqual(result["summary"]["knowledge_usage"]["recommended_count"], 2)
+        self.assertEqual(result["summary"]["knowledge_usage"]["consumed_count"], 1)
+        self.assertEqual(result["summary"]["knowledge_usage"]["unused_count"], 1)
+        self.assertEqual(result["summary"]["knowledge_usage"]["feedback_score"], 0.75)
         self.assertEqual(result["snapshot"]["workflow_id"], "wf-1")
 
     def test_query_audit_returns_filtered_records_and_writes_audit_entry(self):
@@ -1540,18 +1552,24 @@ class UnifiedCLITests(unittest.TestCase):
                                             "build_high_risk_coverage",
                                             return_value={"covered": 2},
                                         ):
-                                            with patch.object(
-                                                unified_cli_module,
-                                                "build_pending_governance_counts",
-                                                return_value={"pending_review": 1},
-                                            ):
-                                                result = unified_cli_module.main(["monitor", "--dashboard"])
+                                                with patch.object(
+                                                    unified_cli_module,
+                                                    "build_knowledge_effectiveness_report",
+                                                    return_value={"average_feedback_score": 0.8},
+                                                ):
+                                                    with patch.object(
+                                                        unified_cli_module,
+                                                        "build_pending_governance_counts",
+                                                        return_value={"pending_review": 1},
+                                                    ):
+                                                        result = unified_cli_module.main(["monitor", "--dashboard"])
 
         self.assertEqual(result["queue_depth"], 3)
         self.assertEqual(result["knowledge_heat_ranking"][0]["path"], "a.md")
         self.assertEqual(result["knowledge_consumption_by_agent"]["architect"], 1)
         self.assertEqual(result["unused_recommendations"], ["unused.md"])
         self.assertEqual(result["high_risk_workflow_coverage"]["covered"], 2)
+        self.assertEqual(result["knowledge_effectiveness_report"]["average_feedback_score"], 0.8)
         self.assertEqual(result["pending_governance_counts"]["pending_review"], 1)
 
     def test_tool_session_list_and_default_paths_return_sessions(self):

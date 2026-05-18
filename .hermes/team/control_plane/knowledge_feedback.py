@@ -4,6 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
+from knowledge.models import KnowledgeUsage
+
 METADATA_TEMPLATE = "---\nowner: control-plane\nlast_reviewed: {date}\nsource: workflow-feedback\n---\n\n"
 DECISION_HEADER = "# 关键决策记录\n\n| 日期 | 决策 | 理由 | 影响范围 |\n|------|------|------|----------|\n"
 RISK_HEADER = "# 风险登记册\n\n| 风险 | 影响范围 | 预警信号 | 缓解策略 |\n|------|----------|----------|----------|\n"
@@ -38,6 +40,54 @@ def sync_workflow_feedback(
     }
 
 
+def record_knowledge_usage(
+    workflow_id: str,
+    knowledge_recommendations: Dict[str, Any],
+    knowledge_bundles: Dict[str, Any],
+    step_contexts: Dict[str, Any],
+) -> Dict[str, Any]:
+    step_records: List[Dict[str, Any]] = []
+    aggregate_usage = KnowledgeUsage()
+
+    for step_id, recommendation in sorted(knowledge_recommendations.items()):
+        if not isinstance(recommendation, dict):
+            continue
+        bundle = knowledge_bundles.get(step_id) if isinstance(knowledge_bundles, dict) else {}
+        bundle = bundle if isinstance(bundle, dict) else {}
+        step_context = step_contexts.get(step_id) if isinstance(step_contexts, dict) else {}
+        step_context = step_context if isinstance(step_context, dict) else {}
+
+        recommended_paths = _flatten_recommended_paths(recommendation)
+        consumed_paths = _dedupe_list(bundle.get("paths", []))
+        unused_paths = [path for path in recommended_paths if path not in consumed_paths]
+        expanded_paths = _dedupe_list(bundle.get("next_read", []))
+
+        usage = KnowledgeUsage(
+            recommended_paths=recommended_paths,
+            consumed_paths=consumed_paths,
+            expanded_paths=expanded_paths,
+            unused_paths=unused_paths,
+            decision_helpful_count=len(step_context.get("decisions", [])),
+            risk_helpful_count=len(step_context.get("risks", [])),
+        )
+        usage.finalize_feedback_score()
+        step_records.append(
+            {
+                "step_id": step_id,
+                "agent": step_context.get("agent"),
+                "usage": usage.to_dict(),
+            }
+        )
+        _merge_usage(aggregate_usage, usage)
+
+    aggregate_usage.finalize_feedback_score()
+    return {
+        "workflow_id": workflow_id,
+        "steps": step_records,
+        "summary": aggregate_usage.to_dict(),
+    }
+
+
 def _ensure_file(path: Path, header: str) -> None:
     today = datetime.now().strftime("%Y-%m-%d")
     if not path.exists():
@@ -56,6 +106,31 @@ def _ensure_file(path: Path, header: str) -> None:
                 lines[index] = f"last_reviewed: {today}"
                 break
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _flatten_recommended_paths(recommendation: Dict[str, Any]) -> List[str]:
+    paths: List[str] = []
+    for group in ("team", "role", "instance"):
+        paths.extend(recommendation.get(group, []))
+    return _dedupe_list(paths)
+
+
+def _dedupe_list(values: List[Any]) -> List[str]:
+    result: List[str] = []
+    for value in values:
+        text = str(value).strip()
+        if text and text not in result:
+            result.append(text)
+    return result
+
+
+def _merge_usage(target: KnowledgeUsage, usage: KnowledgeUsage) -> None:
+    target.recommended_paths = _dedupe_list(target.recommended_paths + usage.recommended_paths)
+    target.consumed_paths = _dedupe_list(target.consumed_paths + usage.consumed_paths)
+    target.expanded_paths = _dedupe_list(target.expanded_paths + usage.expanded_paths)
+    target.unused_paths = _dedupe_list(target.unused_paths + usage.unused_paths)
+    target.decision_helpful_count += int(usage.decision_helpful_count)
+    target.risk_helpful_count += int(usage.risk_helpful_count)
 
 
 def _append_decisions(path: Path, workflow_id: str, decisions: List[Any]) -> List[str]:
