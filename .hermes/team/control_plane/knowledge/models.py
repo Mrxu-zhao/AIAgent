@@ -9,6 +9,7 @@ class KnowledgeProfile:
     task_type: str
     deliverables: List[str] = field(default_factory=list)
     risk_flags: List[str] = field(default_factory=list)
+    search_terms: List[str] = field(default_factory=list)
     workflow_id: Optional[str] = None
     step_id: Optional[str] = None
     owner_agent: Optional[str] = None

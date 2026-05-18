@@ -832,11 +832,12 @@ class WorkflowRuntimeTests(unittest.TestCase):
             }
 
             result = engine.execute_workflow(workflow.id)
-            lesson_files = sorted((knowledge_root / "lessons").glob("workflow-lessons-*.md"))
+            lesson_files = sorted((knowledge_root / "lessons").glob("workflow-lessons-*-*-*.md"))
             lesson_text = lesson_files[0].read_text(encoding="utf-8")
 
         self.assertTrue(result["success"])
         self.assertEqual(len(lesson_files), 1)
+        self.assertRegex(lesson_files[0].name, r"^workflow-lessons-\d{4}-\d{2}-\d{2}\.md$")
         self.assertIn("source: wf-team-lessons", lesson_text)
         self.assertIn("workflow: wf-team-lessons", lesson_text)
         self.assertIn("step: implement", lesson_text)

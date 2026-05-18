@@ -11,6 +11,7 @@ def build_router_knowledge_profile(intent, agent_id: str, role_key: str) -> Know
         task_type=getattr(intent.task_type, 'value', str(getattr(intent, 'task_type', 'generic'))),
         deliverables=list(getattr(intent, 'deliverables', [])),
         risk_flags=list(getattr(intent, 'risk_flags', [])),
+        search_terms=list(getattr(intent, 'search_terms', [])),
         owner_agent=agent_id,
         role_key=role_key,
         collaboration_mode=str(getattr(intent, 'collaboration_mode', 'single')),
@@ -19,11 +20,45 @@ def build_router_knowledge_profile(intent, agent_id: str, role_key: str) -> Know
     )
 
 
+def resolve_role_key(agent_id: str) -> str:
+    if agent_id.startswith("backend-"):
+        return "backend-dev"
+    if agent_id.startswith("frontend-"):
+        return "frontend-dev"
+    return agent_id
+
+
 def _resolve_path(path_text: str, repository_root: Path) -> Path:
     candidate = Path(path_text)
     if candidate.is_absolute():
         return candidate
     return repository_root / path_text
+
+
+def _content_match_bonus(
+    path_text: str,
+    resolved: Path,
+    profile: KnowledgeProfile,
+) -> tuple[float, List[str]]:
+    lowered = path_text.lower()
+    if "lessons" not in lowered and "patterns" not in lowered:
+        return 0.0, []
+    if not resolved.exists():
+        return 0.0, []
+    text = resolved.read_text(encoding="utf-8").lower()
+    score = 0.0
+    reasons: List[str] = []
+    seen = set()
+    for term in list(profile.search_terms)[:24]:
+        normalized = str(term).strip().lower()
+        if len(normalized) < 2 or normalized in seen:
+            continue
+        seen.add(normalized)
+        if normalized in text:
+            bonus = 8.0 if len(normalized) >= 4 else 4.0
+            score += bonus
+            reasons.append(f"content:{normalized}")
+    return min(score, 48.0), reasons
 
 
 def _score_path(path_text: str, profile: KnowledgeProfile, repository_root: Path) -> Dict[str, object]:
@@ -36,6 +71,9 @@ def _score_path(path_text: str, profile: KnowledgeProfile, repository_root: Path
     if 'overview.md' in lowered:
         score += 8.0
         reasons.append('overview')
+    if 'project-lessons' in lowered:
+        score += 20.0
+        reasons.append('project-lessons')
     if 'checklist' in lowered:
         score += 18.0
         reasons.append('checklist')
@@ -56,6 +94,9 @@ def _score_path(path_text: str, profile: KnowledgeProfile, repository_root: Path
             score += 10.0
             reasons.append(f'module:{value}')
     resolved = _resolve_path(path_text, repository_root)
+    content_bonus, content_reasons = _content_match_bonus(path_text, resolved, profile)
+    score += content_bonus
+    reasons.extend(content_reasons)
     exists = resolved.exists()
     return {
         'path': path_text,
@@ -104,6 +145,7 @@ def build_recommendation(
         '.hermes/team/knowledge/status.md',
         '.hermes/team/knowledge/project-overview.md',
         '.hermes/team/knowledge/workflow-playbook.md',
+        '.hermes/team/knowledge/project-lessons.md',
     ]
     if profile.task_type in {'requirements', 'analysis'} or 'spec' in profile.deliverables:
         team_paths.append('.hermes/team/knowledge/domain-glossary.md')
@@ -115,6 +157,7 @@ def build_recommendation(
     role_paths = [
         f'.hermes/agents/{role_key}/knowledge/status.md',
         f'.hermes/agents/{role_key}/knowledge/overview.md',
+        f'.hermes/agents/{role_key}/knowledge/project-lessons.md',
         f'.hermes/agents/{role_key}/knowledge/playbooks/common-tasks.md',
         f'.hermes/agents/{role_key}/knowledge/checklists/delivery-checklist.md',
     ]

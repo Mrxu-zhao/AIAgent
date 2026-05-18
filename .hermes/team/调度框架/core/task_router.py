@@ -5,6 +5,7 @@
 根据任务类型、Agent负载、技能匹配度自动分配任务
 """
 
+import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -17,7 +18,11 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
-from knowledge.recommendation import build_recommendation, build_router_knowledge_profile
+from knowledge.recommendation import (
+    build_recommendation,
+    build_router_knowledge_profile,
+    resolve_role_key,
+)
 
 
 class TaskPriority(Enum):
@@ -63,6 +68,7 @@ class TaskIntent:
     deliverables: List[str] = field(default_factory=list)
     risk_flags: List[str] = field(default_factory=list)
     keywords: List[str] = field(default_factory=list)
+    search_terms: List[str] = field(default_factory=list)
 
 
 
@@ -175,6 +181,8 @@ class TaskRouter:
         for keyword_list in self.config.task_keywords.values():
             matched_keywords.extend([keyword for keyword in keyword_list if keyword.lower() in content_lower])
 
+        search_terms = self._extract_search_terms(content, matched_keywords)
+
         return TaskIntent(
             task_type=task_type,
             requested_agent=requested_agent,
@@ -186,7 +194,37 @@ class TaskRouter:
             deliverables=deliverables,
             risk_flags=risk_flags,
             keywords=matched_keywords,
+            search_terms=search_terms,
         )
+
+    def _extract_search_terms(self, content: str, matched_keywords: List[str]) -> List[str]:
+        terms: List[str] = []
+        seen = set()
+
+        def add(term: str) -> None:
+            normalized = str(term).strip().lower()
+            if len(normalized) < 2 or normalized in seen:
+                return
+            seen.add(normalized)
+            terms.append(normalized)
+
+        for keyword in matched_keywords:
+            add(keyword)
+
+        for token in re.findall(r"[a-z0-9_-]{3,}", content.lower()):
+            add(token)
+
+        for block in re.findall(r"[\u4e00-\u9fff]{2,}", content):
+            cleaned = block.strip()
+            if len(cleaned) <= 4:
+                add(cleaned)
+                continue
+            for size in (4, 3, 2):
+                for index in range(len(cleaned) - size + 1):
+                    add(cleaned[index : index + size])
+                    if len(terms) >= 24:
+                        return terms
+        return terms
 
     def _reviewer_candidate_pool(self, intent: TaskIntent) -> List[str]:
         """返回 review 任务的优先候选池。"""
@@ -208,11 +246,7 @@ class TaskRouter:
 
     def _resolve_role_knowledge_key(self, agent_id: str) -> str:
         """把实例 agent 映射到角色知识目录。"""
-        if agent_id.startswith("backend-"):
-            return "backend-dev"
-        if agent_id.startswith("frontend-"):
-            return "frontend-dev"
-        return agent_id
+        return resolve_role_key(agent_id)
 
     def _resolve_knowledge_path(self, relative_path: str) -> Path:
         path = Path(relative_path)

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from knowledge.models import KnowledgeUsage
+from knowledge.recommendation import resolve_role_key
 
 METADATA_TEMPLATE = "---\nowner: control-plane\nlast_reviewed: {date}\nsource: workflow-feedback\n---\n\n"
 DECISION_HEADER = "# 关键决策记录\n\n| 日期 | 决策 | 理由 | 影响范围 |\n|------|------|------|----------|\n"
@@ -36,6 +37,14 @@ def sync_workflow_feedback(
     lessons = _build_lessons(workflow_id, step_contexts or {})
     team_lessons_path = _resolve_team_lessons_path(knowledge_root)
     appended_team_lessons = _append_team_lessons(team_lessons_path, workflow_id, lessons)
+    team_project_lessons_path = knowledge_root / "project-lessons.md"
+    appended_team_project_lessons = _append_project_lessons(
+        team_project_lessons_path,
+        workflow_id,
+        lessons,
+        scope="team",
+    )
+    appended_role_project_lessons = _append_role_project_lessons(knowledge_root, workflow_id, lessons)
     appended_instance_lessons = _append_instance_lessons(knowledge_root, lessons)
     return {
         "decision_log_path": str(decision_log_path),
@@ -44,6 +53,9 @@ def sync_workflow_feedback(
         "appended_risks": appended_risks,
         "team_lessons_path": str(team_lessons_path),
         "appended_team_lessons": appended_team_lessons,
+        "team_project_lessons_path": str(team_project_lessons_path),
+        "appended_team_project_lessons": appended_team_project_lessons,
+        "role_project_lessons": appended_role_project_lessons,
         "instance_lessons": appended_instance_lessons,
     }
 
@@ -205,7 +217,9 @@ def _build_lessons(workflow_id: str, step_contexts: Dict[str, Any]) -> List[Dict
             "workflow_id": workflow_id,
             "step_id": step_id,
             "agent": agent,
+            "role_key": resolve_role_key(agent),
             "title": title,
+            "project_type": workflow_id,
             "scenario": f"workflow: {workflow_id}; step: {step_id}; agent: {agent}",
             "action": _extract_lesson_action(decisions, summary, title),
             "result": summary or title,
@@ -254,18 +268,17 @@ def _extract_lesson_action(decisions: List[Any], summary: str, fallback: str) ->
 
 
 def _resolve_team_lessons_path(knowledge_root: Path) -> Path:
-    month = datetime.now().strftime("%Y-%m")
-    return knowledge_root / "lessons" / f"workflow-lessons-{month}.md"
+    day = datetime.now().strftime("%Y-%m-%d")
+    return knowledge_root / "lessons" / f"workflow-lessons-{day}.md"
 
 
 def _append_team_lessons(path: Path, workflow_id: str, lessons: List[Dict[str, str]]) -> List[str]:
     path.parent.mkdir(parents=True, exist_ok=True)
     today = datetime.now().strftime("%Y-%m-%d")
-    month = datetime.now().strftime("%Y-%m")
     if not path.exists():
         path.write_text(
             (
-                f"# Workflow 实战经验（{month}）\n\n"
+                f"# Workflow 实战经验（{today}）\n\n"
                 "---\n"
                 "owner: control-plane\n"
                 f"last_reviewed: {today}\n"
@@ -314,6 +327,32 @@ def _append_instance_lessons(knowledge_root: Path, lessons: List[Dict[str, str]]
     return appended
 
 
+def _append_role_project_lessons(
+    knowledge_root: Path,
+    workflow_id: str,
+    lessons: List[Dict[str, str]],
+) -> Dict[str, List[str]]:
+    appended: Dict[str, List[str]] = {}
+    hermes_root = knowledge_root.parents[1]
+    grouped: Dict[str, List[Dict[str, str]]] = {}
+    for lesson in lessons:
+        role_key = str(lesson.get("role_key") or "").strip()
+        if not role_key:
+            continue
+        grouped.setdefault(role_key, []).append(lesson)
+    for role_key, role_lessons in grouped.items():
+        path = hermes_root / "agents" / role_key / "knowledge" / "project-lessons.md"
+        appended_titles = _append_project_lessons(
+            path,
+            workflow_id,
+            role_lessons,
+            scope="role",
+        )
+        if appended_titles:
+            appended[role_key] = appended_titles
+    return appended
+
+
 def _ensure_recent_lessons_file(path: Path, agent: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
@@ -329,6 +368,26 @@ def _ensure_recent_lessons_file(path: Path, agent: str) -> None:
             "- 结果：\n"
             "- 适用前提：\n"
             "- 是否可沉淀到角色层或团队层：\n"
+        ),
+        encoding="utf-8",
+    )
+
+
+def _ensure_project_lessons_file(path: Path, scope: str, workflow_id: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    today = datetime.now().strftime("%Y-%m-%d")
+    if path.exists():
+        return
+    title = "# 项目经验库\n\n" if scope == "team" else "# 角色项目经验\n\n"
+    path.write_text(
+        (
+            title
+            + "---\n"
+            + "owner: control-plane\n"
+            + f"last_reviewed: {today}\n"
+            + f"source: {workflow_id}\n"
+            + f"scope: {scope}\n"
+            + "---\n\n"
         ),
         encoding="utf-8",
     )
@@ -367,6 +426,45 @@ def _render_instance_lesson_block(lesson: Dict[str, str]) -> str:
         f"- 结果：{lesson['result']}\n"
         f"- 适用前提：{lesson['prerequisite']}\n"
         "- 是否可沉淀到角色层或团队层：团队层 lessons\n"
+    )
+
+
+def _append_project_lessons(
+    path: Path,
+    workflow_id: str,
+    lessons: List[Dict[str, str]],
+    *,
+    scope: str,
+) -> List[str]:
+    _ensure_project_lessons_file(path, scope, workflow_id)
+    text = path.read_text(encoding="utf-8")
+    today = datetime.now().strftime("%Y-%m-%d")
+    text = _replace_or_insert_metadata(text, "last_reviewed", today)
+    text = _replace_or_insert_metadata(text, "source", workflow_id)
+    appended: List[str] = []
+    for lesson in lessons:
+        marker = f"<!-- lesson-key: {lesson['dedupe_key']} -->"
+        if marker in text:
+            continue
+        block = _render_project_lesson_block(lesson)
+        text += block
+        appended.append(lesson["title"])
+    path.write_text(text, encoding="utf-8")
+    return appended
+
+
+def _render_project_lesson_block(lesson: Dict[str, str]) -> str:
+    return (
+        f"## {datetime.now().strftime('%Y-%m-%d')}\n"
+        f"<!-- lesson-key: {lesson['dedupe_key']} -->\n"
+        f"### 经验：{lesson['title']}\n"
+        f"- project_type: {lesson['project_type']}\n"
+        f"- role_key: {lesson['role_key']}\n"
+        f"- tags: {lesson['project_type']}, {lesson['agent']}, {lesson['role_key']}\n"
+        f"- 场景：{lesson['scenario']}\n"
+        f"- 做法：{lesson['action']}\n"
+        f"- 结果：{lesson['result']}\n"
+        f"- 适用前提：{lesson['prerequisite']}\n\n"
     )
 
 

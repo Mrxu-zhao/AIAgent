@@ -153,6 +153,62 @@ class TaskRouterIntentTests(unittest.TestCase):
         self.assertTrue(knowledge["path_scores"]["role"]["status.md"]["exists"])
         self.assertTrue(knowledge["path_scores"]["instance"]["expertise.md"]["exists"])
 
+    def test_knowledge_recommendation_auto_hits_similar_project_lessons(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".hermes/team/knowledge/status.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/team/knowledge/status.md").write_text("status", encoding="utf-8")
+            (root / ".hermes/team/knowledge/project-overview.md").write_text("overview", encoding="utf-8")
+            (root / ".hermes/team/knowledge/workflow-playbook.md").write_text("workflow", encoding="utf-8")
+            (root / ".hermes/team/knowledge/project-lessons.md").write_text(
+                (
+                    "# 项目经验库\n\n"
+                    "### 经验：儿童识字游戏首屏采用离线素材预热\n"
+                    "- project_type: children-literacy-game\n"
+                    "- tags: 儿童识字游戏, 拼音, 小游戏, 离线素材\n"
+                    "- 场景：儿童识字游戏的拼音关卡首屏加载\n"
+                ),
+                encoding="utf-8",
+            )
+            (root / ".hermes/agents/backend-dev/knowledge/status.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/status.md").write_text("role", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/overview.md").write_text("overview", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/project-lessons.md").write_text(
+                (
+                    "# 后端项目经验\n\n"
+                    "### 经验：儿童识字游戏接口优先返回拼音关卡轻量数据\n"
+                    "- project_type: children-literacy-game\n"
+                    "- tags: 儿童识字游戏, 拼音, 小游戏, 轻量接口\n"
+                ),
+                encoding="utf-8",
+            )
+            (root / ".hermes/agents/backend-dev/knowledge/playbooks/common-tasks.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/playbooks/common-tasks.md").write_text("common", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/checklists/delivery-checklist.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/checklists/delivery-checklist.md").write_text("delivery", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/expertise.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/team/agents/backend-1/knowledge/expertise.md").write_text("backend", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/owned-modules.md").write_text("orders", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/delivery-style.md").write_text("style", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/recent-lessons.md").write_text("recent", encoding="utf-8")
+
+            router = task_router_module.TaskRouter(knowledge_root=root / ".hermes")
+
+            agent_id, task = router.route_task("请 backend-1 开发儿童识字游戏的拼音关卡接口，并优化小游戏首屏体验")
+
+        self.assertEqual(agent_id, "backend-1")
+        knowledge = task.routing_reason["knowledge_recommendation"]
+        self.assertEqual(knowledge["team"][0], ".hermes/team/knowledge/project-lessons.md")
+        self.assertEqual(knowledge["role"][0], ".hermes/agents/backend-dev/knowledge/project-lessons.md")
+        self.assertGreater(
+            knowledge["path_scores"]["team"]["project-lessons.md"]["score"],
+            knowledge["path_scores"]["team"]["status.md"]["score"],
+        )
+        self.assertGreater(
+            knowledge["path_scores"]["role"]["project-lessons.md"]["score"],
+            knowledge["path_scores"]["role"]["status.md"]["score"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
