@@ -2,6 +2,33 @@
 
 ## 2026-05
 
+<!-- lesson-key: qa-functional|review|review-decision -->
+### 经验：review-decision
+- 场景：workflow: wf-collab; step: review; agent: qa-functional
+- 做法：review:评审 design:设计方案
+- 结果：review:评审 design:设计方案
+- 适用前提：review-risk
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: qa-functional|functional_test|执行功能测试 -->
+### 经验：执行功能测试
+- 场景：workflow: wf-quality-gate; step: functional_test; agent: qa-functional
+- 做法：执行功能测试
+- 结果：执行功能测试
+- 适用前提：适用于 functional_test 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: qa-functional|closure_confirmation|确认闭环 -->
+### 经验：确认闭环
+- 场景：workflow: wf-missing-deliverable; step: closure_confirmation; agent: qa-functional
+- 做法：确认闭环
+- 结果：确认闭环
+- 适用前提：适用于 closure_confirmation 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：接口测试的"契约测试"实践
 - **场景**：前后端联调时发现接口字段不一致，导致测试阻塞
 - **做法**：引入契约测试，前后端先对齐接口契约（JSON Schema），再各自开发

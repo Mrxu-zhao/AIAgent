@@ -793,6 +793,114 @@ class WorkflowRuntimeTests(unittest.TestCase):
         self.assertEqual(decision_log.count("采用接口版本化"), 1)
         self.assertEqual(risk_register.count("缓存一致性风险"), 1)
 
+    def test_workflow_engine_writes_team_lessons_from_step_contexts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            knowledge_root = Path(tmp) / ".hermes" / "team" / "knowledge"
+            engine = workflow_module.WorkflowEngine(
+                task_router=router_module.TaskRouter(),
+                message_bus=None,
+                runtime_store=None,
+                knowledge_root=knowledge_root,
+            )
+            workflow = engine.create_workflow(
+                "wf-team-lessons",
+                "team-lessons",
+                "demo",
+                [
+                    {
+                        "id": "implement",
+                        "name": "实现",
+                        "type": "sequential",
+                        "agent": "backend-1",
+                        "task": "实现接口",
+                    }
+                ],
+            )
+            engine._execute_agent_task = lambda step, task_content: {
+                "success": True,
+                "output": "以 markdown 项目上下文启动 workflow",
+                "agent": step.agent,
+                "risks": ["上下文文件格式不稳定"],
+                "decisions": [
+                    {
+                        "summary": "非 JSON context-file 按文本注入 project_context",
+                        "rationale": "避免 workflow 启动阶段崩溃",
+                        "impact": "workflow 输入装载",
+                        "next_action": "补齐 CLI 使用说明",
+                    }
+                ],
+            }
+
+            result = engine.execute_workflow(workflow.id)
+            lesson_files = sorted((knowledge_root / "lessons").glob("workflow-lessons-*.md"))
+            lesson_text = lesson_files[0].read_text(encoding="utf-8")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(len(lesson_files), 1)
+        self.assertIn("source: wf-team-lessons", lesson_text)
+        self.assertIn("workflow: wf-team-lessons", lesson_text)
+        self.assertIn("step: implement", lesson_text)
+        self.assertIn("agent: backend-1", lesson_text)
+        self.assertIn("非 JSON context-file 按文本注入 project_context", lesson_text)
+
+    def test_workflow_engine_writes_recent_lessons_for_agent_and_deduplicates_entries(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            knowledge_root = Path(tmp) / ".hermes" / "team" / "knowledge"
+            engine = workflow_module.WorkflowEngine(
+                task_router=router_module.TaskRouter(),
+                message_bus=None,
+                runtime_store=None,
+                knowledge_root=knowledge_root,
+            )
+            workflow = engine.create_workflow(
+                "wf-instance-lessons",
+                "instance-lessons",
+                "demo",
+                [
+                    {
+                        "id": "review",
+                        "name": "评审",
+                        "type": "sequential",
+                        "agent": "qa-functional",
+                        "task": "评审交付物",
+                    }
+                ],
+            )
+            engine._execute_agent_task = lambda step, task_content: {
+                "success": True,
+                "output": "交付前先复核终态 snapshot",
+                "agent": step.agent,
+                "risks": ["VERSION_CONFLICT 会误报失败"],
+                "decisions": [
+                    {
+                        "summary": "终态写入冲突后先复核 snapshot",
+                        "rationale": "避免已完成任务被误判失败",
+                        "impact": "dispatch 与 workflow 收口",
+                        "next_action": "统一用于并发完成写入",
+                    }
+                ],
+            }
+
+            first = engine.execute_workflow(workflow.id)
+            workflow.status = "pending"
+            workflow.completed_at = None
+            workflow.started_at = None
+            workflow.steps[0].status = workflow_module.StepStatus.PENDING
+            second = engine.execute_workflow(workflow.id)
+            recent_lessons = (
+                knowledge_root.parent / "agents" / "qa-functional" / "knowledge" / "recent-lessons.md"
+            ).read_text(encoding="utf-8")
+
+        self.assertTrue(first["success"])
+        self.assertTrue(second["success"])
+        self.assertIn("# qa-functional - 最近经验", recent_lessons)
+        self.assertIn("## ", recent_lessons)
+        self.assertEqual(
+            recent_lessons.count("### 经验：终态写入冲突后先复核 snapshot"),
+            1,
+        )
+        self.assertIn("workflow: wf-instance-lessons", recent_lessons)
+
     def test_workflow_engine_passes_upstream_agent_and_role_into_review_route(self):
         router = router_module.TaskRouter()
         engine = workflow_module.WorkflowEngine(task_router=router, message_bus=None, runtime_store=None)

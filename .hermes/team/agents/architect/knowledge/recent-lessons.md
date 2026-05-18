@@ -2,6 +2,51 @@
 
 ## 2026-05
 
+<!-- lesson-key: architect|design|design:设计方案 -->
+### 经验：design:设计方案
+- 场景：workflow: wf-backend; step: design; agent: architect
+- 做法：design:设计方案
+- 结果：design:设计方案
+- 适用前提：适用于 design 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: architect|design|任务已分配给 architect: 产出接口 spec -->
+### 经验：任务已分配给 architect: 产出接口 spec
+- 场景：workflow: wf-handoff; step: design; agent: architect
+- 做法：任务已分配给 architect: 产出接口 spec
+- 结果：任务已分配给 architect: 产出接口 spec
+- 适用前提：适用于 design 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: architect|design|design-decision -->
+### 经验：design-decision
+- 场景：workflow: wf-collab; step: design; agent: architect
+- 做法：design:设计方案
+- 结果：design:设计方案
+- 适用前提：design-risk
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: architect|design|ok -->
+### 经验：ok
+- 场景：workflow: wf-bus-handoff; step: design; agent: architect
+- 做法：ok
+- 结果：ok
+- 适用前提：适用于 design 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: architect|requirements_review|评审需求 -->
+### 经验：评审需求
+- 场景：workflow: wf-blocked-approval; step: requirements_review; agent: architect
+- 做法：评审需求
+- 结果：评审需求
+- 适用前提：适用于 requirements_review 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：微服务拆分的"黄金粒度"
 - **场景**：物资管理平台初期拆分过细（8个服务），导致调用链过长、运维复杂
 - **做法**：重新评估，按"业务边界+团队规模+数据一致性"三维度合并为4个服务

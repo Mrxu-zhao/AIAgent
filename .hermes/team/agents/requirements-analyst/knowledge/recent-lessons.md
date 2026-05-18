@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: requirements-analyst|requirements|任务已分配给 requirements-analyst: 分析需求 -->
+### 经验：任务已分配给 requirements-analyst: 分析需求
+- 场景：workflow: wf-runtime; step: requirements; agent: requirements-analyst
+- 做法：任务已分配给 requirements-analyst: 分析需求
+- 结果：任务已分配给 requirements-analyst: 分析需求
+- 适用前提：适用于 requirements 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：B端表单类需求的标准化表达
 - **场景**：物资管理平台的采购申请模块，表单字段多达30+，开发反馈需求描述混乱
 - **做法**：将表单需求拆分为"字段清单（含校验规则）+ 状态流转（含触发条件）+ 异常处理"三部分

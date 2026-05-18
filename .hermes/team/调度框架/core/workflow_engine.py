@@ -876,6 +876,7 @@ class WorkflowEngine:
             self.knowledge_root,
             workflow.id,
             collaboration_context,
+            workflow.variables.get("step_contexts", {}),
         )
         for decision in list(collaboration_context.get("decisions", [])):
             summary = str(decision.get("decision_summary") if isinstance(decision, dict) else decision).strip()

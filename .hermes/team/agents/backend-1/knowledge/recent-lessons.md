@@ -2,6 +2,87 @@
 
 ## 2026-05
 
+<!-- lesson-key: backend-1|implement|done -->
+### 经验：done
+- 场景：workflow: wf-real-exec-success-shape; step: implement; agent: backend-1
+- 做法：done
+- 结果：done
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|模拟执行: 实现代码 -->
+### 经验：模拟执行: 实现代码
+- 场景：workflow: wf-simulated; step: implement; agent: backend-1
+- 做法：模拟执行: 实现代码
+- 结果：模拟执行: 实现代码
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|implement:实现代码 -->
+### 经验：implement:实现代码
+- 场景：workflow: wf-backend; step: implement; agent: backend-1
+- 做法：implement:实现代码
+- 结果：implement:实现代码
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|任务已分配给 backend-1: 实现接口并补测试 -->
+### 经验：任务已分配给 backend-1: 实现接口并补测试
+- 场景：workflow: wf-knowledge-pack; step: implement; agent: backend-1
+- 做法：任务已分配给 backend-1: 实现接口并补测试
+- 结果：任务已分配给 backend-1: 实现接口并补测试
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码 -->
+### 经验：任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码
+- 场景：workflow: wf-handoff; step: implement; agent: backend-1
+- 做法：任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码
+- 结果：任务已分配给 backend-1: 根据 任务已分配给 architect: 产出接口 spec 完成代码
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|review|任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口 -->
+### 经验：任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口
+- 场景：workflow: wf-review-routing; step: review; agent: backend-1
+- 做法：任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口
+- 结果：任务已分配给 backend-1: 请 review 任务已分配给 backend-1: 实现接口
+- 适用前提：适用于 review 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|任务已分配给 backend-1: 实现接口 -->
+### 经验：任务已分配给 backend-1: 实现接口
+- 场景：workflow: wf-review-routing; step: implement; agent: backend-1
+- 做法：任务已分配给 backend-1: 实现接口
+- 结果：任务已分配给 backend-1: 实现接口
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|ok -->
+### 经验：ok
+- 场景：workflow: wf-bus-handoff; step: implement; agent: backend-1
+- 做法：ok
+- 结果：ok
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: backend-1|implement|实现代码 -->
+### 经验：实现代码
+- 场景：workflow: wf-routing-priority-failure; step: implement; agent: backend-1
+- 做法：实现代码
+- 结果：实现代码
+- 适用前提：适用于 implement 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：API版本控制的"兼容性优先"策略
 - **场景**：订单接口v1需要增加字段，但已有客户端在使用
 - **做法**：采用"扩展不修改"策略，新增字段有默认值，旧客户端不感知
