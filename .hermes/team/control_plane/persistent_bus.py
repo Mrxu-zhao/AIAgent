@@ -7,6 +7,7 @@ from threading import RLock
 from typing import Any, Dict, List, Optional
 
 from config import load_control_plane_config
+from file_lock import FileLock, atomic_write_text
 
 
 @dataclass
@@ -67,6 +68,7 @@ class PersistentMessageBus:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._messages_path = self.base_dir / "messages.jsonl"
         self._state_path = self.base_dir / "state.json"
+        self._file_lock_path = self.base_dir / ".bus.lock"
         self._lock = RLock()
         self._groups = config.groups
         self._registered_agents = set()
@@ -76,29 +78,33 @@ class PersistentMessageBus:
         self.load_from_disk()
 
     def register_agent(self, agent_id: str):
-        with self._lock:
+        def mutate():
             self._registered_agents.add(agent_id)
             self._pending.setdefault(agent_id, [])
             self._unacked.setdefault(agent_id, {})
-            self._persist_state()
+
+        self._mutate_shared_state(mutate)
 
     def unregister_agent(self, agent_id: str):
-        with self._lock:
+        def mutate():
             self._registered_agents.discard(agent_id)
             self._pending.pop(agent_id, None)
             self._unacked.pop(agent_id, None)
-            self._persist_state()
+
+        self._mutate_shared_state(mutate)
 
     def send(self, message) -> bool:
         persistent = PersistentMessage.from_message(message)
-        with self._lock:
+        
+        def mutate():
             self._history.append(persistent)
             for agent_id in self._resolve_targets(persistent):
                 self._pending.setdefault(agent_id, []).append(persistent)
                 self._registered_agents.add(agent_id)
             with self._messages_path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(persistent.to_dict(), ensure_ascii=False) + "\n")
-            self._persist_state()
+
+        self._mutate_shared_state(mutate)
         try:
             from observability.metrics import get_metrics_registry
 
@@ -109,36 +115,48 @@ class PersistentMessageBus:
         return True
 
     def receive(self, agent_id: str) -> Optional[PersistentMessage]:
-        with self._lock:
+        result = {"message": None}
+
+        def mutate():
             queue = self._pending.setdefault(agent_id, [])
             if not queue:
-                return None
+                return
             message = queue.pop(0)
             self._unacked.setdefault(agent_id, {})[message.id] = message
-            self._persist_state()
-            return message
+            result["message"] = message
+
+        self._mutate_shared_state(mutate)
+        return result["message"]
 
     def ack(self, agent_id: str, message_id: str) -> bool:
-        with self._lock:
+        result = {"ok": False}
+
+        def mutate():
             unacked = self._unacked.setdefault(agent_id, {})
             if message_id not in unacked:
-                return False
+                return
             del unacked[message_id]
-            self._persist_state()
-            return True
+            result["ok"] = True
+
+        self._mutate_shared_state(mutate)
+        return result["ok"]
 
     def nack(self, agent_id: str, message_id: str) -> bool:
         return self.requeue(agent_id, message_id)
 
     def requeue(self, agent_id: str, message_id: str) -> bool:
-        with self._lock:
+        result = {"ok": False}
+
+        def mutate():
             unacked = self._unacked.setdefault(agent_id, {})
             if message_id not in unacked:
-                return False
+                return
             message = unacked.pop(message_id)
             self._pending.setdefault(agent_id, []).insert(0, message)
-            self._persist_state()
-            return True
+            result["ok"] = True
+
+        self._mutate_shared_state(mutate)
+        return result["ok"]
 
     def list_unacked(self, agent_id: str) -> List[Dict[str, Any]]:
         with self._lock:
@@ -184,6 +202,13 @@ class PersistentMessageBus:
                 for agent_id, items in payload.get("unacked", {}).items()
             }
 
+    def _mutate_shared_state(self, mutator):
+        with self._lock:
+            with FileLock(self._file_lock_path):
+                self.load_from_disk()
+                mutator()
+                self._persist_state()
+
     def _persist_state(self):
         payload = {
             "registered_agents": sorted(self._registered_agents),
@@ -196,7 +221,7 @@ class PersistentMessageBus:
                 for agent_id, messages in self._unacked.items()
             },
         }
-        self._state_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        atomic_write_text(self._state_path, json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def _resolve_targets(self, message: PersistentMessage) -> List[str]:
         if message.to_agent is None:

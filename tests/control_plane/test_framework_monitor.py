@@ -5,8 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tests.control_plane.test_support import load_framework_module
+from tests.control_plane.test_support import ensure_control_plane_path, load_framework_module
 
+ensure_control_plane_path()
 monitor_module = load_framework_module("monitor")
 
 
@@ -75,6 +76,39 @@ class MonitorRegressionTests(unittest.TestCase):
         self.assertEqual(dashboard["recent_knowledge_feedback"][0]["workflow_id"], "wf-1")
         self.assertIn("knowledge_effectiveness_report", dashboard)
         self.assertEqual(dashboard["knowledge_effectiveness_report"]["average_feedback_score"], 0.6)
+
+    def test_dashboard_includes_hermes_health_summary(self):
+        fake_config = type(
+            "Config",
+            (),
+            {
+                "thresholds": {"agent_load_high": 0.8, "error_rate_high": 0.1},
+                "directories": {"workflow_runtime_dir": ""},
+                "executors": {"hermes": {"command": "hermes"}},
+            },
+        )()
+
+        with patch.object(monitor_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                monitor_module,
+                "check_hermes_health",
+                return_value=type(
+                    "Report",
+                    (),
+                    {
+                        "ok": True,
+                        "status": "healthy",
+                        "message": "ok",
+                        "available_commands": ["chat", "team"],
+                    },
+                )(),
+            ):
+                monitor = monitor_module.Monitor()
+                dashboard = monitor.get_dashboard_data()
+
+        self.assertIn("hermes_health", dashboard)
+        self.assertEqual(dashboard["hermes_health"]["status"], "healthy")
+        self.assertEqual(dashboard["hermes_health"]["available_commands"], ["chat", "team"])
 
 
 if __name__ == "__main__":

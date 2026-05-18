@@ -1,6 +1,7 @@
 import re
 import subprocess
 
+from hermes_health import check_hermes_health
 from providers.base import ExecutorProvider
 
 
@@ -62,6 +63,12 @@ class HermesProvider(ExecutorProvider):
             if candidate in self.dispatch_profiles:
                 return list(self.dispatch_profiles[candidate])
         raise ValueError("no hermes dispatch template configured")
+
+    def validate_health(self):
+        report = check_hermes_health(self.command, probe_args=self.probe_args)
+        if not report.ok and report.status != "command_missing":
+            raise ValueError(f"hermes_health:{report.status}:{report.message}")
+        return report
 
     def build_dispatch_command(self, agent_id: str, task: str):
         template = self._resolve_dispatch_template()

@@ -186,6 +186,21 @@ class PersistentMessageBusTests(unittest.TestCase):
             with patch("observability.metrics.get_metrics_registry", side_effect=RuntimeError("boom")):
                 self.assertTrue(bus.send(msg))
 
+    def test_multiple_bus_instances_merge_registered_agents_in_shared_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = persistent_bus_module.PersistentMessageBus(base_dir=root)
+            second = persistent_bus_module.PersistentMessageBus(base_dir=root)
+
+            first.register_agent("architect")
+            second.register_agent("backend-1")
+
+            third = persistent_bus_module.PersistentMessageBus(base_dir=root)
+            stats = third.stats()
+
+        self.assertIn("architect", stats["pending_counts"])
+        self.assertIn("backend-1", stats["pending_counts"])
+
 
 if __name__ == "__main__":
     unittest.main()

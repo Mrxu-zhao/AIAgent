@@ -305,6 +305,42 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(result, "metric 1\n")
         refresh_mock.assert_called_once_with()
 
+    def test_build_parser_exposes_hermes_health_command(self):
+        parser = unified_cli_module.build_parser()
+        help_text = parser.format_help()
+
+        self.assertIn("hermes-health", help_text)
+
+    def test_hermes_health_command_returns_structured_report(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+            executors={"hermes": {"command": "hermes"}},
+        )
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger"):
+                        with patch.object(
+                            unified_cli_module,
+                            "check_hermes_health",
+                            return_value=SimpleNamespace(
+                                ok=False,
+                                status="not_configured",
+                                message="not configured",
+                                available_commands=["chat"],
+                            ),
+                        ):
+                            result = unified_cli_module.main(["hermes-health"])
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "not_configured")
+        self.assertEqual(result["available_commands"], ["chat"])
+
     def test_control_plane_run_command_calls_shared_runner(self):
         observed = {}
         fake_config = SimpleNamespace(
@@ -452,6 +488,42 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(snapshot["status"], "done")
         self.assertEqual(outcome["runner_mode"], "dry-run-fallback")
         self.assertTrue(outcome["artifact_refs"])
+
+    def test_execute_dispatch_task_returns_structured_failure_when_hermes_not_configured(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            fake_config = SimpleNamespace(
+                directories={
+                    "state_dir": str(base / "state"),
+                    "events_dir": str(base / "events"),
+                },
+                default_executor="hermes",
+            )
+            fake_provider = SimpleNamespace(
+                name="hermes",
+                validate_health=lambda: (_ for _ in ()).throw(
+                    ValueError("hermes_health:not_configured:not configured")
+                ),
+            )
+            broken_adapter = SimpleNamespace(
+                provider=fake_provider,
+                build_dispatch_command=lambda *_args, **_kwargs: ["hermes", "chat", "-q", "noop"],
+            )
+
+            with patch.object(unified_cli_module, "get_executor_adapter", return_value=broken_adapter):
+                with patch.object(executor_runtime_module, "get_executor_adapter", return_value=broken_adapter):
+                    outcome = unified_cli_module.execute_dispatch_task(
+                        task_id="task-execute-not-configured",
+                        task_text="设计接口",
+                        agent_id="architect",
+                        backend="hermes",
+                        config=fake_config,
+                        wait=True,
+                    )
+
+        self.assertFalse(outcome["success"])
+        self.assertEqual(outcome["error_code"], "HERMES_NOT_CONFIGURED")
+        self.assertEqual(outcome["runner_mode"], "preflight-failed")
 
     def test_execute_dispatch_task_writes_command_artifact_before_runner_returns(self):
         class Result:

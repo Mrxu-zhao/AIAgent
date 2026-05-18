@@ -20,6 +20,7 @@ if str(CONTROL_PLANE_DIR) not in sys.path:
     sys.path.insert(0, str(CONTROL_PLANE_DIR))
 
 from config import load_control_plane_config
+from hermes_health import check_hermes_health
 from knowledge.analytics import (
     build_consumption_by_agent,
     build_high_risk_coverage,
@@ -319,11 +320,27 @@ class Monitor:
                 "knowledge_effectiveness_report": build_knowledge_effectiveness_report(self.workflow_runtime_dir),
                 "pending_governance_counts": build_pending_governance_counts(Path(__file__).resolve().parents[2] / "knowledge"),
                 "recent_alerts": self.get_alerts(resolved=False)[:5],
-                "recent_logs": self.get_logs(limit=10)
+                "recent_logs": self.get_logs(limit=10),
+                "hermes_health": self._collect_hermes_health(),
             }
             get_metrics_registry().set_gauge("improvement_dashboard_availability_ratio", 1.0)
             get_metrics_registry().set_gauge("improvement_high_risk_issues_total", float(critical_alerts))
             return payload
+
+    def _collect_hermes_health(self) -> Dict[str, object]:
+        config = load_control_plane_config()
+        executors = getattr(config, "executors", {}) or {}
+        hermes_conf = executors.get("hermes", {}) if isinstance(executors, dict) else {}
+        report = check_hermes_health(
+            str(hermes_conf.get("command", "hermes")),
+            timeout_seconds=0.2,
+        )
+        return {
+            "ok": report.ok,
+            "status": report.status,
+            "message": report.message,
+            "available_commands": list(report.available_commands),
+        }
 
     def _collect_recommended_knowledge(self) -> List[Dict]:
         if self.task_router is None:

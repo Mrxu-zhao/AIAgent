@@ -128,6 +128,38 @@ class ConfigCenterTests(unittest.TestCase):
 
         self.assertIn("architect", config.agents)
 
+    def test_reload_control_plane_config_refreshes_environment_override(self):
+        with patch.object(config_module, "_default_override_config_path", return_value=Path("Z:/__missing__/config.json")):
+            with patch.dict(os.environ, {"HERMES_COMMAND": "D:\\first\\hermes.exe"}, clear=False):
+                config_module.load_control_plane_config.cache_clear()
+                first = config_module.load_control_plane_config()
+
+            with patch.dict(os.environ, {"HERMES_COMMAND": "D:\\second\\hermes.exe"}, clear=False):
+                second = config_module.reload_control_plane_config()
+
+        self.assertEqual(first.executors["hermes"]["command"], "D:\\first\\hermes.exe")
+        self.assertEqual(second.executors["hermes"]["command"], "D:\\second\\hermes.exe")
+
+    def test_clear_control_plane_config_cache_reloads_override_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            override_path = Path(tmp) / "config.json"
+            override_path.write_text(
+                json.dumps({"default_executor": "hermes"}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            config_module.load_control_plane_config.cache_clear()
+            first = config_module.load_control_plane_config(str(override_path))
+
+            override_path.write_text(
+                json.dumps({"default_executor": "openclaw"}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            config_module.clear_control_plane_config_cache()
+            second = config_module.load_control_plane_config(str(override_path))
+
+        self.assertEqual(first.default_executor, "hermes")
+        self.assertEqual(second.default_executor, "openclaw")
+
 
 if __name__ == "__main__":
     unittest.main()

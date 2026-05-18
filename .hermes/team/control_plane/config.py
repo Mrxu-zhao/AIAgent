@@ -234,3 +234,12 @@ def load_control_plane_config(config_path: Optional[str] = None) -> ControlPlane
     except Exception:
         pass
     return config
+
+
+def clear_control_plane_config_cache() -> None:
+    load_control_plane_config.cache_clear()
+
+
+def reload_control_plane_config(config_path: Optional[str] = None) -> ControlPlaneConfig:
+    clear_control_plane_config_cache()
+    return load_control_plane_config(config_path)

@@ -20,6 +20,7 @@ from governance.approval import ApprovalGate
 from governance.audit import AuditLogger
 from governance.rbac import build_default_rbac_policy
 from handoff_runtime import HandoffRunStore
+from hermes_health import check_hermes_health
 from knowledge.analytics import (
     build_consumption_by_agent,
     build_high_risk_coverage,
@@ -530,6 +531,40 @@ def execute_dispatch_task(
     runner_meta = {"mode": "subprocess"}
     artifact_dir = _dispatch_artifact_dir(effective_config, task_id)
     selected_runner = command_runner or (_subprocess_command_runner if wait else _spawn_command_runner)
+    adapter = get_executor_adapter(backend)
+
+    if command_runner is None:
+        provider = getattr(adapter, "provider", None)
+        if getattr(provider, "name", None) == "hermes" and hasattr(provider, "validate_health"):
+            try:
+                provider.validate_health()
+            except ValueError as exc:
+                message = str(exc)
+                if message.startswith("hermes_health:"):
+                    parts = message.split(":", 2)
+                    health_status = parts[1] if len(parts) > 1 else "probe_failed"
+                    health_message = parts[2] if len(parts) > 2 else message
+                    error_code = (
+                        "HERMES_NOT_CONFIGURED"
+                        if health_status == "not_configured"
+                        else f"HERMES_{health_status.upper()}"
+                    )
+                    snapshot = store.read_snapshot(task_id)
+                    return {
+                        "success": False,
+                        "task_id": task_id,
+                        "agent": agent_id,
+                        "backend": backend,
+                        "final_status": snapshot["status"],
+                        "runner_mode": "preflight-failed",
+                        "waited": bool(wait),
+                        "artifact_refs": _collect_dispatch_artifact_refs(effective_config, task_id),
+                        "reaped_running_tasks": reaped_tasks,
+                        "error_code": error_code,
+                        "stderr": health_message,
+                        "stdout": "",
+                    }
+                raise
 
     def wrapped_runner(command):
         _write_dispatch_command_artifact(
@@ -560,11 +595,14 @@ def execute_dispatch_task(
         runner_meta["mode"] = getattr(result, "runner_mode", "subprocess")
         return result
 
-    outcome = ControlPlaneExecutor(store=store).execute_task(
-        card,
-        get_executor_adapter(backend),
-        wrapped_runner,
-    )
+    try:
+        outcome = ControlPlaneExecutor(store=store).execute_task(
+            card,
+            adapter,
+            wrapped_runner,
+        )
+    except ValueError:
+        raise
     snapshot = store.read_snapshot(task_id)
     outcome["task_id"] = task_id
     outcome["agent"] = agent_id
@@ -620,6 +658,9 @@ def build_parser():
     monitor = subparsers.add_parser("monitor", help="查看监控数据")
     monitor.add_argument("--dashboard", action="store_true")
     monitor.add_argument("--prometheus", action="store_true")
+
+    hermes_health = subparsers.add_parser("hermes-health", help="检查 Hermes 健康状态")
+    hermes_health.add_argument("--json", action="store_true")
 
     batch = subparsers.add_parser("control-plane-run", help="运行控制平面批次")
     batch.add_argument("--max-workers", type=int, default=2)
@@ -1054,6 +1095,21 @@ def main(argv=None):
             }
         )
         print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return payload
+
+    if args.command == "hermes-health":
+        hermes_conf = config.executors.get("hermes", {})
+        report = check_hermes_health(str(hermes_conf.get("command", "hermes")))
+        payload = {
+            "ok": report.ok,
+            "status": report.status,
+            "message": report.message,
+            "available_commands": list(report.available_commands),
+        }
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            print(f"[{payload['status']}] {payload['message']}")
         return payload
 
     if args.command == "control-plane-run":
