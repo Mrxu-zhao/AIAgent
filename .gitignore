@@ -1,5 +1,6 @@
 *.pyc
 claude code源码/*
+projects/*
 
 # Generated control plane runtime artifacts
 .hermes/team/control_plane/state/runs/workflow_runtime/
