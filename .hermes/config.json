@@ -1,0 +1,7 @@
+{
+  "executors": {
+    "hermes": {
+      "command": "D:\\KIMIK2.5\\hermes-agent\\venv\\Scripts\\hermes.exe"
+    }
+  }
+}

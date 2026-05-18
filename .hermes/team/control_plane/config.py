@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -57,6 +58,10 @@ class ControlPlaneConfig:
 
 def _control_plane_root() -> Path:
     return Path(__file__).resolve().parent
+
+
+def _default_override_config_path() -> Path:
+    return _control_plane_root().parents[1] / "config.json"
 
 
 def _default_directories() -> Dict[str, str]:
@@ -146,7 +151,17 @@ def _default_payload() -> Dict[str, object]:
             "queue_length_high": 10,
         },
         "executors": {
-            "hermes": {"command": "hermes", "mode": "live", "dispatch_args": ["team", "dispatch"]},
+            "hermes": {
+                "command": "hermes",
+                "mode": "live",
+                "auto_detect": True,
+                "preferred_commands": ["chat", "team"],
+                "probe_args": ["--help"],
+                "dispatch_profiles": {
+                    "team": ["team", "dispatch", "-a", "{agent}", "-t", "{task}"],
+                    "chat": ["chat", "-q", "[agent:{agent}] {task}", "-Q", "--source", "tool"],
+                },
+            },
             "openclaw": {"command": "openclaw", "mode": "dry-run", "dispatch_args": ["dispatch"]},
         },
         "directories": _default_directories(),
@@ -162,6 +177,20 @@ def _default_payload() -> Dict[str, object]:
     }
 
 
+def _apply_environment_overrides(payload: Dict[str, object]) -> Dict[str, object]:
+    hermes_command = os.getenv("HERMES_COMMAND")
+    if not hermes_command:
+        return payload
+    override = {
+        "executors": {
+            "hermes": {
+                "command": hermes_command,
+            }
+        }
+    }
+    return _deep_merge(payload, override)
+
+
 def _deep_merge(base: Dict[str, object], override: Dict[str, object]) -> Dict[str, object]:
     merged = dict(base)
     for key, value in override.items():
@@ -175,8 +204,10 @@ def _deep_merge(base: Dict[str, object], override: Dict[str, object]) -> Dict[st
 @lru_cache(maxsize=4)
 def load_control_plane_config(config_path: Optional[str] = None) -> ControlPlaneConfig:
     payload = _default_payload()
-    if config_path:
-        override = json.loads(Path(config_path).read_text(encoding="utf-8"))
+    payload = _apply_environment_overrides(payload)
+    resolved_config_path = Path(config_path) if config_path else _default_override_config_path()
+    if resolved_config_path.exists():
+        override = json.loads(resolved_config_path.read_text(encoding="utf-8"))
         payload = _deep_merge(payload, override)
 
     agents = {

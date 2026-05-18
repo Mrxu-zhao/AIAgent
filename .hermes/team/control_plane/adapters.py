@@ -5,10 +5,14 @@ from providers.registry import build_default_provider_registry
 
 
 class HermesExecutorAdapter:
-    def __init__(self, hermes_command="hermes", dispatch_script=None):
-        self.hermes_command = hermes_command
+    def __init__(self, provider=None, hermes_command="hermes", dispatch_script=None):
         self.dispatch_script = dispatch_script
-        self.provider = HermesProvider(command=hermes_command)
+        if provider is not None:
+            self.provider = provider
+            self.hermes_command = provider.command
+        else:
+            self.hermes_command = hermes_command
+            self.provider = HermesProvider(command=hermes_command)
 
     def build_dispatch_command(self, agent_id: str, task: str):
         return self.provider.build_dispatch_command(agent_id, task)
@@ -35,7 +39,7 @@ def get_executor_adapter(backend_name: str, provider_registry=None):
             dry_run=provider.dry_run,
             dispatch_args=provider.dispatch_args,
         )
-    return HermesExecutorAdapter(hermes_command=provider.command)
+    return HermesExecutorAdapter(provider=provider)
 
 
 def get_default_executor_adapter():

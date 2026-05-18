@@ -25,6 +25,7 @@ class ControlPlaneExecutor:
         command = self.build_dispatch_command(adapter, card.owner_agent, card.goal)
         snapshot = self.store.read_snapshot(card.task_id)
         expected_start_version = snapshot["version"]
+        pending_artifact_refs = list(getattr(card, "artifact_refs", []) or [])
 
         try:
             self.store.append_event(
@@ -38,7 +39,7 @@ class ControlPlaneExecutor:
                     status_before=TaskStatus.READY,
                     status_after=TaskStatus.RUNNING,
                     summary="task started",
-                    artifact_refs=[],
+                    artifact_refs=pending_artifact_refs,
                     lock_scope={
                         "files": card.lock_scope.files,
                         "modules": card.lock_scope.modules,
@@ -63,6 +64,7 @@ class ControlPlaneExecutor:
 
         expected_terminal_version = expected_start_version + 1
         result = command_runner(command)
+        pending_artifact_refs = list(getattr(result, "artifact_refs", []) or pending_artifact_refs)
         if result.returncode == 0:
             try:
                 self.store.append_event(
@@ -76,7 +78,7 @@ class ControlPlaneExecutor:
                         status_before=TaskStatus.RUNNING,
                         status_after=TaskStatus.DONE,
                         summary="task completed",
-                        artifact_refs=[],
+                        artifact_refs=pending_artifact_refs,
                         lock_scope={
                             "files": card.lock_scope.files,
                             "modules": card.lock_scope.modules,
@@ -105,6 +107,7 @@ class ControlPlaneExecutor:
                 "stderr": result.stderr,
                 "knowledge_summary": getattr(card, "knowledge_summary", None),
                 "knowledge_next_read": list((getattr(card, "knowledge_bundle", None) or {}).get("next_read", [])),
+                "artifact_refs": pending_artifact_refs,
             }
 
         try:
@@ -119,7 +122,7 @@ class ControlPlaneExecutor:
                     status_before=TaskStatus.RUNNING,
                     status_after=TaskStatus.FAILED,
                     summary="task failed",
-                    artifact_refs=[],
+                    artifact_refs=pending_artifact_refs,
                     lock_scope={
                         "files": card.lock_scope.files,
                         "modules": card.lock_scope.modules,
@@ -148,6 +151,7 @@ class ControlPlaneExecutor:
             "stderr": result.stderr,
             "knowledge_summary": getattr(card, "knowledge_summary", None),
             "knowledge_next_read": list((getattr(card, "knowledge_bundle", None) or {}).get("next_read", [])),
+            "artifact_refs": pending_artifact_refs,
         }
 
     def compute_blocked_tasks(self, failed_task_id, graph):

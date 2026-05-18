@@ -26,7 +26,11 @@ def build_default_provider_registry() -> ExecutorProviderRegistry:
     registry.register(
         HermesProvider(
             command=str(hermes_conf.get("command", "hermes")),
-            dispatch_args=list(hermes_conf.get("dispatch_args", ["team", "dispatch"])),
+            dispatch_args=list(hermes_conf["dispatch_args"]) if hermes_conf.get("dispatch_args") else None,
+            dispatch_profiles=dict(hermes_conf.get("dispatch_profiles", {})),
+            preferred_commands=list(hermes_conf.get("preferred_commands", ["chat", "team"])),
+            auto_detect=bool(hermes_conf.get("auto_detect", False)),
+            probe_args=list(hermes_conf.get("probe_args", ["--help"])),
         )
     )
     registry.register(

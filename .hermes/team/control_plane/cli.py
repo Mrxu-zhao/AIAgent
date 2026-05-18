@@ -305,12 +305,51 @@ def _subprocess_command_runner(command):
         )
 
 
+def _dispatch_artifact_dir(config, task_id: str) -> Path:
+    if config.directories.get("artifacts_dir"):
+        artifacts_root = Path(config.directories["artifacts_dir"])
+    elif config.directories.get("audit_log"):
+        artifacts_root = Path(config.directories["audit_log"]).parent
+    else:
+        artifacts_root = Path(config.directories["state_dir"]).parent / "artifacts"
+    target = artifacts_root / "dispatch" / task_id
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def _persist_dispatch_artifacts(
+    artifact_dir: Path,
+    command,
+    result,
+    *,
+    task_text: str,
+    agent_id: str,
+    backend: str,
+    wait: bool,
+):
+    metadata = {
+        "command": list(command),
+        "task": task_text,
+        "agent": agent_id,
+        "backend": backend,
+        "returncode": int(getattr(result, "returncode", 1)),
+        "runner_mode": getattr(result, "runner_mode", "subprocess"),
+        "wait_requested": bool(wait),
+    }
+    (artifact_dir / "command.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    (artifact_dir / "stdout.txt").write_text(str(getattr(result, "stdout", "")), encoding="utf-8")
+    (artifact_dir / "stderr.txt").write_text(str(getattr(result, "stderr", "")), encoding="utf-8")
+    refs = sorted(str(path) for path in artifact_dir.rglob("*") if path.is_file())
+    return refs
+
+
 def execute_dispatch_task(
     task_id: str,
     task_text: str,
     agent_id: str,
     backend: str,
     config,
+    wait: bool = False,
     command_runner=None,
 ):
     effective_config = config or load_control_plane_config()
@@ -340,9 +379,26 @@ def execute_dispatch_task(
     if not snapshot_path.exists():
         store.register_task(card)
     runner_meta = {"mode": "subprocess"}
+    artifact_dir = _dispatch_artifact_dir(effective_config, task_id)
 
     def wrapped_runner(command):
-        result = (command_runner or _subprocess_command_runner)(command)
+        base_result = (command_runner or _subprocess_command_runner)(command)
+        artifact_refs = _persist_dispatch_artifacts(
+            artifact_dir,
+            command,
+            base_result,
+            task_text=task_text,
+            agent_id=agent_id,
+            backend=backend,
+            wait=wait,
+        )
+        result = SimpleNamespace(
+            returncode=getattr(base_result, "returncode", 1),
+            stdout=getattr(base_result, "stdout", ""),
+            stderr=getattr(base_result, "stderr", ""),
+            runner_mode=getattr(base_result, "runner_mode", "subprocess"),
+            artifact_refs=artifact_refs,
+        )
         runner_meta["mode"] = getattr(result, "runner_mode", "subprocess")
         return result
 
@@ -357,6 +413,8 @@ def execute_dispatch_task(
     outcome["backend"] = backend
     outcome["final_status"] = snapshot["status"]
     outcome["runner_mode"] = runner_meta["mode"]
+    outcome["waited"] = bool(wait)
+    outcome["artifact_refs"] = list(outcome.get("artifact_refs", []))
     return outcome
 
 
@@ -370,6 +428,7 @@ def build_parser():
     dispatch.add_argument("--priority", choices=["critical", "high", "normal", "low"], default="normal")
     dispatch.add_argument("--backend")
     dispatch.add_argument("--execute", action="store_true")
+    dispatch.add_argument("--wait", action="store_true")
 
     workflow = subparsers.add_parser("workflow", help="执行标准工作流")
     workflow.add_argument("--name", default="项目开发")
@@ -548,6 +607,7 @@ def main(argv=None):
                 agent_id=agent_id,
                 backend=backend,
                 config=config,
+                wait=args.wait,
             )
             payload["success"] = bool(payload["execution"].get("success"))
         print(json.dumps(payload, ensure_ascii=False, indent=2))

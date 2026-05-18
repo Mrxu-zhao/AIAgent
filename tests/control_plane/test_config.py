@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,56 @@ class ConfigCenterTests(unittest.TestCase):
         self.assertEqual(config.executors["openclaw"]["mode"], "live")
         self.assertFalse(config.feature_flags["metrics_enabled"])
         self.assertEqual(config.default_executor, "openclaw")
+
+    def test_environment_variable_overrides_default_hermes_command(self):
+        with patch.dict(os.environ, {"HERMES_COMMAND": "D:\\custom\\hermes.exe"}, clear=False):
+            with patch.object(config_module, "_default_override_config_path", return_value=Path("Z:/__missing__/config.json")):
+                config_module.load_control_plane_config.cache_clear()
+                config = config_module.load_control_plane_config()
+
+        self.assertEqual(config.executors["hermes"]["command"], "D:\\custom\\hermes.exe")
+
+    def test_json_override_takes_precedence_over_environment_variable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            override_path = Path(tmp) / "control-plane-config.json"
+            override_path.write_text(
+                json.dumps(
+                    {
+                        "executors": {
+                            "hermes": {"command": "D:\\override\\hermes.exe"},
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.dict(os.environ, {"HERMES_COMMAND": "D:\\env\\hermes.exe"}, clear=False):
+                config_module.load_control_plane_config.cache_clear()
+                config = config_module.load_control_plane_config(str(override_path))
+
+        self.assertEqual(config.executors["hermes"]["command"], "D:\\override\\hermes.exe")
+
+    def test_default_hermes_config_json_is_loaded_when_present(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            override_path = Path(tmp) / "config.json"
+            override_path.write_text(
+                json.dumps(
+                    {
+                        "executors": {
+                            "hermes": {"command": "D:\\default-file\\hermes.exe"},
+                        }
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.object(config_module, "_default_override_config_path", return_value=override_path):
+                config_module.load_control_plane_config.cache_clear()
+                config = config_module.load_control_plane_config()
+
+        self.assertEqual(config.executors["hermes"]["command"], "D:\\default-file\\hermes.exe")
 
     def test_to_dict_contains_directory_alias_and_agent_metadata(self):
         config = config_module.load_control_plane_config()

@@ -144,6 +144,48 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(payload["execution"]["success"], True)
         execute_mock.assert_called_once()
 
+    def test_dispatch_command_execute_wait_calls_execution_helper_with_wait(self):
+        class FakeBus:
+            def register_agent(self, agent_id):
+                pass
+
+            def create_task_message(self, actor, agent_id, task_id, task):
+                return {"actor": actor, "agent_id": agent_id, "task_id": task_id, "task": task}
+
+            def send(self, payload):
+                pass
+
+        class FakeRouter:
+            agents = {"architect": object()}
+
+            def route_task(self, task, priority):
+                return "architect", SimpleNamespace(id="task-3", routing_reason={})
+
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+            default_executor="hermes",
+        )
+        fake_policy = SimpleNamespace(is_allowed=lambda actor, action: True)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=SimpleNamespace(log=lambda *args: None)):
+                        with patch.object(unified_cli_module, "TaskRouter", return_value=FakeRouter()):
+                            with patch.object(unified_cli_module, "get_bus", return_value=FakeBus()):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "execute_dispatch_task",
+                                    return_value={"success": True, "stdout": "ok", "waited": True},
+                                ) as execute_mock:
+                                    payload = unified_cli_module.main(
+                                        ["dispatch", "设计接口", "--actor", "admin", "--priority", "high", "--execute", "--wait"]
+                                    )
+
+        self.assertTrue(payload["execution"]["waited"])
+        self.assertEqual(execute_mock.call_args.kwargs["wait"], True)
+
     def test_monitor_prometheus_command_returns_exported_text(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
@@ -269,6 +311,8 @@ class UnifiedCLITests(unittest.TestCase):
             outcome["command"],
             ["hermes", "team", "dispatch", "-a", "architect", "-t", "设计接口"],
         )
+        self.assertTrue(outcome["artifact_refs"])
+        self.assertTrue(any(path.endswith("stdout.txt") for path in outcome["artifact_refs"]))
 
     def test_execute_dispatch_task_falls_back_when_command_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -299,6 +343,7 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertTrue(outcome["success"])
         self.assertEqual(snapshot["status"], "done")
         self.assertEqual(outcome["runner_mode"], "dry-run-fallback")
+        self.assertTrue(outcome["artifact_refs"])
 
     def test_validate_command_marks_failed_checks_as_unsuccessful(self):
         fake_config = SimpleNamespace(

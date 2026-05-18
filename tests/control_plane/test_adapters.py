@@ -88,5 +88,25 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("--execute", command)
 
 
+    def test_hermes_adapter_uses_provider_auto_detect_chat(self):
+        from providers.hermes import HermesProvider
+
+        provider = HermesProvider(
+            command="hermes",
+            auto_detect=True,
+            preferred_commands=["chat", "team"],
+            dispatch_profiles={
+                "team": ["team", "dispatch", "-a", "{agent}", "-t", "{task}"],
+                "chat": ["chat", "-q", "[agent:{agent}] {task}", "-Q", "--source", "tool"],
+            },
+        )
+        with patch.object(provider, "_probe_available_commands", return_value={"chat"}):
+            adapter = adapters_module.HermesExecutorAdapter(provider=provider)
+            command = adapter.build_dispatch_command("architect", "ship feature")
+
+        self.assertEqual(command[:3], ["hermes", "chat", "-q"])
+        self.assertIn("-Q", command)
+        self.assertIn("--source", command)
+
 if __name__ == "__main__":
     unittest.main()
