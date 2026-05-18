@@ -31,6 +31,18 @@ from knowledge.analytics import (
 from knowledge.governance import apply_governance_action
 from knowledge.query import query_knowledge_records
 from message_bus import get_bus
+from models import (
+    EventType,
+    LockScope,
+    RetryPolicy,
+    RollbackPolicy,
+    TaskCard,
+    TaskEvent,
+    TaskStatus,
+)
+from models import (
+    TaskPriority as ControlTaskPriority,
+)
 from monitor import get_monitor
 from observability.metrics import refresh_repository_metrics
 from observability.prometheus_exporter import export_metrics_text
@@ -49,7 +61,6 @@ from workflow_engine import (
     load_workflow_definition,
 )
 from workflow_runtime import WorkflowRunStore
-from models import LockScope, RetryPolicy, RollbackPolicy, TaskCard, TaskPriority as ControlTaskPriority
 
 
 def _normalize_handoff_record(record):
@@ -78,6 +89,27 @@ def _extract_knowledge_recommendation(task):
         return None
     recommendation = routing_reason.get("knowledge_recommendation")
     return recommendation if isinstance(recommendation, dict) else None
+
+
+def _normalize_dispatch_actor(actor: str) -> str:
+    normalized = str(actor or "").strip()
+    if normalized in {"admin", "operator", "viewer"}:
+        return normalized
+    role_mappings = {
+        "project-manager": "operator",
+        "architect": "operator",
+        "dba": "operator",
+        "devops": "operator",
+        "requirements-analyst": "operator",
+        "ucd": "operator",
+        "qa-functional": "operator",
+        "qa-performance": "operator",
+    }
+    if normalized in role_mappings:
+        return role_mappings[normalized]
+    if normalized.startswith("backend-") or normalized.startswith("frontend-"):
+        return "operator"
+    return normalized
 
 
 def _build_knowledge_bundles(result):
@@ -309,6 +341,32 @@ def _subprocess_command_runner(command):
         )
 
 
+def _spawn_command_runner(command):
+    try:
+        creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
+        return SimpleNamespace(
+            returncode=0,
+            stdout="",
+            stderr="",
+            runner_mode="spawned",
+            pid=process.pid,
+        )
+    except FileNotFoundError as exc:
+        return SimpleNamespace(
+            returncode=0,
+            stdout=f"dry-run fallback: {command!r}",
+            stderr="",
+            runner_mode="dry-run-fallback",
+            error=str(exc),
+        )
+
+
 def _dispatch_artifact_dir(config, task_id: str) -> Path:
     if config.directories.get("artifacts_dir"):
         artifacts_root = Path(config.directories["artifacts_dir"])
@@ -321,10 +379,9 @@ def _dispatch_artifact_dir(config, task_id: str) -> Path:
     return target
 
 
-def _persist_dispatch_artifacts(
+def _write_dispatch_command_artifact(
     artifact_dir: Path,
     command,
-    result,
     *,
     task_text: str,
     agent_id: str,
@@ -336,15 +393,102 @@ def _persist_dispatch_artifacts(
         "task": task_text,
         "agent": agent_id,
         "backend": backend,
-        "returncode": int(getattr(result, "returncode", 1)),
-        "runner_mode": getattr(result, "runner_mode", "subprocess"),
         "wait_requested": bool(wait),
+        "started_at": time.time(),
     }
-    (artifact_dir / "command.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    path = artifact_dir / "command.json"
+    path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
+def _persist_dispatch_artifacts(
+    artifact_dir: Path,
+    command,
+    result,
+    *,
+    task_text: str,
+    agent_id: str,
+    backend: str,
+    wait: bool,
+):
+    command_path = artifact_dir / "command.json"
+    if command_path.exists():
+        metadata = json.loads(command_path.read_text(encoding="utf-8"))
+    else:
+        metadata = {
+            "command": list(command),
+            "task": task_text,
+            "agent": agent_id,
+            "backend": backend,
+            "wait_requested": bool(wait),
+        }
+    metadata["returncode"] = int(getattr(result, "returncode", 1))
+    metadata["runner_mode"] = getattr(result, "runner_mode", "subprocess")
+    metadata["finished_at"] = time.time()
+    command_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
     (artifact_dir / "stdout.txt").write_text(str(getattr(result, "stdout", "")), encoding="utf-8")
     (artifact_dir / "stderr.txt").write_text(str(getattr(result, "stderr", "")), encoding="utf-8")
     refs = sorted(str(path) for path in artifact_dir.rglob("*") if path.is_file())
     return refs
+
+
+def _stale_task_timeout_seconds(config, snapshot: Dict[str, Any]) -> int:
+    thresholds = getattr(config, "thresholds", {}) or {}
+    configured_timeout = int(thresholds.get("task_timeout", 300))
+    snapshot_timeout = snapshot.get("timeout_seconds")
+    if snapshot_timeout is None:
+        return max(1, configured_timeout)
+    return max(1, min(int(snapshot_timeout), configured_timeout))
+
+
+def _collect_dispatch_artifact_refs(config, task_id: str):
+    artifact_dir = _dispatch_artifact_dir(config, task_id)
+    return sorted(str(path) for path in artifact_dir.rglob("*") if path.is_file())
+
+
+def _reap_stale_running_tasks(config, store: TaskStore, *, current_task_id: Optional[str] = None):
+    state_dir = Path(config.directories["state_dir"])
+    now = time.time()
+    reaped = []
+    for snapshot_path in state_dir.glob("*.json"):
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        task_id = str(snapshot.get("task_id") or snapshot_path.stem)
+        if task_id == current_task_id:
+            continue
+        if snapshot.get("status") != TaskStatus.RUNNING.value:
+            continue
+        updated_at = snapshot.get("updated_at")
+        if updated_at is None:
+            continue
+        stale_after = _stale_task_timeout_seconds(config, snapshot)
+        if now - float(updated_at) < stale_after:
+            continue
+        try:
+            store.append_event(
+                TaskEvent(
+                    event_id=f"evt-reap-{task_id}",
+                    task_id=task_id,
+                    event_type=EventType.TASK_FAILED,
+                    agent_id="system",
+                    timestamp=now,
+                    attempt=1,
+                    status_before=TaskStatus.RUNNING,
+                    status_after=TaskStatus.FAILED,
+                    summary="task interrupted before terminal event",
+                    artifact_refs=_collect_dispatch_artifact_refs(config, task_id),
+                    lock_scope=dict(snapshot.get("lock_scope") or {"files": [], "modules": [], "contracts": []}),
+                    depends_on=list(snapshot.get("dependencies") or []),
+                    metrics_delta={},
+                    error_code="PROCESS_INTERRUPTED",
+                ),
+                expected_version=snapshot["version"],
+            )
+        except Exception as exc:
+            if exc.__class__.__name__ != "VersionConflictError":
+                raise
+            continue
+        reaped.append(task_id)
+    return reaped
 
 
 def execute_dispatch_task(
@@ -361,6 +505,7 @@ def execute_dispatch_task(
         Path(effective_config.directories["state_dir"]),
         Path(effective_config.directories["events_dir"]),
     )
+    reaped_tasks = _reap_stale_running_tasks(effective_config, store, current_task_id=task_id)
     snapshot_path = Path(effective_config.directories["state_dir"]) / f"{task_id}.json"
     card = TaskCard(
         task_id=task_id,
@@ -384,9 +529,18 @@ def execute_dispatch_task(
         store.register_task(card)
     runner_meta = {"mode": "subprocess"}
     artifact_dir = _dispatch_artifact_dir(effective_config, task_id)
+    selected_runner = command_runner or (_subprocess_command_runner if wait else _spawn_command_runner)
 
     def wrapped_runner(command):
-        base_result = (command_runner or _subprocess_command_runner)(command)
+        _write_dispatch_command_artifact(
+            artifact_dir,
+            command,
+            task_text=task_text,
+            agent_id=agent_id,
+            backend=backend,
+            wait=wait,
+        )
+        base_result = selected_runner(command)
         artifact_refs = _persist_dispatch_artifacts(
             artifact_dir,
             command,
@@ -419,6 +573,7 @@ def execute_dispatch_task(
     outcome["runner_mode"] = runner_meta["mode"]
     outcome["waited"] = bool(wait)
     outcome["artifact_refs"] = list(outcome.get("artifact_refs", []))
+    outcome["reaped_running_tasks"] = reaped_tasks
     return outcome
 
 
@@ -583,7 +738,8 @@ def main(argv=None):
     audit = AuditLogger(Path(config.directories["audit_log"]))
 
     if args.command == "dispatch":
-        if not policy.is_allowed(args.actor, "control_plane.dispatch"):
+        effective_actor = _normalize_dispatch_actor(args.actor)
+        if not policy.is_allowed(effective_actor, "control_plane.dispatch"):
             raise PermissionError("actor is not allowed to dispatch")
         router = TaskRouter()
         bus = get_bus()

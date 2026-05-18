@@ -96,6 +96,57 @@ class UnifiedCLITests(unittest.TestCase):
             runtime_rules_module.build_knowledge_bundle(payload["knowledge_recommendation"]),
         )
 
+    def test_dispatch_command_accepts_requirements_analyst_actor_via_role_mapping(self):
+        observed = {}
+
+        class FakeBus:
+            def register_agent(self, agent_id):
+                pass
+
+            def create_task_message(self, actor, agent_id, task_id, task):
+                observed["message_actor"] = actor
+                return {
+                    "actor": actor,
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                    "task": task,
+                }
+
+            def send(self, payload):
+                observed["sent"] = payload
+
+        class FakeRouter:
+            agents = {"requirements-analyst": object()}
+
+            def route_task(self, task, priority):
+                return "requirements-analyst", SimpleNamespace(id="task-role-map", routing_reason={})
+
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+            default_executor="hermes",
+        )
+
+        def is_allowed(actor, action):
+            observed.setdefault("policy_calls", []).append((actor, action))
+            return actor == "operator" and action == "control_plane.dispatch"
+
+        fake_policy = SimpleNamespace(is_allowed=is_allowed)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=SimpleNamespace(log=lambda *args: None)):
+                        with patch.object(unified_cli_module, "TaskRouter", return_value=FakeRouter()):
+                            with patch.object(unified_cli_module, "get_bus", return_value=FakeBus()):
+                                payload = unified_cli_module.main(
+                                    ["dispatch", "分析需求", "--actor", "requirements-analyst"]
+                                )
+
+        self.assertEqual(payload["agent"], "requirements-analyst")
+        self.assertIn(("operator", "control_plane.dispatch"), observed["policy_calls"])
+        self.assertEqual(observed["message_actor"], "requirements-analyst")
+
     def test_dispatch_command_execute_calls_execution_helper(self):
         observed = {"registered": [], "audit": []}
 
@@ -187,6 +238,48 @@ class UnifiedCLITests(unittest.TestCase):
 
         self.assertTrue(payload["execution"]["waited"])
         self.assertEqual(execute_mock.call_args.kwargs["wait"], True)
+
+    def test_dispatch_command_execute_defaults_to_non_blocking(self):
+        class FakeBus:
+            def register_agent(self, agent_id):
+                pass
+
+            def create_task_message(self, actor, agent_id, task_id, task):
+                return {"actor": actor, "agent_id": agent_id, "task_id": task_id, "task": task}
+
+            def send(self, payload):
+                pass
+
+        class FakeRouter:
+            agents = {"architect": object()}
+
+            def route_task(self, task, priority):
+                return "architect", SimpleNamespace(id="task-async", routing_reason={})
+
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+            default_executor="hermes",
+        )
+        fake_policy = SimpleNamespace(is_allowed=lambda actor, action: True)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=SimpleNamespace(log=lambda *args: None)):
+                        with patch.object(unified_cli_module, "TaskRouter", return_value=FakeRouter()):
+                            with patch.object(unified_cli_module, "get_bus", return_value=FakeBus()):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "execute_dispatch_task",
+                                    return_value={"success": True, "stdout": "", "waited": False},
+                                ) as execute_mock:
+                                    payload = unified_cli_module.main(
+                                        ["dispatch", "设计接口", "--actor", "admin", "--priority", "high", "--execute"]
+                                    )
+
+        self.assertFalse(payload["execution"]["waited"])
+        self.assertEqual(execute_mock.call_args.kwargs["wait"], False)
 
     def test_monitor_prometheus_command_returns_exported_text(self):
         fake_config = SimpleNamespace(
@@ -350,6 +443,7 @@ class UnifiedCLITests(unittest.TestCase):
                     agent_id="architect",
                     backend="hermes",
                     config=fake_config,
+                    wait=True,
                 )
 
             snapshot = json.loads((base / "state" / "task-execute-fallback.json").read_text(encoding="utf-8"))
@@ -358,6 +452,182 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(snapshot["status"], "done")
         self.assertEqual(outcome["runner_mode"], "dry-run-fallback")
         self.assertTrue(outcome["artifact_refs"])
+
+    def test_execute_dispatch_task_writes_command_artifact_before_runner_returns(self):
+        class Result:
+            returncode = 0
+            stdout = "ok"
+            stderr = ""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            fake_config = SimpleNamespace(
+                directories={
+                    "state_dir": str(base / "state"),
+                    "events_dir": str(base / "events"),
+                },
+                thresholds={"task_timeout": 300},
+                default_executor="hermes",
+            )
+            observed = {}
+
+            def command_runner(command):
+                command_path = base / "artifacts" / "dispatch" / "task-execute-prewrite" / "command.json"
+                observed["exists_before_return"] = command_path.exists()
+                if command_path.exists():
+                    observed["command_payload"] = json.loads(command_path.read_text(encoding="utf-8"))
+                return Result()
+
+            outcome = unified_cli_module.execute_dispatch_task(
+                task_id="task-execute-prewrite",
+                task_text="先落盘命令证据",
+                agent_id="architect",
+                backend="hermes",
+                config=fake_config,
+                command_runner=command_runner,
+            )
+
+        self.assertTrue(outcome["success"])
+        self.assertTrue(observed["exists_before_return"])
+        self.assertEqual(observed["command_payload"]["agent"], "architect")
+        self.assertNotIn("returncode", observed["command_payload"])
+
+    def test_execute_dispatch_task_reaps_stale_running_tasks_before_new_execution(self):
+        class Result:
+            returncode = 0
+            stdout = "ok"
+            stderr = ""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            fake_config = SimpleNamespace(
+                directories={
+                    "state_dir": str(base / "state"),
+                    "events_dir": str(base / "events"),
+                },
+                thresholds={"task_timeout": 300},
+                default_executor="hermes",
+            )
+            state_dir = base / "state"
+            events_dir = base / "events"
+            state_dir.mkdir(parents=True, exist_ok=True)
+            events_dir.mkdir(parents=True, exist_ok=True)
+            stale_snapshot = {
+                "task_id": "task-stale-running",
+                "title": "Dispatch task-stale-running",
+                "goal": "stale task",
+                "scope": [".hermes/team/control_plane/cli.py"],
+                "lock_scope": {"files": [], "modules": ["control_plane"], "contracts": []},
+                "inputs": ["dispatch-task"],
+                "outputs": ["command-output"],
+                "dependencies": [],
+                "owner_agent": "requirements-analyst",
+                "review_agent": "requirements-analyst",
+                "priority": "P1",
+                "timeout_seconds": 1200,
+                "retry_policy": {"max_attempts": 1, "backoff_seconds": [0]},
+                "rollback_policy": {"mode": "code"},
+                "acceptance_criteria": ["dispatch command executes"],
+                "executor_backend": "hermes",
+                "knowledge_recommendation": None,
+                "knowledge_bundle": None,
+                "knowledge_summary": None,
+                "entry_checks": {},
+                "required_deliverables": [],
+                "approval_required": False,
+                "approval_role": None,
+                "status": "running",
+                "evidence": [],
+                "version": 2,
+                "last_event_id": "evt-stale-started",
+                "updated_at": 100.0,
+                "updated_by": "requirements-analyst",
+            }
+            (state_dir / "task-stale-running.json").write_text(
+                json.dumps(stale_snapshot, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            (events_dir / "task-stale-running.jsonl").write_text(
+                json.dumps(
+                    {
+                        "event_id": "evt-stale-started",
+                        "task_id": "task-stale-running",
+                        "event_type": "task_started",
+                        "agent_id": "requirements-analyst",
+                        "timestamp": 100.0,
+                        "attempt": 1,
+                        "status_before": "ready",
+                        "status_after": "running",
+                        "summary": "task started",
+                        "artifact_refs": [],
+                        "lock_scope": {"files": [], "modules": ["control_plane"], "contracts": []},
+                        "depends_on": [],
+                        "metrics_delta": {},
+                        "error_code": None,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch.object(unified_cli_module.time, "time", return_value=1000.0):
+                outcome = unified_cli_module.execute_dispatch_task(
+                    task_id="task-fresh",
+                    task_text="新任务",
+                    agent_id="architect",
+                    backend="hermes",
+                    config=fake_config,
+                    command_runner=lambda command: Result(),
+                )
+
+            recovered_snapshot = json.loads((state_dir / "task-stale-running.json").read_text(encoding="utf-8"))
+            recovered_events = (events_dir / "task-stale-running.jsonl").read_text(encoding="utf-8").splitlines()
+
+        self.assertTrue(outcome["success"])
+        self.assertEqual(recovered_snapshot["status"], "failed")
+        self.assertEqual(recovered_snapshot["updated_by"], "system")
+        self.assertIn("PROCESS_INTERRUPTED", recovered_events[-1])
+
+    def test_execute_dispatch_task_uses_spawn_runner_when_wait_not_requested(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            fake_config = SimpleNamespace(
+                directories={
+                    "state_dir": str(base / "state"),
+                    "events_dir": str(base / "events"),
+                },
+                thresholds={"task_timeout": 300},
+                default_executor="hermes",
+            )
+            test_adapter = SimpleNamespace(
+                build_dispatch_command=lambda agent_id, task: [
+                    "hermes",
+                    "chat",
+                    "-q",
+                    f"[agent:{agent_id}] {task}",
+                ]
+            )
+
+            class FakeProcess:
+                pid = 4321
+
+            with patch.object(unified_cli_module, "get_executor_adapter", return_value=test_adapter):
+                with patch.object(executor_runtime_module, "get_executor_adapter", return_value=test_adapter):
+                    with patch.object(unified_cli_module.subprocess, "Popen", return_value=FakeProcess()) as popen_mock:
+                        outcome = unified_cli_module.execute_dispatch_task(
+                            task_id="task-spawned-1",
+                            task_text="异步任务",
+                            agent_id="architect",
+                            backend="hermes",
+                            config=fake_config,
+                            wait=False,
+                        )
+
+        self.assertTrue(outcome["success"])
+        self.assertEqual(outcome["runner_mode"], "spawned")
+        self.assertFalse(outcome["waited"])
+        popen_mock.assert_called_once()
 
     def test_validate_command_marks_failed_checks_as_unsuccessful(self):
         fake_config = SimpleNamespace(
