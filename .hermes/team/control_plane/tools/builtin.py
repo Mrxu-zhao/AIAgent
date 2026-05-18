@@ -81,6 +81,14 @@ def route_task_handler(_context: ToolExecutionContext, payload: Dict[str, object
     )
 
 
+def echo_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
+    message = str(payload.get("task", ""))
+    return ToolResult.ok_result(
+        content=message,
+        structured_data={"message": message},
+    )
+
+
 def query_workflow_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
     workflow_id = str(payload["workflow_id"])
     store = WorkflowRunStore(
@@ -211,6 +219,15 @@ def read_file_handler(_context: ToolExecutionContext, payload: Dict[str, object]
 def build_default_tool_registry() -> ToolRegistry:
     return ToolRegistry(
         [
+            ToolSpec(
+                name="echo",
+                description="echo the provided task text",
+                input_schema={"task": "str"},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=echo_handler,
+                action="tool.read.generic",
+            ),
             ToolSpec(
                 name="route_task",
                 description="route task to the best agent",

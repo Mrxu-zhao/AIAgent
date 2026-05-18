@@ -48,6 +48,51 @@ class ToolCLITests(unittest.TestCase):
         self.assertEqual(result["structured_data"]["tool"], "read_knowledge")
         self.assertEqual(result["session_id"], "session-1")
 
+    def test_run_tool_command_accepts_builtin_tool_prefix(self):
+        state_dir = Path("d:/KIMIK2.5/AIAgent/.hermes/team/control_plane/state")
+        fake_config = SimpleNamespace(
+            sensitive_actions=["provider.openclaw.live"],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": str(state_dir),
+                "workflow_runtime_dir": str(state_dir / "workflow_runtime"),
+                "message_bus_dir": str(state_dir / "message_bus"),
+            },
+        )
+
+        result = unified_cli_module.run_tool_command(
+            tool_name="builtin:read_knowledge",
+            task="请 architect review 接口设计",
+            actor="operator",
+            config=fake_config,
+        )
+
+        self.assertTrue(result["ok"])
+        self.assertIn(".hermes/team/knowledge/status.md", result["artifacts"])
+        self.assertIn("session_id", result)
+
+    def test_run_tool_command_supports_builtin_echo(self):
+        state_dir = Path("d:/KIMIK2.5/AIAgent/.hermes/team/control_plane/state")
+        fake_config = SimpleNamespace(
+            sensitive_actions=["provider.openclaw.live"],
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "state_dir": str(state_dir),
+                "workflow_runtime_dir": str(state_dir / "workflow_runtime"),
+                "message_bus_dir": str(state_dir / "message_bus"),
+            },
+        )
+
+        result = unified_cli_module.run_tool_command(
+            tool_name="builtin:echo",
+            task="hello",
+            actor="operator",
+            config=fake_config,
+        )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["content"], "hello")
+
     def test_run_tool_command_route_task_returns_structured_route(self):
         state_dir = Path("d:/KIMIK2.5/AIAgent/.hermes/team/control_plane/state")
         fake_config = SimpleNamespace(

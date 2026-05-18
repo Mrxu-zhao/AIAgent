@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -285,7 +286,8 @@ def run_tool_command(
         )
         context.session_id = created["session_id"]
     registry = build_default_tool_registry()
-    tool = registry.get(tool_name)
+    normalized_tool_name = tool_name.split(":", 1)[1] if tool_name.startswith("builtin:") else tool_name
+    tool = registry.get(normalized_tool_name)
     transcript_path = Path(effective_config.directories["state_dir"]) / "tool-runtime" / "tool-transcript.jsonl"
     executor = ToolExecutor(transcript_store=ToolTranscriptStore(transcript_path))
     payload = {
@@ -646,7 +648,19 @@ def main(argv=None):
         return result
 
     if args.command == "validate":
-        result = run_real_load_validation(replicas=args.replicas, max_workers=args.max_workers)
+        artifacts_dir = Path(config.directories.get("artifacts_dir", Path(config.directories["audit_log"]).parent))
+        validation_root = artifacts_dir / "validation-suite" / f"cli-run-{int(time.time() * 1000)}"
+        result = run_real_load_validation(
+            replicas=args.replicas,
+            max_workers=args.max_workers,
+            state_dir=validation_root / "state",
+            events_dir=validation_root / "events",
+        )
+        checks = result.get("checks", {})
+        result["success"] = all(
+            checks.get(key, False)
+            for key in ("all_tasks_done", "no_failed_tasks", "no_blocked_tasks", "no_conflicted_tasks")
+        )
         audit.log("validate", {"replicas": args.replicas, "max_workers": args.max_workers})
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
@@ -685,4 +699,5 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    result = main()
+    raise SystemExit(0 if (result is None or result.get("success", True)) else 1)

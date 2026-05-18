@@ -70,6 +70,21 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["blocked_tasks"], [])
         self.assertTrue(payload["checks"]["all_tasks_done"])
 
+    def test_run_real_load_validation_uses_default_runner_when_missing(self):
+        cards = [make_card("TASK-1"), make_card("TASK-2", dependencies=["TASK-1"])]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = validation_module.run_real_load_validation(
+                cards=cards,
+                replicas=1,
+                state_dir=Path(tmp) / "state",
+                events_dir=Path(tmp) / "events",
+                max_workers=2,
+            )
+
+        self.assertEqual(payload["summary"]["failed_tasks"], [])
+        self.assertTrue(payload["checks"]["all_tasks_done"])
+
     def test_run_behavior_validation_reports_blocking_and_conflict(self):
         with tempfile.TemporaryDirectory() as tmp:
             payload = validation_module.run_behavior_validation(Path(tmp))

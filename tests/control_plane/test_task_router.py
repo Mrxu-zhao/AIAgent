@@ -124,6 +124,35 @@ class TaskRouterIntentTests(unittest.TestCase):
         )
         self.assertGreater(knowledge["path_scores"]["instance"]["recent-lessons.md"]["score"], 0)
 
+    def test_knowledge_recommendation_marks_existing_paths_true(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".hermes/team/knowledge/status.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/team/knowledge/status.md").write_text("status", encoding="utf-8")
+            (root / ".hermes/team/knowledge/project-overview.md").write_text("overview", encoding="utf-8")
+            (root / ".hermes/team/knowledge/workflow-playbook.md").write_text("workflow", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/status.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/status.md").write_text("role", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/overview.md").write_text("overview", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/playbooks/common-tasks.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/playbooks/common-tasks.md").write_text("common", encoding="utf-8")
+            (root / ".hermes/agents/backend-dev/knowledge/checklists/delivery-checklist.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/agents/backend-dev/knowledge/checklists/delivery-checklist.md").write_text("delivery", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/expertise.md").parent.mkdir(parents=True, exist_ok=True)
+            (root / ".hermes/team/agents/backend-1/knowledge/expertise.md").write_text("backend", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/owned-modules.md").write_text("orders", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/delivery-style.md").write_text("style", encoding="utf-8")
+            (root / ".hermes/team/agents/backend-1/knowledge/recent-lessons.md").write_text("lessons", encoding="utf-8")
+
+            router = task_router_module.TaskRouter(knowledge_root=root / ".hermes")
+
+            _agent_id, task = router.route_task("请 backend-1 实现接口并补测试")
+
+        knowledge = task.routing_reason["knowledge_recommendation"]
+        self.assertTrue(knowledge["path_scores"]["team"]["status.md"]["exists"])
+        self.assertTrue(knowledge["path_scores"]["role"]["status.md"]["exists"])
+        self.assertTrue(knowledge["path_scores"]["instance"]["expertise.md"]["exists"])
+
 
 if __name__ == "__main__":
     unittest.main()

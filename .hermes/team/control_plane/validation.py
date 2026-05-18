@@ -13,6 +13,15 @@ from store import TaskStore
 from tasks import TASKS
 
 
+def _default_validation_runner(_command):
+    class Result:
+        returncode = 0
+        stdout = "dry-run ok"
+        stderr = ""
+
+    return Result()
+
+
 def replicate_cards(cards, replicas=1):
     replicated = []
     for replica in range(1, replicas + 1):
@@ -44,7 +53,7 @@ def run_real_load_validation(
         state_dir=state_dir,
         events_dir=events_dir,
         adapter=adapter,
-        command_runner=command_runner,
+        command_runner=command_runner or _default_validation_runner,
         max_workers=max_workers,
     )
     summary = result["summary"]

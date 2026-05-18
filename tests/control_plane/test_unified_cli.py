@@ -154,7 +154,10 @@ class UnifiedCLITests(unittest.TestCase):
     def test_validate_command_calls_real_load_validation(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
-            directories={"audit_log": "audit-log.jsonl"},
+            directories={
+                "audit_log": "audit-log.jsonl",
+                "artifacts_dir": "artifacts",
+            },
         )
         fake_audit = SimpleNamespace(log=lambda *args: None)
 
@@ -176,7 +179,53 @@ class UnifiedCLITests(unittest.TestCase):
                             )
 
         self.assertEqual(result["replicas"], 2)
-        validation_mock.assert_called_once_with(replicas=2, max_workers=5)
+        validation_mock.assert_called_once()
+        self.assertEqual(validation_mock.call_args.kwargs["replicas"], 2)
+        self.assertEqual(validation_mock.call_args.kwargs["max_workers"], 5)
+        self.assertIn("state_dir", validation_mock.call_args.kwargs)
+        self.assertIn("events_dir", validation_mock.call_args.kwargs)
+
+    def test_validate_command_marks_failed_checks_as_unsuccessful(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "run_real_load_validation",
+                            return_value={
+                                "summary": {"done_tasks": [], "failed_tasks": [], "blocked_tasks": [], "conflicted_tasks": [], "rounds": 0},
+                                "checks": {
+                                    "all_tasks_done": False,
+                                    "no_failed_tasks": True,
+                                    "no_blocked_tasks": True,
+                                    "no_conflicted_tasks": True,
+                                },
+                            },
+                        ):
+                            result = unified_cli_module.main(["validate"])
+
+        self.assertFalse(result["success"])
+
+    def test_main_exits_nonzero_when_validate_reports_failure(self):
+        with patch.object(unified_cli_module, "main", return_value={"success": False}):
+            with self.assertRaises(SystemExit) as exc:
+                exec(
+                    "if __name__ == '__main__':\n    result = main()\n    raise SystemExit(0 if (result is None or result.get('success', True)) else 1)\n",
+                    {"__name__": "__main__", "main": unified_cli_module.main, "SystemExit": SystemExit},
+                )
+
+        self.assertEqual(exc.exception.code, 1)
 
     def test_workflow_command_returns_engine_result(self):
         fake_config = SimpleNamespace(

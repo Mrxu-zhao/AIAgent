@@ -19,7 +19,14 @@ def build_router_knowledge_profile(intent, agent_id: str, role_key: str) -> Know
     )
 
 
-def _score_path(path_text: str, profile: KnowledgeProfile) -> Dict[str, object]:
+def _resolve_path(path_text: str, repository_root: Path) -> Path:
+    candidate = Path(path_text)
+    if candidate.is_absolute():
+        return candidate
+    return repository_root / path_text
+
+
+def _score_path(path_text: str, profile: KnowledgeProfile, repository_root: Path) -> Dict[str, object]:
     score = 10.0
     reasons: List[str] = []
     lowered = path_text.lower()
@@ -48,8 +55,8 @@ def _score_path(path_text: str, profile: KnowledgeProfile) -> Dict[str, object]:
         if value and value in lowered:
             score += 10.0
             reasons.append(f'module:{value}')
-    resolved = Path(path_text)
-    exists = resolved.exists() if resolved.is_absolute() else False
+    resolved = _resolve_path(path_text, repository_root)
+    exists = resolved.exists()
     return {
         'path': path_text,
         'resolved_path': str(resolved),
@@ -59,15 +66,16 @@ def _score_path(path_text: str, profile: KnowledgeProfile) -> Dict[str, object]:
     }
 
 
-def _rank_paths(paths: List[str], profile: KnowledgeProfile) -> tuple[List[str], Dict[str, Dict[str, object]], List[Dict[str, str]]]:
-    scored = [_score_path(path, profile) for path in paths]
+def _rank_paths(
+    paths: List[str],
+    profile: KnowledgeProfile,
+    repository_root: Path,
+) -> tuple[List[str], Dict[str, Dict[str, object]], List[Dict[str, str]]]:
+    scored = [_score_path(path, profile, repository_root) for path in paths]
     scored.sort(key=lambda item: (-float(item['score']), str(item['path'])))
     degradations = []
     for item in scored:
-        resolved = item['path']
-        candidate = Path(resolved)
-        if not candidate.is_absolute():
-            candidate = Path(__file__).resolve().parents[4] / resolved
+        candidate = _resolve_path(str(item['path']), repository_root)
         if not candidate.exists():
             degradations.append({'path': str(item['path']), 'reason': 'missing-path'})
     return [str(item['path']) for item in scored], {Path(str(item['path'])).name: item for item in scored}, degradations
@@ -91,6 +99,7 @@ def build_recommendation(
     agent_id: str,
     repository_root,
 ) -> Dict[str, object]:
+    repository_root = Path(repository_root)
     team_paths = [
         '.hermes/team/knowledge/status.md',
         '.hermes/team/knowledge/project-overview.md',
@@ -121,9 +130,9 @@ def build_recommendation(
     if profile.collaboration_mode != 'single':
         instance_paths.append(f'.hermes/team/agents/{agent_id}/knowledge/collaboration-preferences.md')
 
-    ordered_team, team_scores, team_degradations = _rank_paths(team_paths, profile)
-    ordered_role, role_scores, role_degradations = _rank_paths(role_paths, profile)
-    ordered_instance, instance_scores, instance_degradations = _rank_paths(instance_paths, profile)
+    ordered_team, team_scores, team_degradations = _rank_paths(team_paths, profile, repository_root)
+    ordered_role, role_scores, role_degradations = _rank_paths(role_paths, profile, repository_root)
+    ordered_instance, instance_scores, instance_degradations = _rank_paths(instance_paths, profile, repository_root)
     degradations = team_degradations + role_degradations + instance_degradations
     if degradations:
         degradations.append({'path': 'role-overview', 'reason': 'fallback-role-overview'})

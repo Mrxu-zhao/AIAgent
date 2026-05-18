@@ -28,6 +28,32 @@
         "priority": 3,
         "timestamp": 1778730753.9012487,
         "reply_to": null
+      },
+      {
+        "id": "5e1627b9",
+        "type": "task_assign",
+        "from": "admin",
+        "to": "requirements-analyst",
+        "content": {
+          "task_id": "task_1779070287924",
+          "content": "分析当前代码库结构"
+        },
+        "priority": 3,
+        "timestamp": 1779070287.9263892,
+        "reply_to": null
+      },
+      {
+        "id": "b3120f6f",
+        "type": "task_assign",
+        "from": "admin",
+        "to": "requirements-analyst",
+        "content": {
+          "task_id": "task_1779071951821",
+          "content": "分析代码库"
+        },
+        "priority": 3,
+        "timestamp": 1779071951.8239794,
+        "reply_to": null
       }
     ],
     "architect": [],
@@ -185,7 +211,21 @@
         "reply_to": null
       }
     ],
-    "project-manager": []
+    "project-manager": [
+      {
+        "id": "ebc21429",
+        "type": "task_assign",
+        "from": "admin",
+        "to": "project-manager",
+        "content": {
+          "task_id": "task_1779070646754",
+          "content": "开发儿童识字APP"
+        },
+        "priority": 3,
+        "timestamp": 1779070646.7563195,
+        "reply_to": null
+      }
+    ]
   },
   "unacked": {
     "requirements-analyst": [],
