@@ -13,6 +13,7 @@
 - `handoff-templates.md`
 - `risk-register.md`
 - `decision-log.md`
+- `lessons/control-plane-practical-lessons-2026-05.md`
 
 ## 共享目录
 - `templates/`：团队通用模板与固定输出格式。
@@ -23,3 +24,4 @@
 ## 后续维护约定
 - 新增知识优先落在最合适的层级，避免团队层过载。
 - 每次新增内容需要标注来源、适用范围和最后复审时间。
+- 2026-05-18 已补充 control plane 实战经验，覆盖 `context-file` 文本兼容、仓库相对 workflow 路径解析、终态版本冲突复核。
