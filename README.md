@@ -72,13 +72,18 @@ python .hermes/team/control_plane/cli.py control-plane-run --max-workers 2
 ### 3. 运行标准 workflow
 
 ```bash
-python .hermes/team/control_plane/cli.py workflow --workflow-id project_delivery
+python .hermes/team/control_plane/cli.py workflow --name "项目开发"
 ```
+
+说明：
+
+- `workflow` 默认加载 `.hermes/workflows/project_delivery.json`
+- 该定义就是当前仓库的团队全流程标准工作流，覆盖需求、设计、开发、测试、闭环和部署上线
 
 ### 4. 查看 workflow / handoff 摘要
 
 ```bash
-python .hermes/team/control_plane/cli.py query workflow --workflow-id project_delivery --summary --knowledge-only
+python .hermes/team/control_plane/cli.py query workflow --id project_delivery --summary --knowledge-only
 python .hermes/team/control_plane/cli.py query handoff --summary --knowledge-only
 ```
 
