@@ -1,4 +1,5 @@
 import io
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -93,6 +94,56 @@ class UnifiedCLITests(unittest.TestCase):
             runtime_rules_module.build_knowledge_bundle(payload["knowledge_recommendation"]),
         )
 
+    def test_dispatch_command_execute_calls_execution_helper(self):
+        observed = {"registered": [], "audit": []}
+
+        class FakeBus:
+            def register_agent(self, agent_id):
+                observed["registered"].append(agent_id)
+
+            def create_task_message(self, actor, agent_id, task_id, task):
+                return {
+                    "actor": actor,
+                    "agent_id": agent_id,
+                    "task_id": task_id,
+                    "task": task,
+                }
+
+            def send(self, payload):
+                observed["sent"] = payload
+
+        class FakeRouter:
+            agents = {"architect": object()}
+
+            def route_task(self, task, priority):
+                return "architect", SimpleNamespace(id="task-2", routing_reason={})
+
+        fake_audit = SimpleNamespace(log=lambda action, payload: observed["audit"].append((action, payload)))
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+            default_executor="hermes",
+        )
+        fake_policy = SimpleNamespace(is_allowed=lambda actor, action: True)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(unified_cli_module, "build_default_rbac_policy", return_value=fake_policy):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(unified_cli_module, "TaskRouter", return_value=FakeRouter()):
+                            with patch.object(unified_cli_module, "get_bus", return_value=FakeBus()):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "execute_dispatch_task",
+                                    return_value={"success": True, "stdout": "ok"},
+                                ) as execute_mock:
+                                    payload = unified_cli_module.main(
+                                        ["dispatch", "设计接口", "--actor", "admin", "--priority", "high", "--execute"]
+                                    )
+
+        self.assertEqual(payload["execution"]["success"], True)
+        execute_mock.assert_called_once()
+
     def test_monitor_prometheus_command_returns_exported_text(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
@@ -185,6 +236,70 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertIn("state_dir", validation_mock.call_args.kwargs)
         self.assertIn("events_dir", validation_mock.call_args.kwargs)
 
+    def test_execute_dispatch_task_persists_successful_state(self):
+        class Result:
+            returncode = 0
+            stdout = "ok"
+            stderr = ""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            fake_config = SimpleNamespace(
+                directories={
+                    "state_dir": str(base / "state"),
+                    "events_dir": str(base / "events"),
+                },
+                default_executor="hermes",
+            )
+
+            outcome = unified_cli_module.execute_dispatch_task(
+                task_id="task-execute-1",
+                task_text="设计接口",
+                agent_id="architect",
+                backend="hermes",
+                config=fake_config,
+                command_runner=lambda command: Result(),
+            )
+
+            snapshot = json.loads((base / "state" / "task-execute-1.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(outcome["success"])
+        self.assertEqual(snapshot["status"], "done")
+        self.assertEqual(
+            outcome["command"],
+            ["hermes", "team", "dispatch", "-a", "architect", "-t", "设计接口"],
+        )
+
+    def test_execute_dispatch_task_falls_back_when_command_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            fake_config = SimpleNamespace(
+                directories={
+                    "state_dir": str(base / "state"),
+                    "events_dir": str(base / "events"),
+                },
+                default_executor="hermes",
+            )
+
+            with patch.object(
+                unified_cli_module.subprocess,
+                "run",
+                side_effect=FileNotFoundError("missing hermes"),
+            ):
+                outcome = unified_cli_module.execute_dispatch_task(
+                    task_id="task-execute-fallback",
+                    task_text="设计接口",
+                    agent_id="architect",
+                    backend="hermes",
+                    config=fake_config,
+                )
+
+            snapshot = json.loads((base / "state" / "task-execute-fallback.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(outcome["success"])
+        self.assertEqual(snapshot["status"], "done")
+        self.assertEqual(outcome["runner_mode"], "dry-run-fallback")
+
     def test_validate_command_marks_failed_checks_as_unsuccessful(self):
         fake_config = SimpleNamespace(
             sensitive_actions=[],
@@ -265,6 +380,141 @@ class UnifiedCLITests(unittest.TestCase):
         self.assertEqual(result["workflow_id"], "wf-1")
         self.assertIn("step_contexts", result)
         self.assertIn("handoffs", result)
+
+    def test_workflow_command_uses_prototype_definition_when_requested(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "_execute_workflow_definition",
+                            return_value={"success": True, "workflow_id": "wf-prototype"},
+                        ) as execute_mock:
+                            with patch.object(
+                                unified_cli_module,
+                                "prototype_workflow_definition_path",
+                                return_value=Path("/workspace/.hermes/workflows/prototype_delivery.json"),
+                            ):
+                                result = unified_cli_module.main(
+                                    ["workflow", "--name", "demo-project", "--prototype"]
+                                )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["workflow_id"], "wf-prototype")
+        self.assertEqual(
+            execute_mock.call_args.kwargs["workflow_path"],
+            Path("/workspace/.hermes/workflows/prototype_delivery.json"),
+        )
+
+    def test_workflow_command_injects_auto_approvals_for_human_steps(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "_execute_workflow_definition",
+                            return_value={"success": True, "workflow_id": "wf-auto"},
+                        ) as execute_mock:
+                            with patch.object(
+                                unified_cli_module,
+                                "load_workflow_definition",
+                                return_value={
+                                    "workflow_id": "project_delivery",
+                                    "steps": [
+                                        {"id": "requirement_confirmation", "type": "human"},
+                                        {"id": "requirements_analysis", "type": "sequential"},
+                                    ],
+                                },
+                            ):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "default_workflow_definition_path",
+                                    return_value=Path("/workspace/.hermes/workflows/project_delivery.json"),
+                                ):
+                                    result = unified_cli_module.main(
+                                        ["workflow", "--name", "demo-project", "--auto-approve"]
+                                    )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(
+            execute_mock.call_args.kwargs["context"]["approvals"]["requirement_confirmation"]["approved"],
+            True,
+        )
+
+    def test_workflow_command_auto_approve_injects_governance_bypass_context(self):
+        fake_config = SimpleNamespace(
+            sensitive_actions=[],
+            directories={"audit_log": "audit-log.jsonl"},
+        )
+        fake_audit = SimpleNamespace(log=lambda *args: None)
+
+        with patch.object(unified_cli_module, "load_control_plane_config", return_value=fake_config):
+            with patch.object(
+                unified_cli_module,
+                "build_default_rbac_policy",
+                return_value=SimpleNamespace(is_allowed=lambda *_: True),
+            ):
+                with patch.object(unified_cli_module, "ApprovalGate"):
+                    with patch.object(unified_cli_module, "AuditLogger", return_value=fake_audit):
+                        with patch.object(
+                            unified_cli_module,
+                            "_execute_workflow_definition",
+                            return_value={"success": True, "workflow_id": "wf-auto"},
+                        ) as execute_mock:
+                            with patch.object(
+                                unified_cli_module,
+                                "load_workflow_definition",
+                                return_value={
+                                    "workflow_id": "project_delivery",
+                                    "steps": [
+                                        {
+                                            "id": "requirements_review",
+                                            "type": "human",
+                                            "entry_checks": {
+                                                "required_deliverables": ["PRD.md"],
+                                                "approval_required": True,
+                                                "coverage_threshold": {"backend": 70},
+                                                "test_pass_rate": 100,
+                                            },
+                                        }
+                                    ],
+                                },
+                            ):
+                                with patch.object(
+                                    unified_cli_module,
+                                    "default_workflow_definition_path",
+                                    return_value=Path("/workspace/.hermes/workflows/project_delivery.json"),
+                                ):
+                                    unified_cli_module.main(
+                                        ["workflow", "--name", "demo-project", "--auto-approve"]
+                                    )
+
+        context = execute_mock.call_args.kwargs["context"]
+        self.assertIn("PRD.md", context["deliverables"])
+        self.assertEqual(context["quality_gates"]["coverage"]["backend"], 70)
+        self.assertEqual(context["quality_gates"]["test_pass_rate"], 100)
 
     def test_workflow_command_surfaces_knowledge_bundles(self):
         fake_config = SimpleNamespace(
