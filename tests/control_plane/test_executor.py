@@ -183,6 +183,77 @@ class ExecutorTests(unittest.TestCase):
             self.assertEqual(len(events), 2)
             self.assertEqual(events[-1]["event_id"], "evt-external")
 
+    def test_execute_task_treats_done_snapshot_as_success_after_completion_conflict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = store_module.TaskStore(Path(tmp) / "state", Path(tmp) / "events")
+            runner = executor_module.ControlPlaneExecutor(store=store)
+            adapter = adapters_module.HermesExecutorAdapter()
+            card = models.TaskCard(
+                task_id="WS-B-P1-012B",
+                title="Conflict but already done",
+                goal="Detect completed snapshot",
+                scope=[".hermes/team/control_plane/executor.py"],
+                lock_scope=models.LockScope(files=[], modules=["control_plane"], contracts=[]),
+                inputs=["task"],
+                outputs=["stdout"],
+                dependencies=[],
+                owner_agent="architect",
+                review_agent="architect",
+                priority=models.TaskPriority.P1,
+                timeout_seconds=1200,
+                retry_policy=models.RetryPolicy(max_attempts=1, backoff_seconds=[0]),
+                rollback_policy=models.RollbackPolicy(mode="code"),
+                acceptance_criteria=["completed snapshot is accepted"],
+            )
+            store.register_task(card)
+
+            class Result:
+                returncode = 0
+                stdout = "ok"
+                stderr = ""
+                artifact_refs = ["artifact.txt"]
+
+            original_append_event = store.append_event
+            completion_injected = {"done": False}
+
+            def append_event_with_external_completion(event, expected_version=None):
+                if (
+                    event.event_type == models.EventType.TASK_COMPLETED
+                    and not completion_injected["done"]
+                ):
+                    completion_injected["done"] = True
+                    original_append_event(
+                        models.TaskEvent(
+                            event_id="evt-external-completed",
+                            task_id=card.task_id,
+                            event_type=models.EventType.TASK_COMPLETED,
+                            agent_id="architect",
+                            timestamp=2.0,
+                            attempt=1,
+                            status_before=models.TaskStatus.RUNNING,
+                            status_after=models.TaskStatus.DONE,
+                            summary="external completion",
+                            artifact_refs=["artifact.txt"],
+                            lock_scope={"files": [], "modules": ["control_plane"], "contracts": []},
+                            depends_on=[],
+                            metrics_delta={},
+                            error_code=None,
+                        ),
+                        expected_version=2,
+                    )
+                return original_append_event(event, expected_version=expected_version)
+
+            with patch.object(store, "append_event", side_effect=append_event_with_external_completion):
+                outcome = runner.execute_task(card, adapter, lambda command: Result())
+
+            snapshot = store.read_snapshot(card.task_id)
+            events = store.list_events(card.task_id)
+
+            self.assertTrue(outcome["success"])
+            self.assertEqual(snapshot["status"], "done")
+            self.assertEqual(outcome["artifact_refs"], ["artifact.txt"])
+            self.assertEqual(events[-1]["event_id"], "evt-external-completed")
+
     def test_execute_task_supports_per_card_executor_backend_override(self):
         with tempfile.TemporaryDirectory() as tmp:
             store = store_module.TaskStore(Path(tmp) / "state", Path(tmp) / "events")

@@ -151,7 +151,11 @@ def _knowledge_root() -> Path:
 def _load_workflow_context(context_file: Optional[str]) -> Dict[str, Any]:
     if not context_file:
         return {}
-    return json.loads(Path(context_file).read_text(encoding="utf-8"))
+    path = Path(context_file)
+    raw = path.read_text(encoding="utf-8")
+    if path.suffix.lower() == ".json":
+        return json.loads(raw)
+    return {"project_context": raw}
 
 
 def prototype_workflow_definition_path() -> Path:

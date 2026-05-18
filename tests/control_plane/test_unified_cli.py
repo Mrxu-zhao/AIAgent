@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -11,6 +12,7 @@ from tests.control_plane.test_support import ensure_control_plane_path
 
 ensure_control_plane_path()
 import cli as unified_cli_module  # noqa: E402
+import executor as executor_runtime_module  # noqa: E402
 import governance.audit as audit_module  # noqa: E402
 import runtime.rules as runtime_rules_module  # noqa: E402
 
@@ -293,15 +295,27 @@ class UnifiedCLITests(unittest.TestCase):
                 },
                 default_executor="hermes",
             )
-
-            outcome = unified_cli_module.execute_dispatch_task(
-                task_id="task-execute-1",
-                task_text="设计接口",
-                agent_id="architect",
-                backend="hermes",
-                config=fake_config,
-                command_runner=lambda command: Result(),
+            test_adapter = SimpleNamespace(
+                build_dispatch_command=lambda agent_id, task: [
+                    "hermes",
+                    "team",
+                    "dispatch",
+                    "-a",
+                    agent_id,
+                    "-t",
+                    task,
+                ]
             )
+            with patch.object(unified_cli_module, "get_executor_adapter", return_value=test_adapter):
+                with patch.object(executor_runtime_module, "get_executor_adapter", return_value=test_adapter):
+                    outcome = unified_cli_module.execute_dispatch_task(
+                        task_id="task-execute-1",
+                        task_text="设计接口",
+                        agent_id="architect",
+                        backend="hermes",
+                        config=fake_config,
+                        command_runner=lambda command: Result(),
+                    )
 
             snapshot = json.loads((base / "state" / "task-execute-1.json").read_text(encoding="utf-8"))
 
@@ -1429,6 +1443,30 @@ class UnifiedCLITests(unittest.TestCase):
             result = unified_cli_module._load_workflow_context(str(context_path))
 
         self.assertEqual(result, {"project_name": "demo"})
+
+    def test_load_workflow_context_reads_markdown_file_as_project_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            context_path = Path(tmp) / "context.md"
+            context_path.write_text("# Demo\nproject context", encoding="utf-8")
+
+            result = unified_cli_module._load_workflow_context(str(context_path))
+
+        self.assertEqual(result, {"project_context": "# Demo\nproject context"})
+
+    def test_resolve_workflow_path_prefers_existing_repo_relative_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            previous = Path.cwd()
+            try:
+                os.chdir(tmp)
+                relative_path = Path(".hermes") / "team" / "调度框架" / "workflows" / "demo.json"
+                relative_path.parent.mkdir(parents=True, exist_ok=True)
+                relative_path.write_text('{"workflow_id": "demo"}', encoding="utf-8")
+
+                result = unified_cli_module._resolve_workflow_path(str(relative_path))
+            finally:
+                os.chdir(previous)
+
+        self.assertEqual(result, relative_path)
 
     def test_run_tool_command_resume_requires_session_id(self):
         with self.assertRaisesRegex(ValueError, "--resume requires --session-id"):

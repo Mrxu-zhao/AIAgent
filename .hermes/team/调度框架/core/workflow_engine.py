@@ -1249,7 +1249,10 @@ def default_workflow_definition_path(workflow_id: str = "project_delivery") -> P
 def load_workflow_definition(path: Path | str) -> Dict[str, Any]:
     definition_path = Path(path)
     if not definition_path.is_absolute():
-        definition_path = workflow_definition_dir() / definition_path
+        if definition_path.exists():
+            definition_path = definition_path.resolve()
+        else:
+            definition_path = workflow_definition_dir() / definition_path
     if not definition_path.exists():
         raise FileNotFoundError(f"workflow definition not found: {definition_path}")
 

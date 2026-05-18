@@ -20,6 +20,27 @@ class ControlPlaneExecutor:
             return get_executor_adapter(card.executor_backend)
         return adapter
 
+    def _recover_terminal_conflict(
+        self,
+        task_id: str,
+        *,
+        success: bool,
+        command,
+        stdout: str,
+        stderr: str,
+        artifact_refs,
+    ):
+        snapshot = self.store.read_snapshot(task_id)
+        if success and snapshot.get("status") == TaskStatus.DONE.value:
+            return {
+                "success": True,
+                "command": command,
+                "stdout": stdout,
+                "stderr": stderr,
+                "artifact_refs": list(artifact_refs or []),
+            }
+        return None
+
     def execute_task(self, card, adapter, command_runner):
         adapter = self.resolve_adapter(card, adapter)
         command = self.build_dispatch_command(adapter, card.owner_agent, card.goal)
@@ -93,6 +114,20 @@ class ControlPlaneExecutor:
             except Exception as exc:
                 if not self._is_version_conflict(exc):
                     raise
+                recovered = self._recover_terminal_conflict(
+                    card.task_id,
+                    success=True,
+                    command=command,
+                    stdout=result.stdout,
+                    stderr=result.stderr,
+                    artifact_refs=pending_artifact_refs,
+                )
+                if recovered is not None:
+                    recovered["knowledge_summary"] = getattr(card, "knowledge_summary", None)
+                    recovered["knowledge_next_read"] = list(
+                        (getattr(card, "knowledge_bundle", None) or {}).get("next_read", [])
+                    )
+                    return recovered
                 return {
                     "success": False,
                     "command": command,

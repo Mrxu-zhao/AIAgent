@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,6 +69,32 @@ class WorkflowRuntimeTests(unittest.TestCase):
 
         self.assertEqual(workflow["workflow_id"], "project_delivery")
         self.assertEqual(workflow["steps"][0]["id"], "step-1")
+
+    def test_workflow_engine_loads_existing_repo_relative_definition_without_rebasing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            previous = Path.cwd()
+            try:
+                os.chdir(tmp)
+                path = Path(".hermes") / "team" / "调度框架" / "workflows" / "demo.json"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    json.dumps(
+                        {
+                            "workflow_id": "demo",
+                            "name": "demo",
+                            "description": "demo workflow",
+                            "steps": [{"id": "step-1", "name": "步骤1", "type": "sequential", "agent": "architect", "task": "设计"}],
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+
+                workflow = workflow_module.load_workflow_definition(str(path))
+            finally:
+                os.chdir(previous)
+
+        self.assertEqual(workflow["workflow_id"], "demo")
 
     def test_human_project_manager_review_defaults_to_virtual_agent(self):
         engine = workflow_module.WorkflowEngine(task_router=None, message_bus=None, runtime_store=None)
