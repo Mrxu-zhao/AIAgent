@@ -1,6 +1,8 @@
 *.pyc
 claude code源码/*
 projects/*
+# projects/children-english-letters-game/*
+# projects/children-literacy-game/*
 
 # Generated control plane runtime artifacts
 .hermes/team/control_plane/state/runs/workflow_runtime/
