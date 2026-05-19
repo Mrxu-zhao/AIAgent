@@ -14,6 +14,7 @@ if str(FRAMEWORK_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(FRAMEWORK_CORE_DIR))
 
 from adapters import get_executor_adapter
+from collaboration.kanban import KanbanBoard
 from config import load_control_plane_config
 from executor import ControlPlaneExecutor
 from governance.approval import ApprovalGate
@@ -21,6 +22,8 @@ from governance.audit import AuditLogger
 from governance.rbac import build_default_rbac_policy
 from handoff_runtime import HandoffRunStore
 from hermes_health import check_hermes_health
+from integrations.oauth import OAuthManager
+from intelligence.code_intelligence import CodeReviewer, detect_language, get_code_hub
 from knowledge.analytics import (
     build_consumption_by_agent,
     build_high_risk_coverage,
@@ -689,6 +692,23 @@ def build_parser():
     tool_session_get = tool_session_sub.add_parser("get", help="读取指定 session")
     tool_session_get.add_argument("--session-id", required=True)
 
+    code_review = subparsers.add_parser("code-review", help="运行代码审查")
+    code_review.add_argument("--file", dest="file_path")
+    code_review.add_argument("--inline-code")
+
+    code_diagnostics = subparsers.add_parser("code-diagnostics", help="查看代码诊断")
+    code_diagnostics.add_argument("--file", required=True)
+    code_diagnostics.add_argument("--language")
+
+    kanban = subparsers.add_parser("kanban", help="查看或管理 Kanban 任务板")
+    kanban_sub = kanban.add_subparsers(dest="kanban_command")
+    kanban_summary = kanban_sub.add_parser("summary", help="查看任务板摘要")
+    kanban_summary.add_argument("--db-path")
+
+    oauth = subparsers.add_parser("oauth", help="查看 OAuth 预留服务")
+    oauth_sub = oauth.add_subparsers(dest="oauth_command")
+    oauth_sub.add_parser("list", help="列出 OAuth 服务")
+
     return parser
 
 
@@ -1156,6 +1176,43 @@ def main(argv=None):
         audit.log("validate", {"replicas": args.replicas, "max_workers": args.max_workers})
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return result
+
+    if args.command == "code-review":
+        source = args.inline_code or ""
+        if args.file_path:
+            source = Path(args.file_path).read_text(encoding="utf-8")
+        result = CodeReviewer().review(source)
+        payload = {
+            "score": result.score,
+            "issues": result.issues,
+            "security": result.security_concerns,
+            "suggestions": result.suggestions,
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return payload
+
+    if args.command == "code-diagnostics":
+        language = args.language or detect_language(args.file) or "python"
+        hub = get_code_hub()
+        client = hub.get_lsp(language, str(Path(args.file).resolve().parent))
+        diagnostics = client.get_diagnostics(args.file) if client else []
+        payload = {"file_path": args.file, "language": language, "diagnostics": diagnostics}
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return payload
+
+    if args.command == "kanban":
+        if args.kanban_command == "summary":
+            board = KanbanBoard(args.db_path or str(Path(config.directories["state_dir"]) / "kanban.db"))
+            payload = board.get_board_summary()
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return payload
+
+    if args.command == "oauth":
+        if args.oauth_command == "list":
+            manager = OAuthManager()
+            payload = {"services": manager.list_services(), "exchange_mode": manager.exchange_mode}
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            return payload
 
     if args.command == "tool-run":
         result = run_tool_command(

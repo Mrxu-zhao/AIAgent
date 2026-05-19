@@ -2,7 +2,7 @@
 
 ---
 owner: control-plane
-last_reviewed: 2026-05-18
+last_reviewed: 2026-05-19
 source: wf-decision-summary
 scope: role
 ---

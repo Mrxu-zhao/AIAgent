@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: requirements-analyst|requirements|任务已分配给 requirements-analyst: Analyze requirements -->
+### 经验：任务已分配给 requirements-analyst: Analyze requirements
+- 场景：workflow: baseline_workflow; step: requirements; agent: requirements-analyst
+- 做法：任务已分配给 requirements-analyst: Analyze requirements
+- 结果：任务已分配给 requirements-analyst: Analyze requirements
+- 适用前提：适用于 requirements 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 <!-- lesson-key: requirements-analyst|requirements|任务已分配给 requirements-analyst: 分析需求 -->
 ### 经验：任务已分配给 requirements-analyst: 分析需求
 - 场景：workflow: wf-runtime; step: requirements; agent: requirements-analyst

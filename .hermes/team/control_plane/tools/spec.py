@@ -16,6 +16,8 @@ class ToolExecutionContext:
     knowledge_bundle: Dict[str, Any] = field(default_factory=dict)
     actor: str = "admin"
     session_id: Optional[str] = None
+    compression_meta: Dict[str, Any] = field(default_factory=dict)
+    security_session_type: str = "main"
 
 
 @dataclass

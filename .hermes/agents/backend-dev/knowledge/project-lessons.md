@@ -2,7 +2,7 @@
 
 ---
 owner: control-plane
-last_reviewed: 2026-05-18
+last_reviewed: 2026-05-19
 source: wf-exec-bind
 scope: role
 ---
@@ -105,4 +105,15 @@ scope: role
 - 做法：done
 - 结果：done
 - 适用前提：适用于 implement 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: backend-1|backend|Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2 -->
+### 经验：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
+- project_type: baseline_workflow
+- role_key: backend-dev
+- tags: baseline_workflow, backend-1, backend-dev
+- 场景：workflow: baseline_workflow; step: backend; agent: backend-1
+- 做法：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
+- 结果：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
+- 适用前提：适用于 backend 等类似工作流步骤
 

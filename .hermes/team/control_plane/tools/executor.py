@@ -7,8 +7,10 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from config import load_control_plane_config
 from governance.approval import ApprovalGate
 from governance.rbac import RBACPolicy, build_default_rbac_policy
+from governance.session_security import get_session_security_manager
 from governance.tool_permissions import check_tool_approval, check_tool_permission
 from runtime.rules import preload_knowledge_bundle
+from runtime.token_compressor import TokenCompressor
 from tools.spec import ToolExecutionContext, ToolResult, ToolSpec
 from tools.transcript import ToolTranscriptStore
 
@@ -24,7 +26,10 @@ class ToolExecutor:
     ):
         self.transcript_store = transcript_store
         self.policy = policy or build_default_rbac_policy()
-        self.approval_gate = approval_gate or ApprovalGate(load_control_plane_config().sensitive_actions)
+        config = load_control_plane_config()
+        self.approval_gate = approval_gate or ApprovalGate(config.sensitive_actions)
+        self.session_security = get_session_security_manager()
+        self.output_compressor = TokenCompressor()
 
     def execute_many(
         self,
@@ -75,6 +80,14 @@ class ToolExecutor:
             result = ToolResult.error_result(error="PERMISSION_DENIED", content="")
             self._write_transcript(context, tool, payload, result, action, "denied")
             return result
+        session_id = context.session_id or context.task_id
+        self.session_security.create_policy(session_id, context.security_session_type)
+        toolset = "read" if tool.is_read_only else "write"
+        secure_allowed, secure_reason = self.session_security.check_permission(session_id, tool.name, payload, toolset=toolset)
+        if not secure_allowed:
+            result = ToolResult.error_result(error="SESSION_SECURITY_DENIED", content=secure_reason)
+            self._write_transcript(context, tool, payload, result, action, "session_security_denied")
+            return result
         if check_tool_approval(self.approval_gate, tool, action):
             result = ToolResult.error_result(error="APPROVAL_REQUIRED", content="")
             self._write_transcript(context, tool, payload, result, action, "approval_required")
@@ -99,6 +112,8 @@ class ToolExecutor:
     ) -> None:
         if self.transcript_store is None:
             return
+        compressed = self.output_compressor.compress(result.content, "tool")
+        preview = compressed.compressed[:200]
         self.transcript_store.append_record(
             {
                 "session_id": context.session_id,
@@ -110,10 +125,12 @@ class ToolExecutor:
                 "input": payload,
                 "ok": result.ok,
                 "error": result.error,
-                "content_preview": result.content[:200],
+                "content_preview": preview,
                 "artifacts": list(result.artifacts),
                 "knowledge_paths": list(context.knowledge_bundle.get("paths", [])),
                 "permission_outcome": permission_outcome,
+                "compressed": compressed.ratio > 0,
+                "compression_ratio": round(compressed.ratio, 2),
                 "timestamp": time.time(),
             }
         )

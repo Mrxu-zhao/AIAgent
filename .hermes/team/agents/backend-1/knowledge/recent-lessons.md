@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: backend-1|backend|Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2 -->
+### 经验：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
+- 场景：workflow: baseline_workflow; step: backend; agent: backend-1
+- 做法：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
+- 结果：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
+- 适用前提：适用于 backend 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 <!-- lesson-key: backend-1|implement|done -->
 ### 经验：done
 - 场景：workflow: wf-real-exec-success-shape; step: implement; agent: backend-1

@@ -14,6 +14,17 @@ class AuditLogger:
             handle.write(json.dumps(event, ensure_ascii=False) + "\n")
         return event
 
+    def log_tool_event(self, action: str, *, tool_name: str, session_id: str | None, payload, outcome: str):
+        return self.log(
+            action,
+            {
+                "tool_name": tool_name,
+                "session_id": session_id,
+                "payload": payload,
+                "outcome": outcome,
+            },
+        )
+
     def read_all(self):
         if not self.path.exists():
             return []

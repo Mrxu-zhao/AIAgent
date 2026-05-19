@@ -2,7 +2,7 @@
 
 ---
 owner: control-plane
-last_reviewed: 2026-05-18
+last_reviewed: 2026-05-19
 source: wf-backend-inherit
 scope: role
 ---
@@ -61,4 +61,15 @@ scope: role
 - 做法：design:设计方案
 - 结果：design:设计方案
 - 适用前提：适用于 design 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: architect|architecture|任务已分配给 architect: Design architecture -->
+### 经验：任务已分配给 architect: Design architecture
+- project_type: baseline_workflow
+- role_key: architect
+- tags: baseline_workflow, architect, architect
+- 场景：workflow: baseline_workflow; step: architecture; agent: architect
+- 做法：任务已分配给 architect: Design architecture
+- 结果：任务已分配给 architect: Design architecture
+- 适用前提：适用于 architecture 等类似工作流步骤
 

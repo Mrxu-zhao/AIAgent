@@ -20,12 +20,18 @@ class HandoffRunStore:
         self.archive_dir.mkdir(parents=True, exist_ok=True)
 
     def record_handoff(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        message_id = record["message_id"]
+        normalized = dict(record)
+        normalized.setdefault("knowledge_summary", "")
+        normalized.setdefault("deliverables", [])
+        normalized.setdefault("decisions", [])
+        normalized.setdefault("risks", [])
+        normalized.setdefault("next_steps", [])
+        message_id = normalized["message_id"]
         self._record_path(message_id).write_text(
-            json.dumps(record, ensure_ascii=False, indent=2),
+            json.dumps(normalized, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        return record
+        return normalized
 
     def read_record(self, message_id: str) -> Optional[Dict[str, Any]]:
         path = self._record_path(message_id)

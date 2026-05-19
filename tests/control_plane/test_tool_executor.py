@@ -3,6 +3,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 from tests.control_plane.test_support import ensure_control_plane_path
 
@@ -184,6 +185,58 @@ class ToolExecutorTests(unittest.TestCase):
         self.assertEqual(len(observed["items"]), 1)
         self.assertEqual(observed["items"][0]["path"], ".hermes/team/knowledge/status.md")
         self.assertIn("redis cache", observed["items"][0]["summary"])
+
+    def test_execute_many_denies_unpaired_sensitive_tool(self):
+        tool = ToolSpec(
+            name="write_file",
+            description="write file",
+            input_schema={},
+            is_read_only=False,
+            is_concurrency_safe=False,
+            handler=lambda *_: ToolResult.ok_result(content="should-not-run"),
+            action="tool.write.generic",
+            requires_approval=False,
+            is_sensitive=True,
+        )
+        context = ToolExecutionContext(
+            task_id="tool-task-12",
+            agent_id="backend-dev",
+            backend="hermes",
+            actor="admin",
+            session_id="session-sensitive",
+        )
+
+        result = ToolExecutor().execute_many(context, [(tool, {"file_path": "demo.txt"})])[0]
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.error, "SESSION_SECURITY_DENIED")
+
+    def test_execute_many_compresses_transcript_preview_for_large_output(self):
+        transcript = Mock()
+        tool = ToolSpec(
+            name="search_code",
+            description="search code",
+            input_schema={},
+            is_read_only=True,
+            is_concurrency_safe=True,
+            handler=lambda *_: ToolResult.ok_result(content="\n".join(f"line {index}" for index in range(300))),
+            action="tool.read.generic",
+        )
+        context = ToolExecutionContext(
+            task_id="tool-task-13",
+            agent_id="architect",
+            backend="hermes",
+            actor="admin",
+            session_id="session-preview",
+        )
+        executor = ToolExecutor(transcript_store=transcript)
+
+        result = executor.execute_many(context, [(tool, {})])[0]
+
+        self.assertTrue(result.ok)
+        payload = transcript.append_record.call_args.args[0]
+        self.assertTrue(payload["compressed"])
+        self.assertLess(len(payload["content_preview"]), 200)
 
 
 if __name__ == "__main__":

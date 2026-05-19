@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from typing import Dict
 
 from adapters import get_executor_adapter
+from collaboration.kanban import KanbanBoard
+from collaboration.kanban import TaskPriority as KanbanTaskPriority
+from config import load_control_plane_config
 from handoff_runtime import HandoffRunStore
+from integrations.oauth import OAuthManager
+from intelligence.code_intelligence import CodeReviewer, detect_language, get_code_hub
 from knowledge.consumer import expand_excerpt_content
 from knowledge.query import query_knowledge_records
 from persistent_bus import PersistentMessageBus
@@ -213,6 +219,71 @@ def read_file_handler(_context: ToolExecutionContext, payload: Dict[str, object]
         content=resolved.read_text(encoding="utf-8"),
         structured_data={"path": str(raw_path), "resolved_path": str(resolved)},
         artifacts=[str(raw_path)],
+    )
+
+
+def _kanban_db_path(payload: Dict[str, object]) -> str:
+    if payload.get("db_path"):
+        return str(payload["db_path"])
+    config = load_control_plane_config()
+    return str(Path(config.directories["state_dir"]) / "kanban.db")
+
+
+def code_review_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
+    reviewer = CodeReviewer()
+    source = str(payload.get("source") or payload.get("task") or "")
+    result = reviewer.review(source)
+    return ToolResult.ok_result(
+        content=f"score:{result.score}",
+        structured_data={
+            "score": result.score,
+            "issues": result.issues,
+            "security_concerns": result.security_concerns,
+            "suggestions": result.suggestions,
+        },
+    )
+
+
+def code_diagnostics_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
+    file_path = str(payload.get("file_path") or payload.get("path") or "")
+    language = str(payload.get("language") or detect_language(file_path) or "python")
+    diagnostics = []
+    if file_path:
+        hub = get_code_hub()
+        client = hub.get_lsp(language, str(repository_root()))
+        diagnostics = client.get_diagnostics(file_path) if client else []
+    return ToolResult.ok_result(
+        content=f"diagnostics:{len(diagnostics)}",
+        structured_data={"diagnostics": diagnostics, "language": language, "file_path": file_path},
+    )
+
+
+def kanban_summary_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
+    board = KanbanBoard(_kanban_db_path(payload))
+    summary = board.get_board_summary()
+    return ToolResult.ok_result(content=json.dumps(summary, ensure_ascii=False), structured_data=summary)
+
+
+def kanban_create_task_handler(_context: ToolExecutionContext, payload: Dict[str, object]) -> ToolResult:
+    board = KanbanBoard(_kanban_db_path(payload))
+    task = board.create_task(
+        title=str(payload.get("title") or payload.get("task") or "Untitled Task"),
+        description=str(payload.get("description") or ""),
+        assignee=str(payload.get("assignee") or ""),
+        priority=KanbanTaskPriority(int(payload.get("priority", 2))),
+        tags=list(payload.get("tags") or []),
+    )
+    return ToolResult.ok_result(
+        content=f"kanban:{task.id}",
+        structured_data={"id": task.id, "title": task.title, "status": task.status.value},
+    )
+
+
+def list_oauth_services_handler(_context: ToolExecutionContext, _payload: Dict[str, object]) -> ToolResult:
+    manager = OAuthManager()
+    return ToolResult.ok_result(
+        content="oauth-services",
+        structured_data={"services": manager.list_services(), "exchange_mode": manager.exchange_mode},
     )
 
 
@@ -497,6 +568,51 @@ def build_default_tool_registry() -> ToolRegistry:
                 is_concurrency_safe=False,
                 handler=generate_prd_handler,
                 action="tool.generate.prd",
+            ),
+            ToolSpec(
+                name="code_review",
+                description="review code and report security/style/performance findings",
+                input_schema={"source": "str"},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=code_review_handler,
+                action="tool.read.code_review",
+            ),
+            ToolSpec(
+                name="code_diagnostics",
+                description="inspect diagnostics for a source file using optional LSP support",
+                input_schema={"file_path": "str", "language": "str"},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=code_diagnostics_handler,
+                action="tool.read.code_diagnostics",
+            ),
+            ToolSpec(
+                name="kanban_summary",
+                description="read collaboration board summary",
+                input_schema={"db_path": "str"},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=kanban_summary_handler,
+                action="tool.read.kanban",
+            ),
+            ToolSpec(
+                name="kanban_create_task",
+                description="create a task in the collaboration board",
+                input_schema={"title": "str", "description": "str", "assignee": "str"},
+                is_read_only=False,
+                is_concurrency_safe=False,
+                handler=kanban_create_task_handler,
+                action="tool.write.kanban",
+            ),
+            ToolSpec(
+                name="list_oauth_services",
+                description="list OAuth services reserved for future integration",
+                input_schema={},
+                is_read_only=True,
+                is_concurrency_safe=True,
+                handler=list_oauth_services_handler,
+                action="tool.read.oauth",
             ),
         ]
     )

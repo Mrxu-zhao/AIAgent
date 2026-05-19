@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: dba|database|任务已分配给 dba: Design architecture review package -->
+### 经验：任务已分配给 dba: Design architecture review package
+- 场景：workflow: baseline_workflow; step: database; agent: dba
+- 做法：任务已分配给 dba: Design architecture review package
+- 结果：任务已分配给 dba: Design architecture review package
+- 适用前提：适用于 database 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：索引设计的"覆盖索引"策略
 - **场景**：订单查询列表页响应慢，发现回表查询导致IO高
 - **做法**：将查询条件+返回字段设计为覆盖索引，避免回表

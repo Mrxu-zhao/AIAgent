@@ -22,10 +22,14 @@
 - `handoff_runtime.py`：handoff 记录与 continuation 状态落盘
 - `protocols/handoff.py`：handoff payload 与 schema 对齐
 - `knowledge_feedback.py`：把 workflow 决策与风险回写到团队知识层
-- `runtime/`：knowledge bundle 规则、预加载与 tool execution context
+- `runtime/`：knowledge bundle 规则、预加载、tool execution context 与上下文压缩
+- `governance/`：审批、审计、RBAC 与 session security
+- `intelligence/`：代码审查、代码诊断、结构化编辑等代码智能能力
+- `collaboration/`：Kanban 看板与技能生命周期管理
+- `integrations/`：OAuth 等第三方集成预留能力
 - `tools/`：tool spec、registry、executor、builtin tools、transcript、session store
 - `runner.py`：共享批次入口，负责任务注册与调度装配
-- `cli.py`：统一控制平面 CLI，覆盖 dispatch、workflow、query、monitor、tool-run、tool-session
+- `cli.py`：统一控制平面 CLI，覆盖 dispatch、workflow、query、monitor、tool-run、tool-session 以及增强能力命令
 
 ## 当前边界
 - 第一阶段直接支持 `Hermes` 调度命令装配。
@@ -36,9 +40,11 @@
 - `ControlPlaneOrchestrator` 已负责高层多任务并行调度，并把 CAS 语义上推到 ready 任务选择、冲突解释和直接依赖阻塞传播。
 - `runner.py` 已把 `TASKS`、`TaskStore`、`ControlPlaneExecutor` 和 `ControlPlaneOrchestrator` 装配为统一批次执行入口。
 - 统一 CLI 已支持 `dispatch`、`workflow`、`query workflow`、`query handoff`、`monitor`、`tool-run`、`tool-session`。
+- 统一 CLI 现已额外支持 `code-review`、`code-diagnostics`、`kanban summary`、`oauth list`。
 - workflow runtime 现已记录 `knowledge_recommendations`、`knowledge_bundles`、`knowledge_feedback`，不再只落快照与 step 事件。
 - handoff 协议与 runtime 已支持 `knowledge_recommendation`，跨 agent 交接会附带目标知识包建议。
-- tool runtime 已支持 knowledge bundle 预加载、tool transcript、session 恢复、tool 级 RBAC 与审批拦截。
+- tool runtime 已支持 knowledge bundle 预加载、tool transcript、session 恢复、tool 级 RBAC、审批拦截、session security 与 transcript 压缩。
+- agent tools 现已支持直接调用增强能力，如 `code_review`、`code_diagnostics`、`kanban_summary`、`kanban_create_task`、`list_oauth_services`。
 - query 入口已支持 `--knowledge-only` 与 `--summary`，可以直接查看 workflow/handoff 的知识摘要视图。
 - dashboard 已新增 `recommended_knowledge` 与 `recent_knowledge_feedback` 面板。
 
@@ -53,10 +59,11 @@
 1. 使用 `runner.py` 或 `run_batch.py` 注册任务并建立状态仓。
 2. 通过共享 runner 装配执行器、适配器与 `ControlPlaneOrchestrator`。
 3. 在 tool 级能力场景使用 `tool-run` / `tool-session` 验证 knowledge bundle、session 与权限语义。
-4. 使用 `query workflow --knowledge-only --summary` 与 `query handoff --knowledge-only --summary` 查看知识摘要视图。
-5. 使用 `monitor --dashboard` 观察推荐知识包与最近知识回写结果。
-6. 运行调度框架与控制平面相关回归测试。
-7. 聚合执行结果并生成最终报告。
+4. 使用 `code-review` / `code-diagnostics` 验证代码智能能力，使用 `kanban summary` 查看协作状态。
+5. 使用 `query workflow --knowledge-only --summary` 与 `query handoff --knowledge-only --summary` 查看知识摘要视图。
+6. 使用 `monitor --dashboard` 观察推荐知识包与最近知识回写结果。
+7. 运行调度框架与控制平面相关回归测试。
+8. 聚合执行结果并生成最终报告。
 
 ## 验证基线
 - `python -m unittest discover -s tests/control_plane -p "test_*.py" -v`：控制平面主线测试可运行。

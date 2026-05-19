@@ -106,6 +106,30 @@ class HandoffRunStoreTests(unittest.TestCase):
             self.assertEqual(updated["knowledge_consumer"], "backend-1")
             self.assertIsNotNone(updated["knowledge_consumed_at"])
 
+    def test_handoff_run_store_preserves_enhanced_summary_fields(self):
+        runtime_module = load_control_plane_module("handoff_runtime")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            store = runtime_module.HandoffRunStore(Path(tmp))
+            saved = store.record_handoff(
+                {
+                    "message_id": "msg-3",
+                    "workflow_id": "wf-9",
+                    "target_agent": "backend-1",
+                    "status": "materialized",
+                    "knowledge_summary": "summary",
+                    "decisions": ["use control plane"],
+                    "risks": ["missing tests"],
+                    "next_steps": ["add cli"],
+                }
+            )
+            loaded = store.read_record("msg-3")
+
+        self.assertEqual(saved["knowledge_summary"], "summary")
+        self.assertEqual(loaded["decisions"], ["use control plane"])
+        self.assertEqual(loaded["risks"], ["missing tests"])
+        self.assertEqual(loaded["next_steps"], ["add cli"])
+
 
 if __name__ == "__main__":
     unittest.main()

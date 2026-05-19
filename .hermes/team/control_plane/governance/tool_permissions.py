@@ -19,6 +19,11 @@ ROLE_TOOL_PERMISSIONS = {
         "dispatch_task",
         "generate_architecture_doc",
         "review_api_design",
+        "code_review",
+        "code_diagnostics",
+        "kanban_summary",
+        "kanban_create_task",
+        "list_oauth_services",
     },
     "backend-dev": {
         "read_knowledge",
@@ -30,6 +35,9 @@ ROLE_TOOL_PERMISSIONS = {
         "generate_mapper",
         "run_unit_tests",
         "generate_code",
+        "code_review",
+        "code_diagnostics",
+        "kanban_summary",
     },
     "dba": {
         "read_knowledge",
@@ -63,6 +71,8 @@ ROLE_TOOL_PERMISSIONS = {
         "dispatch_task",
         "generate_test_cases",
         "run_api_tests",
+        "code_review",
+        "kanban_summary",
     },
     "qa-performance": {
         "read_knowledge",
@@ -76,6 +86,7 @@ ROLE_TOOL_PERMISSIONS = {
         "write_file",
         "dispatch_task",
         "generate_prd",
+        "kanban_summary",
     },
     "analyst": {
         "read_knowledge",

@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: architect|architecture|任务已分配给 architect: Design architecture -->
+### 经验：任务已分配给 architect: Design architecture
+- 场景：workflow: baseline_workflow; step: architecture; agent: architect
+- 做法：任务已分配给 architect: Design architecture
+- 结果：任务已分配给 architect: Design architecture
+- 适用前提：适用于 architecture 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 <!-- lesson-key: architect|design|design:设计方案 -->
 ### 经验：design:设计方案
 - 场景：workflow: wf-backend; step: design; agent: architect
