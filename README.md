@@ -20,7 +20,9 @@
 - 已打通共享批次入口：`run_batch.py` 与 `team-cli.py control-plane-run` 共用同一 runner 链路
 - 已补齐配置中心、持久化消息总线、工作流运行态、handoff/continuation、Provider 注册、治理骨架、观测骨架与基础 CI
 - 已落地知识闭环能力：`TaskRouter`、`WorkflowEngine`、handoff runtime 与 query 入口之间可传递并消费 `knowledge_recommendation` / `knowledge_bundle`
-- 已落地 tool runtime MVP：支持 builtin tools、knowledge 预加载、tool transcript、session 恢复、tool 级 RBAC 与审批拦截
+- 已将增强能力并入主线：补齐代码智能、上下文压缩、session security、Kanban 协作与 OAuth 预留模块
+- 已落地 tool runtime 主链：支持 builtin tools、knowledge 预加载、tool transcript、session 恢复、tool 级 RBAC、审批拦截、session security 与 transcript 压缩
+- 已把部分增强能力注册为 agent tools：`code_review`、`code_diagnostics`、`kanban_summary`、`kanban_create_task`、`list_oauth_services`
 - 已形成团队知识治理入口：`.hermes/team/knowledge/` 可承接决策、风险、术语和协作模板的稳定沉淀
 - 已对调度框架中的高风险 P0 问题完成回归验证，包括监控死锁、`workflow step.agent` 忽略和 CLI 监控生命周期
 
@@ -100,13 +102,21 @@ python .hermes/team/control_plane/cli.py tool-session list
 python .hermes/team/调度框架/cli/team-cli.py control-plane-run --max-workers 2
 ```
 
-### 7. 重建基线与性能报告
+### 7. 运行增强能力命令
+
+```bash
+python .hermes/team/control_plane/cli.py code-review --inline-code "eval(user_input)"
+python .hermes/team/control_plane/cli.py kanban summary
+python .hermes/team/control_plane/cli.py oauth list
+```
+
+### 8. 重建基线与性能报告
 
 ```bash
 python .hermes/team/control_plane/run_benchmarks.py
 ```
 
-### 8. 执行测试
+### 9. 执行测试
 
 ```bash
 python -m unittest discover -s tests/control_plane -p "test_*.py" -v
@@ -114,14 +124,14 @@ python -m unittest discover -s tests/control_plane -p "test_*.py" -v
 
 ## 当前验证状态
 
-- 单元回归：`210 tests, OK`
-- 已验证主线：统一 CLI、workflow runtime、handoff/continuation、knowledge feedback、tool runtime、兼容入口
+- 单元回归：`348 tests, OK`
+- 已验证主线：统一 CLI、workflow runtime、handoff/continuation、knowledge feedback、tool runtime、代码智能、上下文压缩、session security、协作模块、兼容入口
 - Ruff：`python -m ruff check .hermes/team/control_plane .hermes/team/调度框架/core .hermes/team/调度框架/cli/team-cli.py tests/control_plane`
 - Coverage 门槛配置：`pyproject.toml` 中对 `config.py`、`persistent_bus.py`、`workflow_runtime.py`、`cli.py` 设置 `fail_under = 90`
 
 说明：
 
-- `210 tests, OK` 来自当前仓库执行 `python -m unittest discover -s tests/control_plane -p "test_*.py" -v` 的结果
+- `348 tests, OK` 来自当前仓库执行 `python -m unittest discover -s tests/control_plane -p "test_*.py" -v` 的结果
 - Coverage 阈值是仓库配置，不代表整个仓库的整体覆盖率，也不代表所有文件都达到同一水平
 - Prometheus/Grafana 交付物、治理、多后端与 tool runtime 当前均应按 MVP/骨架能力理解
 
@@ -130,6 +140,8 @@ python -m unittest discover -s tests/control_plane -p "test_*.py" -v
 - `.hermes/team/control_plane/README.md`：控制平面能力、入口和验证基线
 - `.hermes/team/knowledge/README.md`：团队公共知识层入口与治理规则
 - `.hermes/team/调度框架/README.md`：历史调度框架与控制平面对齐情况
+- `docs/superpowers/specs/2026-05-19-control-plane-enhanced-capabilities-integration-design.md`：增强能力融合设计
+- `docs/superpowers/plans/2026-05-19-control-plane-enhanced-capabilities-integration.md`：增强能力实施计划
 - `.hermes/team/control_plane/artifacts/execution-summary-2026-05-12.md`：本轮实施执行摘要
 - `.hermes/team/control_plane/artifacts/milestone-progress-report.md`：里程碑交付与指标口径
 - `docs/architecture/control-plane-overview.md`：控制平面总览与当前边界
@@ -145,7 +157,8 @@ python -m unittest discover -s tests/control_plane -p "test_*.py" -v
 - 搭建一套本地可演进的多 Agent 团队工程骨架
 - 研究 Hermes 风格任务分发、工作流执行、handoff、知识闭环与控制平面治理
 - 在已有调度框架上逐步演进为更统一的仓库级控制平面
-- 验证 tool runtime、session 恢复、最小权限和团队知识治理的最小实现
+- 验证 tool runtime、session 恢复、最小权限、上下文压缩和团队知识治理的最小实现
+- 让 agent 直接调用代码审查、代码诊断、Kanban 摘要等主线增强能力
 - 为后续接入真实执行后端、外部集成和更强观测能力预留结构
 
 如果你希望直接把它当成“生产级多 Agent 平台”使用，建议先补齐统一入口收敛、审批/审计闭环、workflow 恢复语义、持久化总线 cursor/订阅语义、真实 provider 执行链路，以及观测抓取闭环。

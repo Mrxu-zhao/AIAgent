@@ -3,7 +3,8 @@
 ## 作用
 - 为所有 agent 提供共享的项目背景、术语、仓库地图、协作流程和交接模板。
 - 作为 `~/.hermes/team/knowledge/` 的真实落盘目录，兼容现有 skill 文档中的读取约定。
-- 为后续 `TaskRouter`、`WorkflowEngine` 和 handoff 推荐知识包提供稳定入口。
+- 为 `TaskRouter`、`WorkflowEngine`、handoff 推荐知识包和 tool runtime 的 `read_knowledge` 提供稳定入口。
+- 为增强后的控制平面提供可压缩、可摘要、可复用的知识源，供 query、dashboard 和 transcript 使用。
 
 ## 装载顺序
 1. 全局 `SOUL.md`
@@ -27,6 +28,7 @@
 
 ## 治理规则
 - 负责人：团队 owner
-- 更新日期：2026-05-13
+- 更新日期：2026-05-19
 - 仅沉淀稳定事实、重复问题和已验证最佳实践。
 - 一次性任务过程不直接写入团队层。
+- 目录索引类 README 需要保持“入口文件 + 用途 + 与 control_plane 的关系”三要素完整。

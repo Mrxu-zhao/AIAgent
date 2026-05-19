@@ -6,6 +6,8 @@
 - provider 契约：`../../../docs/contracts/provider-contracts.md`
 - 运行时治理：`../../../docs/runtime/runtime-governance.md`
 - handoff 与 continuation：`../../../docs/runtime/handoff-and-continuation.md`
+- 增强能力融合设计：`../../../docs/superpowers/specs/2026-05-19-control-plane-enhanced-capabilities-integration-design.md`
+- 增强能力实施计划：`../../../docs/superpowers/plans/2026-05-19-control-plane-enhanced-capabilities-integration.md`
 - 知识库 enrichment 计划：`../../../docs/superpowers/plans/2026-05-13-agent-knowledge-base-enrichment.md`
 - tool runtime MVP 计划：`../../../docs/superpowers/plans/2026-05-14-control-plane-tool-runtime-mvp.md`
 - session/tools/permissions 计划：`../../../docs/superpowers/plans/2026-05-14-control-plane-session-tools-permissions.md`
@@ -30,6 +32,14 @@
 - `tools/`：tool spec、registry、executor、builtin tools、transcript、session store
 - `runner.py`：共享批次入口，负责任务注册与调度装配
 - `cli.py`：统一控制平面 CLI，覆盖 dispatch、workflow、query、monitor、tool-run、tool-session 以及增强能力命令
+
+## 新增主线能力
+- `intelligence/code_intelligence.py`：提供 `CodeReviewer`、可选 LSP 诊断与轻量结构化编辑能力。
+- `runtime/token_compressor.py`：提供 tool output 压缩、上下文摘要和 `MemoryTreeManager` 运行时分层上下文。
+- `governance/session_security.py`：提供 session 类型、敏感工具门禁、配对与路径访问限制。
+- `collaboration/kanban.py`：提供 SQLite 持久化任务板。
+- `collaboration/skill_curator.py`：提供技能注册、归档与使用计数。
+- `integrations/oauth.py`：保留第三方授权服务注册表，当前为 `deferred` 预留态。
 
 ## 当前边界
 - 第一阶段直接支持 `Hermes` 调度命令装配。
@@ -67,5 +77,6 @@
 
 ## 验证基线
 - `python -m unittest discover -s tests/control_plane -p "test_*.py" -v`：控制平面主线测试可运行。
-- `python -m unittest tests.control_plane.test_tool_executor tests.control_plane.test_tool_cli tests.control_plane.test_tool_transcript tests.control_plane.test_unified_cli tests.control_plane.test_handoff tests.control_plane.test_handoff_coordinator tests.control_plane.test_task_router tests.control_plane.test_workflow_runtime tests.control_plane.test_framework_monitor tests.control_plane.test_framework_compat tests.control_plane.test_metrics tests.control_plane.test_orchestrator`：`89 tests, OK`
+- `python -m unittest discover -s tests/control_plane -p "test_*.py" -v` 当前基线结果为 `348 tests, OK`。
+- `python -m ruff check .hermes/team/control_plane tests/control_plane`：增强能力融合后静态检查通过。
 - 使用编辑器诊断检查 `.hermes/team/control_plane` 与 `.hermes/team/调度框架/core` 关键文件：无新增诊断错误。

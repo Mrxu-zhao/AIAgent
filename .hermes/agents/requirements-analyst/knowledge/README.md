@@ -3,7 +3,7 @@
 ## 角色定位
 - 角色：需求分析师
 - 责任重点：需求澄清、范围边界、验收标准
-- 更新时间：2026-05-13
+- 更新时间：2026-05-19
 
 ## 标准入口
 - `overview.md`
@@ -30,6 +30,7 @@
 - `xzmeto_resource_backend_study.md`
 
 ## 使用建议
+- 当前索引会被 control_plane 的 knowledge bundle、handoff 推荐和 `read_knowledge` 工具消费，新增内容优先挂到标准入口下。
 - 先读 `overview.md` 理解角色边界。
 - 执行高频任务时优先查看 `playbooks/` 与 `checklists/`。
 - 需要深入专题时，再查阅历史专题文件。

@@ -11,6 +11,7 @@
 - 不是跨进程持久化调度系统
 - 没有真实消息消费确认
 - 没有独立队列服务或已完成的故障转移编排
+- 新增强能力默认不再优先落在本目录，而是进入 `.hermes/team/control_plane/` 主线
 
 ## Agent 列表
 
@@ -162,6 +163,7 @@ hermes --resume <session_id> chat
 - `cli/team-cli.py` 保留为兼容 CLI，其中 `control-plane-run` 已直接桥接仓库级控制平面 runner。
 - `team.sh` 已优先转发主控制平面入口；`scripts/team-dispatch.sh` 与 `tmux/team-tmux.sh` 仍保留兼容 CLI 路径，旧入口收敛工作尚未完全结束。
 - `.hermes/team/control_plane/runner.py` 负责真实任务批次装配，但旧入口仍存在部分历史命令实现，尚未完全统一到主控制平面。
+- 代码智能、上下文压缩、session security、Kanban 协作、OAuth 预留等增强能力均已并入主控制平面，不再在本目录维护平行实现。
 - 调度框架中的 Monitor、Workflow、CLI 关键回归由 `tests/control_plane/` 统一覆盖。
 
 ## 评估报告实现对照表

@@ -35,3 +35,9 @@
 - 团队公共背景优先看 `.hermes/team/knowledge/`
 - 同角色共享知识优先看 `.hermes/agents/<role>/knowledge/`
 - 团队实例个体差异优先看 `.hermes/team/agents/<agent>/knowledge/`
+- 角色知识目录会被控制平面的 `knowledge_bundle`、handoff 推荐和 `read_knowledge` 工具消费，建议维持稳定入口与清晰索引。
+
+## 与控制平面的关系
+- 当前仓库主线是 `.hermes/team/control_plane/`，角色知识是其中的稳定输入层，不是独立运行面。
+- 控制平面中的 agent tools 已可直接暴露 `code_review`、`code_diagnostics`、`kanban_summary` 等增强能力。
+- 角色 README 的职责仍是提供“先读什么、再读什么”的索引，不承载一次性任务过程。
