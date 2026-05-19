@@ -2,6 +2,24 @@
 
 ## 2026-05
 
+<!-- lesson-key: qa-functional|regression_test|任务已分配给 qa-functional: 回归验证修复结果 -->
+### 经验：任务已分配给 qa-functional: 回归验证修复结果
+- 场景：workflow: primary_learning_delivery; step: regression_test; agent: qa-functional
+- 做法：任务已分配给 qa-functional: 回归验证修复结果
+- 结果：任务已分配给 qa-functional: 回归验证修复结果
+- 适用前提：适用于 regression_test 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
+<!-- lesson-key: qa-functional|functional_test|任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块 -->
+### 经验：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 场景：workflow: primary_learning_delivery; step: functional_test; agent: qa-functional
+- 做法：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 结果：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 适用前提：适用于 functional_test 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 <!-- lesson-key: qa-functional|review|review-decision -->
 ### 经验：review-decision
 - 场景：workflow: wf-collab; step: review; agent: qa-functional

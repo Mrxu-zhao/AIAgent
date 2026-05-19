@@ -3,7 +3,7 @@
 ---
 owner: control-plane
 last_reviewed: 2026-05-19
-source: wf-backend-inherit
+source: primary_learning_delivery
 scope: role
 ---
 
@@ -72,4 +72,15 @@ scope: role
 - 做法：任务已分配给 architect: Design architecture
 - 结果：任务已分配给 architect: Design architecture
 - 适用前提：适用于 architecture 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: architect|architecture_design|任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档 -->
+### 经验：任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档
+- project_type: primary_learning_delivery
+- role_key: architect
+- tags: primary_learning_delivery, architect, architect
+- 场景：workflow: primary_learning_delivery; step: architecture_design; agent: architect
+- 做法：任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档
+- 结果：任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档
+- 适用前提：适用于 architecture_design 等类似工作流步骤
 

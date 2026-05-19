@@ -3,7 +3,7 @@
 ---
 owner: control-plane
 last_reviewed: 2026-05-19
-source: wf-exec-bind
+source: primary_learning_delivery
 scope: team
 ---
 
@@ -182,4 +182,84 @@ scope: team
 - 做法：done
 - 结果：done
 - 适用前提：适用于 implement 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: architect|architecture_design|任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档 -->
+### 经验：任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档
+- 场景：workflow: primary_learning_delivery; step: architecture_design; agent: architect
+- 做法：任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档
+- 结果：任务已分配给 architect: 设计轻量级前后端架构，输出架构设计文档
+- 适用前提：适用于 architecture_design 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: backend-1|backend_dev|实现API接口 | 学习逻辑 | 数据库操作 -->
+### 经验：实现API接口 | 学习逻辑 | 数据库操作
+- 场景：workflow: primary_learning_delivery; step: backend_dev; agent: backend-1
+- 做法：实现API接口 | 学习逻辑 | 数据库操作
+- 结果：实现API接口 | 学习逻辑 | 数据库操作
+- 适用前提：适用于 backend_dev 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: project-manager|closure|auto-approved -->
+### 经验：auto-approved
+- 场景：workflow: primary_learning_delivery; step: closure; agent: project-manager
+- 做法：auto-approved
+- 结果：auto-approved
+- 适用前提：适用于 closure 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: dba|database_design|任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表 -->
+### 经验：任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表
+- 场景：workflow: primary_learning_delivery; step: database_design; agent: dba
+- 做法：任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表
+- 结果：任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表
+- 适用前提：适用于 database_design 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: backend-2|defect_fix|任务已分配给 backend-2: 修复测试发现的缺陷 -->
+### 经验：任务已分配给 backend-2: 修复测试发现的缺陷
+- 场景：workflow: primary_learning_delivery; step: defect_fix; agent: backend-2
+- 做法：任务已分配给 backend-2: 修复测试发现的缺陷
+- 结果：任务已分配给 backend-2: 修复测试发现的缺陷
+- 适用前提：适用于 defect_fix 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: frontend-1|frontend_dev|实现页面组件 | 游戏交互 | 对接后端API -->
+### 经验：实现页面组件 | 游戏交互 | 对接后端API
+- 场景：workflow: primary_learning_delivery; step: frontend_dev; agent: frontend-1
+- 做法：实现页面组件 | 游戏交互 | 对接后端API
+- 结果：实现页面组件 | 游戏交互 | 对接后端API
+- 适用前提：适用于 frontend_dev 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: qa-functional|functional_test|任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块 -->
+### 经验：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 场景：workflow: primary_learning_delivery; step: functional_test; agent: qa-functional
+- 做法：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 结果：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 适用前提：适用于 functional_test 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: qa-functional|regression_test|任务已分配给 qa-functional: 回归验证修复结果 -->
+### 经验：任务已分配给 qa-functional: 回归验证修复结果
+- 场景：workflow: primary_learning_delivery; step: regression_test; agent: qa-functional
+- 做法：任务已分配给 qa-functional: 回归验证修复结果
+- 结果：任务已分配给 qa-functional: 回归验证修复结果
+- 适用前提：适用于 regression_test 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: requirements-analyst|requirements_analysis|任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档 -->
+### 经验：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 场景：workflow: primary_learning_delivery; step: requirements_analysis; agent: requirements-analyst
+- 做法：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 结果：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 适用前提：适用于 requirements_analysis 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: ucd|ucd_design|任务已分配给 ucd: 设计适合儿童的界面交互，输出UI设计稿 -->
+### 经验：任务已分配给 ucd: 设计适合儿童的界面交互，输出UI设计稿
+- 场景：workflow: primary_learning_delivery; step: ucd_design; agent: ucd
+- 做法：任务已分配给 ucd: 设计适合儿童的界面交互，输出UI设计稿
+- 结果：任务已分配给 ucd: 设计适合儿童的界面交互，输出UI设计稿
+- 适用前提：适用于 ucd_design 等类似工作流步骤
 

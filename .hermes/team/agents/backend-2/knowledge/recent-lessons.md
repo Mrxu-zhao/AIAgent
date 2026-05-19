@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: backend-2|defect_fix|任务已分配给 backend-2: 修复测试发现的缺陷 -->
+### 经验：任务已分配给 backend-2: 修复测试发现的缺陷
+- 场景：workflow: primary_learning_delivery; step: defect_fix; agent: backend-2
+- 做法：任务已分配给 backend-2: 修复测试发现的缺陷
+- 结果：任务已分配给 backend-2: 修复测试发现的缺陷
+- 适用前提：适用于 defect_fix 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：Redis缓存穿透的"布隆过滤器"方案
 - **场景**：恶意请求查询不存在的商品ID，导致缓存穿透，数据库压力激增
 - **做法**：引入布隆过滤器预热所有商品ID，请求先过布隆过滤器再查缓存

@@ -3,7 +3,7 @@
 ---
 owner: control-plane
 last_reviewed: 2026-05-19
-source: wf-decision-summary
+source: primary_learning_delivery
 scope: role
 ---
 
@@ -39,4 +39,26 @@ scope: role
 - 做法：review:评审 design:设计方案
 - 结果：review:评审 design:设计方案
 - 适用前提：review-risk
+
+## 2026-05-19
+<!-- lesson-key: qa-functional|functional_test|任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块 -->
+### 经验：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- project_type: primary_learning_delivery
+- role_key: qa-functional
+- tags: primary_learning_delivery, qa-functional, qa-functional
+- 场景：workflow: primary_learning_delivery; step: functional_test; agent: qa-functional
+- 做法：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 结果：任务已分配给 qa-functional: 执行功能测试，验证识字/口算/字母模块
+- 适用前提：适用于 functional_test 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: qa-functional|regression_test|任务已分配给 qa-functional: 回归验证修复结果 -->
+### 经验：任务已分配给 qa-functional: 回归验证修复结果
+- project_type: primary_learning_delivery
+- role_key: qa-functional
+- tags: primary_learning_delivery, qa-functional, qa-functional
+- 场景：workflow: primary_learning_delivery; step: regression_test; agent: qa-functional
+- 做法：任务已分配给 qa-functional: 回归验证修复结果
+- 结果：任务已分配给 qa-functional: 回归验证修复结果
+- 适用前提：适用于 regression_test 等类似工作流步骤
 

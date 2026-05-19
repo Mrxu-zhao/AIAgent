@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: frontend-1|frontend_dev|实现页面组件 | 游戏交互 | 对接后端API -->
+### 经验：实现页面组件 | 游戏交互 | 对接后端API
+- 场景：workflow: primary_learning_delivery; step: frontend_dev; agent: frontend-1
+- 做法：实现页面组件 | 游戏交互 | 对接后端API
+- 结果：实现页面组件 | 游戏交互 | 对接后端API
+- 适用前提：适用于 frontend_dev 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 ### 经验：组件库的"按需引入"优化
 - **场景**：组件库全量引入导致打包体积过大（500KB+）
 - **做法**：改造为按需引入，每个组件独立打包，配合unplugin-vue-components自动导入

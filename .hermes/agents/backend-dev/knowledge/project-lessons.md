@@ -3,7 +3,7 @@
 ---
 owner: control-plane
 last_reviewed: 2026-05-19
-source: wf-exec-bind
+source: primary_learning_delivery
 scope: role
 ---
 
@@ -116,4 +116,26 @@ scope: role
 - 做法：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
 - 结果：Implement backend service chunk 0 | Implement backend service chunk 1 | Implement backend service chunk 2
 - 适用前提：适用于 backend 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: backend-1|backend_dev|实现API接口 | 学习逻辑 | 数据库操作 -->
+### 经验：实现API接口 | 学习逻辑 | 数据库操作
+- project_type: primary_learning_delivery
+- role_key: backend-dev
+- tags: primary_learning_delivery, backend-1, backend-dev
+- 场景：workflow: primary_learning_delivery; step: backend_dev; agent: backend-1
+- 做法：实现API接口 | 学习逻辑 | 数据库操作
+- 结果：实现API接口 | 学习逻辑 | 数据库操作
+- 适用前提：适用于 backend_dev 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: backend-2|defect_fix|任务已分配给 backend-2: 修复测试发现的缺陷 -->
+### 经验：任务已分配给 backend-2: 修复测试发现的缺陷
+- project_type: primary_learning_delivery
+- role_key: backend-dev
+- tags: primary_learning_delivery, backend-2, backend-dev
+- 场景：workflow: primary_learning_delivery; step: defect_fix; agent: backend-2
+- 做法：任务已分配给 backend-2: 修复测试发现的缺陷
+- 结果：任务已分配给 backend-2: 修复测试发现的缺陷
+- 适用前提：适用于 defect_fix 等类似工作流步骤
 

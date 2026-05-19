@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: dba|database_design|任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表 -->
+### 经验：任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表
+- 场景：workflow: primary_learning_delivery; step: database_design; agent: dba
+- 做法：任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表
+- 结果：任务已分配给 dba: 设计SQLite数据库表结构，包含字库、题库、学生档案表
+- 适用前提：适用于 database_design 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 <!-- lesson-key: dba|database|任务已分配给 dba: Design architecture review package -->
 ### 经验：任务已分配给 dba: Design architecture review package
 - 场景：workflow: baseline_workflow; step: database; agent: dba

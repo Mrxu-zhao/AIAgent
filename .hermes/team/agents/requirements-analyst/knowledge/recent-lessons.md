@@ -2,6 +2,15 @@
 
 ## 2026-05
 
+<!-- lesson-key: requirements-analyst|requirements_analysis|任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档 -->
+### 经验：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 场景：workflow: primary_learning_delivery; step: requirements_analysis; agent: requirements-analyst
+- 做法：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 结果：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 适用前提：适用于 requirements_analysis 等类似工作流步骤
+- 是否可沉淀到角色层或团队层：团队层 lessons
+
+
 <!-- lesson-key: requirements-analyst|requirements|任务已分配给 requirements-analyst: Analyze requirements -->
 ### 经验：任务已分配给 requirements-analyst: Analyze requirements
 - 场景：workflow: baseline_workflow; step: requirements; agent: requirements-analyst

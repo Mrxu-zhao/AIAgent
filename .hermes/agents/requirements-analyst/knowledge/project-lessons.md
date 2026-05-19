@@ -3,7 +3,7 @@
 ---
 owner: control-plane
 last_reviewed: 2026-05-19
-source: wf-runtime
+source: primary_learning_delivery
 scope: role
 ---
 
@@ -28,4 +28,15 @@ scope: role
 - 做法：任务已分配给 requirements-analyst: Analyze requirements
 - 结果：任务已分配给 requirements-analyst: Analyze requirements
 - 适用前提：适用于 requirements 等类似工作流步骤
+
+## 2026-05-19
+<!-- lesson-key: requirements-analyst|requirements_analysis|任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档 -->
+### 经验：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- project_type: primary_learning_delivery
+- role_key: requirements-analyst
+- tags: primary_learning_delivery, requirements-analyst, requirements-analyst
+- 场景：workflow: primary_learning_delivery; step: requirements_analysis; agent: requirements-analyst
+- 做法：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 结果：任务已分配给 requirements-analyst: 分析小学1-3年级学习助手需求，输出 PRD 文档
+- 适用前提：适用于 requirements_analysis 等类似工作流步骤
 
